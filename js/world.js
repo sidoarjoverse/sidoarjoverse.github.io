@@ -25,12 +25,23 @@ function mat(k) {
 
 // Voxel Builder: kumpulkan kotak per warna lalu gabung jadi sedikit mesh (ringan di HP).
 const MAT_AWAN = new THREE.MeshStandardMaterial({ color: '#fbf8f2', emissive: '#f2ede4', emissiveIntensity: 0.45, roughness: 1, flatShading: true });
+// cahaya lembut lampu saat malam: pendar di kepala lampu + lingkaran sinar hangat di tanah (tanpa PointLight, ringan untuk HP)
+const TEX_PENDAR = (() => {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const x = cv.getContext('2d');
+  const g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.25, 'rgba(255,255,255,.55)'); g.addColorStop(0.6, 'rgba(255,255,255,.14)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+const MAT_PENDAR = new THREE.SpriteMaterial({ map: TEX_PENDAR, color: '#ffcf7a', transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, fog: false, visible: false });
+const MAT_SINAR = new THREE.MeshBasicMaterial({ map: TEX_PENDAR, color: '#ffb85c', transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, visible: false, polygonOffset: true, polygonOffsetFactor: -2 });
+const GEO_SINAR = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
 const BOLA_LP = new THREE.IcosahedronGeometry(0.5, 1); // bola low-poly bersegi (pohon, semak, awan)
 class VB {
-  constructor() { this.parts = new Map(); }
+  constructor() { this.parts = new Map(); this.lampu = []; }
   _add(c, m, geo) { let l = this.parts.get(c); if (!l) { l = []; this.parts.set(c, l); } l.push([m, geo]); return this; }
   // x,z = pusat, y = dasar kotak
   box(x, y, z, w, h, d, c) {
+    if (c === 'lamp') this.lampu.push([x, y + h / 2, z]);
     return this._add(c, new THREE.Matrix4().makeScale(w, h, d).setPosition(x, y + h / 2, z), UNIT);
   }
   // bola low-poly: x,z = pusat, y = dasar
@@ -48,6 +59,10 @@ class VB {
       mesh.castShadow = shadow && c !== 'water' && c !== 'tambak';
       mesh.receiveShadow = true;
       g.add(mesh);
+    }
+    for (const [x, y, z] of this.lampu) {
+      const p = new THREE.Sprite(MAT_PENDAR); p.position.set(x, y, z); p.scale.setScalar(2.8); g.add(p);
+      const r = Math.min(6.5, 2.6 + y * 1.4), k = new THREE.Mesh(GEO_SINAR, MAT_SINAR); k.position.set(x, 0.07, z); k.scale.set(r, 1, r); k.renderOrder = 2; g.add(k);
     }
     return g;
   }
@@ -862,6 +877,9 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
       // jalan setapak tanah
       for (const z of LINES) jalan.box(0, 0, z, EDGE * 2, 0.04, 1.8, '#d7c49c');
       for (const x of LINES) { const z1 = -EDGE, z2 = x === 0 ? 31 : 16; jalan.box(x, 0, (z1 + z2) / 2, 1.8, 0.04, z2 - z1, '#d7c49c'); }
+      // tiang lentera kayu di pinggir jalan setapak
+      for (const z of LINES) for (let x = -24; x <= 24; x += 8) { if (LINES.includes(x)) continue; jalan.box(x, 0, z - 1.4, 0.14, 2.2, 0.14, '#6b4a2a'); jalan.box(x, 2.2, z - 1.4, 0.34, 0.36, 0.34, 'lamp'); jalan.box(x, 2.56, z - 1.4, 0.44, 0.1, 0.44, '#3d2a1e'); }
+      for (const x of LINES) for (let z = -20; z <= 12; z += 8) { if (LINES.some(l => Math.abs(l - z) < 3)) continue; jalan.box(x + 1.4, 0, z, 0.14, 2.2, 0.14, '#6b4a2a'); jalan.box(x + 1.4, 2.2, z, 0.34, 0.36, 0.34, 'lamp'); jalan.box(x + 1.4, 2.56, z, 0.44, 0.1, 0.44, '#3d2a1e'); }
       for (let i = 0; i < 120; i++) { const l = LINES[i % 3], t = (r() - 0.5) * 2 * EDGE; if (i % 2) jalan.box(t, 0.04, l + (r() - 0.5) * 1.4, 0.3, 0.03, 0.3, '#a88a60'); else jalan.box(l + (r() - 0.5) * 1.4, 0.04, Math.min(t, 16), 0.3, 0.03, 0.3, '#a88a60'); }
     }
     // jembatan bambu (selalu ada supaya bisa menyeberang)
@@ -1188,7 +1206,8 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     sun.color.set(h < 6 || h > 18.5 ? '#9fb4ff' : h < 8 || h > 16.5 ? '#ffc98f' : '#ffe3bd');
     const glow = malam ? '#ffcf6b' : '#000000';
     winMat.emissive.set(glow); winMat.emissiveIntensity = malam ? 0.9 : 0;
-    lampMat.emissive.set(malam ? '#fff1b8' : '#000'); lampMat.emissiveIntensity = malam ? 1.3 : 0;
+    lampMat.emissive.set(malam ? '#ffe0a0' : '#000'); lampMat.emissiveIntensity = malam ? 1.3 : 0;
+    MAT_PENDAR.visible = MAT_SINAR.visible = malam;
     return { jam: h, malam };
   }
   setInterval(updateLangit, 30000);

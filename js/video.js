@@ -15,7 +15,7 @@ const FPS = TL.fps, N = Math.round(TL.durasi * FPS);
 // Subtitle = persis yang diucapkan (ejaan mesin suara dirapikan); kata kunci dikapital agar disorot.
 const SOROT = ['warga', 'ktp', 'follow', 'komen', 'like'];
 function rapikan(tts) {
-  return tts.replace(/Sidoarjo Vers/g, 'SidoarjoVerse').replace(/P\. O\. V\./g, 'POV').replace(/\.\.\./g, '…')
+  return tts.replace(/Sidoarjo Vers titik GitHub titik io/gi, 'sidoarjoverse.github.io').replace(/Sidoarjo Vers/g, 'SidoarjoVerse').replace(/P\. O\. V\./g, 'POV').replace(/\.\.\./g, '…')
     .split(' ').map(k => SOROT.includes(k.replace(/[^A-Za-z]/g, '').toLowerCase()) ? k.toUpperCase() : k).join(' ');
 }
 // gambar untuk stiker "layar" (tangkapan layar website) dimuat dulu
@@ -39,7 +39,7 @@ if (!NASKAH.kota || !NASKAH.kota.bangunan) kota.bangunan = [{ id: 'lahan1', nama
 const gl = document.getElementById('gl');
 const world = createWorld(gl, { manual: true });
 world.setKota(kota);
-world.setWarga(NASKAH.warga || [], '');
+world.setWarga(NASKAH.warga || [], NASKAH.kamu || '');
 world.maskot().g.visible = false;
 world.setJam(NASKAH.jam ?? 9.3);
 const { scene, camera, renderer } = world;
@@ -75,6 +75,47 @@ const sorot = new THREE.Mesh(new THREE.BoxGeometry(11.2, 0.5, 7.2), new THREE.Me
 sorot.position.set(+lahanB.x, 0.25, +lahanB.z); sorot.visible = false; scene.add(sorot);
 sorot.add(new THREE.LineSegments(new THREE.EdgesGeometry(sorot.geometry), new THREE.LineBasicMaterial({ color: '#f28c28' })));
 
+// Cak Darjo "pojok": dirender terpisah (latar transparan) lalu ditempel di pojok kanan bawah saat shot udara
+const PW = 300, PH = 430;
+const rPojok = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+rPojok.outputColorSpace = THREE.SRGBColorSpace; rPojok.toneMapping = THREE.ACESFilmicToneMapping; rPojok.toneMappingExposure = 1.12;
+rPojok.setPixelRatio(SKALA); rPojok.setSize(PW, PH, false); rPojok.setClearColor(0x000000, 0);
+const scPojok = new THREE.Scene();
+scPojok.add(new THREE.HemisphereLight('#e4eef2', '#9a9070', 1.7));
+{ const sun = new THREE.DirectionalLight('#ffe3bd', 2.3); sun.position.set(2, 4, 5); scPojok.add(sun); }
+const camPojok = new THREE.PerspectiveCamera(30, PW / PH, 0.1, 50);
+camPojok.position.set(0.2, 1.75, 4.1); camPojok.lookAt(0, 1.6, 0);
+
+// papan yang diangkat Cak Darjo (pose "angkat-papan", naskah "papan": "BARIS1|BARIS2")
+const papanAngkat = new THREE.Group(); papanAngkat.visible = false; darjo.add(papanAngkat);
+{
+  const baris = (NASKAH.baris.find(b => b.papan) || {}).papan || '';
+  const [a1, a2] = baris.split('|');
+  const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d');
+  g.fillStyle = '#fff8ea'; g.beginPath(); g.roundRect(8, 8, 624, 344, 40); g.fill();
+  g.lineWidth = 14; g.strokeStyle = '#f28c28'; g.stroke();
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#0f4c5c'; g.font = '900 170px "DejaVu Sans", sans-serif'; g.fillText(a1 || '', 320, 150);
+  g.fillStyle = '#f28c28'; g.font = '800 54px "DejaVu Sans", sans-serif'; g.fillText(a2 || '', 320, 285);
+  const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.96), new THREE.MeshBasicMaterial({ map: tx }));
+  pl.position.set(0, 3.0, 0.25); papanAngkat.add(pl);
+  for (const x of [-0.62, 0.62]) { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9), new THREE.MeshStandardMaterial({ color: '#8d6e4a' })); k.position.set(x, 2.55, 0.2); papanAngkat.add(k); }
+}
+
+// warga "@kamu" + beberapa tetangga dipasang diam di satu titik untuk kamera "warga"
+const TITIK_W = new THREE.Vector3(-5, 0, 2);
+const kodeDari = ch => ch.g.userData.pick && ch.g.userData.pick.data && ch.g.userData.pick.data.kode;
+const semua = world.karakter().filter(ch => ch !== world.maskot());
+const kamu = semua.find(ch => kodeDari(ch) === NASKAH.kamu);
+const tetangga = semua.filter(ch => ch !== kamu).slice(0, 4);
+const pasang = (ch, x, z, ry) => { ch.dikontrol = true; ch.g.position.set(x, 0, z); ch.g.rotation.y = ry; };
+if (kamu) { pasang(kamu, TITIK_W.x, TITIK_W.z, 0.35); kamu._s = kamu.g.scale.x; kamu._lbl = kamu.g.children.find(o => o.isSprite); kamu._ls = kamu._lbl && kamu._lbl.scale.clone(); }
+[[-7.3, 0.4, 0.6], [-2.9, 0.1, -0.4], [-8.1, 3.1, 0.9], [-1.9, 2.6, -0.7]].forEach(([x, z, r], k) => tetangga[k] && pasang(tetangga[k], x, z, r));
+
+// label bangunan (bukan label warga) disembunyikan bila terlalu dekat kamera
+const labelBangunan = []; scene.traverse(o => { if (o.isSprite && o.material.blending !== THREE.AdditiveBlending && !world.karakter().some(ch => ch.g === o.parent)) labelBangunan.push(o); });
+const _wp = new THREE.Vector3();
 // ------------------------------------------------------------ util
 const ease = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
 const easeOut = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
@@ -91,6 +132,8 @@ function bidikan(jenis, sebelum) {
     case 'mundur': return { a: sb, b: { pos: V(9, 13, 21), look: V(0, 0.4, -5) }, e: easeOut };
     case 'udara': return { a: { pos: V(9, 13, 21), look: V(0, 0.4, -5) }, b: { pos: V(-5, 15, 21), look: V(-2, 0, -7) }, e: ease };
     case 'atas': return { a: { pos: V(lahanB.x + 4, 9, lahanB.z + 12), look: V(lahanB.x + 2, 0, lahanB.z + 3) }, b: { pos: V(+lahanB.x, 25, lahanB.z + 11), look: V(+lahanB.x, 0, +lahanB.z) }, e: easeOut };
+    case 'papan': return { a: { pos: V(0.3, 2.35, 7.9), look: V(0, 2.05, 0.6) }, b: { pos: V(0.6, 2.35, 7.3), look: V(0, 2.05, 0.6) }, e: ease };
+    case 'warga': return { a: { pos: V(-2.6, 3.1, 9.6), look: V(-5, 1.25, 2) }, b: { pos: V(-3.4, 2.7, 8.4), look: V(-5, 1.3, 2) }, e: ease };
     case 'ayam': return { a: { pos: V(2.6, 1.3, 5.2), look: V(0.9, 0.7, 1.3) }, b: { pos: V(2.2, 1.05, 4.4), look: V(0.9, 0.7, 1.3) }, e: ease };
     case 'bangunan': {
       const b = kota.bangunan.find(x => x.id === arg) || lahanB;
@@ -128,7 +171,12 @@ function animDarjo(t, f) {
   if (pakaiAkua) {     // dua tangan memegang akuarium; bandeng & udang "gelut"
     tangan.rotation.set(-0.8, 0, -0.42); if (tanganKiri) tanganKiri.rotation.set(-0.8, 0, 0.42);
     akua.tick(t * 4.5);
+  } else if (s.pose === 'angkat-papan') {   // dua tangan ke atas memegang papan
+    tangan.rotation.set(0, 0, 2.75); if (tanganKiri) tanganKiri.rotation.set(0, 0, -2.75);
   } else if (tanganKiri) tanganKiri.rotation.copy(kiriAwal);
+  papanAngkat.visible = s.pose === 'angkat-papan';
+  if (tongkat) tongkat.visible = !pakaiAkua && !papanAngkat.visible;
+  if (papanAngkat.visible) papanAngkat.position.y = Math.sin(t * 3) * 0.03;
   if (tukang) { const a = tukang.userData.anim; a.arms[1].rotation.x = -1.2 + Math.abs(Math.sin(t * 7)) * -1.1; a.arms[0].rotation.x = -0.4; }
   ayam.rotation.x = Math.max(0, Math.sin(t * 6)) * 0.35;
 }
@@ -199,7 +247,8 @@ function subtitle(t) {
   const p = potongan.find(p => t >= p.t0 - 0.05 && t < p.t1 + 0.12);
   if (!p) return;
   const s = popS(t, p.t0 - 0.05, 0.18) * 0.12 + 0.88;
-  const size = pas(p.x, 44, 600), w = ukur(p.x, size) + 60, h = 86, cx = W / 2, cy = 1050;
+  const pj = SEG[segPada(t)].darjo === 'pojok';
+  const size = pas(p.x, 44, pj ? 400 : 600), w = ukur(p.x, size) + 60, h = 86, cx = pj ? 40 + w / 2 : W / 2, cy = pj ? 1150 : 1050;
   denganSkala(cx, cy, s, () => {
     c.fillStyle = 'rgba(15,76,92,.93)'; rr(cx - w / 2, cy - h / 2, w, h, 22); c.fill();
     let x = cx - ukur(p.x, size) / 2;
@@ -227,6 +276,9 @@ SEG.forEach((s, i) => {
   else if (s.sfx === 'tada') catat(s.start + 0.3, 'tada');
   for (const st of s.stiker || []) {
     if (['pil', 'papan', 'kartu_teks', 'judul', 'url', 'follow', 'aturan', 'klasemen', 'layar'].includes(st.jenis)) catat(st._t0, 'pop');
+    if (['headline', 'langkah', 'voting'].includes(st.jenis)) catat(st._t0, 'pop');
+    if (st.jenis === 'chip') st.items.forEach((_, k) => { if (!(st.lanjut && k === 0)) catat(st._t0 + (st.lanjut ? k - 1 : k) * 0.45, 'pop'); });
+    if (st.jenis === 'tangga') st.items.forEach((_, k) => catat(st._t0 + k * 0.35, 'pop'));
     if (st.jenis === 'ide') st.items.forEach((_, k) => catat(s.start + 0.2 + k * s.dur * 0.18, 'pop'));
     if (st.jenis === 'komen') st.items.forEach((_, k) => catat(st._t0 + 0.3 + k * 0.5, 'pop'));
   }
@@ -236,9 +288,9 @@ function gambarStiker(st, s, i, t, slot) {
   const t0 = st._t0, ps = popS(t, t0);
   const y = 170 + slot * 110;
   switch (st.jenis) {
-    case 'pil': return pil(st.teks, W / 2, y, ps, st.warna || 'kuning');
+    case 'pil': return pil(st.teks, W / 2, st.y || y, ps, st.warna || 'kuning');
     case 'papan': return pil(st.teks, W / 2, y, ps, 'oren', 34);
-    case 'url': return pil(st.teks, W / 2, 230, ps, 'teal', 34);
+    case 'url': return pil(st.teks, W / 2, st.y || 230, ps, 'teal', 34);
     case 'kartu_teks': {
       const size = pas(st.teks, 84, 520);
       return kartu(W / 2, 300, Math.max(360, ukur(st.teks, size) + 100), 170, ps, (x, yy) => teks(st.teks, W / 2, yy + 88, { size, warna: TEAL }), { bg: KREM });
@@ -247,6 +299,7 @@ function gambarStiker(st, s, i, t, slot) {
       const s2 = popS(t, t0 + 0.55, 0.35), ts = pas(st.teks, 80, 640);
       if (st.atas) denganSkala(W / 2, 290, ps, () => teks(st.atas, W / 2, 290, { size: 44, warna: '#fff', garis: 12 }));
       denganSkala(W / 2, 370, st.atas ? s2 : ps, () => teks(st.teks, W / 2, 370, { size: ts, warna: KUNING, garis: 18 }));
+      if (st.sub) denganSkala(W / 2, 450, popS(t, t0 + 1.0, 0.3), () => pil(st.sub, W / 2, 450, 1, 'putih', 30, 22));
       return;
     }
     case 'follow':
@@ -279,7 +332,7 @@ function gambarStiker(st, s, i, t, slot) {
     case 'komen':
       return st.items.forEach(([u, kk], k) => {
         const tk = t0 + 0.3 + k * 0.5, kiri = k % 2 === 0;
-        const w = Math.max(ukur(kk, 26, 600), ukur(u, 21)) + 110, cx = kiri ? 40 + w / 2 : W - 40 - w / 2, cy = 290 + k * 100;
+        const w = Math.max(ukur(kk, 26, 600), ukur(u, 21)) + 110, cx = kiri ? 40 + w / 2 : W - 40 - w / 2, cy = (st.y || 290) + k * 100;
         kartu(cx, cy, w, 80, popS(t, tk), (x, yy) => {
           c.fillStyle = ['#f4a261', '#2a9d8f', '#8d5a97', '#e9c46a'][k % 4]; c.beginPath(); c.arc(x + 40, yy + 40, 22, 0, Math.PI * 2); c.fill();
           teks(u, x + 74, yy + 26, { size: 21, warna: '#5b7083', align: 'left' });
@@ -332,6 +385,81 @@ function gambarStiker(st, s, i, t, slot) {
       if (st.label) pil(st.label, W / 2, 170, popS(t, t0 + 0.2), 'teal', 34);
       return;
     }
+    case 'headline': {          // teks besar kiri atas; kata *bintang* kuning, muncul kata demi kata
+      const kata = st.teks.split(' '), size = st.size || 56, maks = 620, lh = size * 1.18;
+      const baris = [[]]; let lw = 0;
+      for (const k of kata) { const w = ukur(k.replace(/\*/g, '') + ' ', size, 900); if (lw + w > maks && baris[baris.length - 1].length) { baris.push([]); lw = 0; } baris[baris.length - 1].push(k); lw += w; }
+      let idx = 0;
+      baris.forEach((br, bi) => {
+        let x = 44; const yy = (st.y || 150) + bi * lh;
+        for (const k of br) {
+          const tk = t0 + idx * 0.07; idx++;
+          const a = Math.min(1, Math.max(0, (t - tk) / 0.15)); if (a <= 0) continue;
+          const bersih = k.replace(/\*/g, ''), sorot = k.includes('*');
+          c.globalAlpha = a;
+          teks(bersih, x, yy + (1 - a) * 18, { size, warna: sorot ? KUNING : '#fff', bobot: 900, align: 'left', garis: 12, warnaGaris: 'rgba(10,40,55,.85)' });
+          c.globalAlpha = 1;
+          x += ukur(bersih + ' ', size, 900);
+        }
+      });
+      return;
+    }
+    case 'langkah': {           // kartu langkah bernomor; langkah sebelumnya tampil redup + ✓
+      for (let k = 1; k <= st.no; k++) {
+        const ini = k === st.no, cy = (st.y || 800) + (k - 1) * 122;
+        const label = ini ? st.teks : (NASKAH.baris.flatMap(b => b.stiker || []).find(x => x.jenis === 'langkah' && x.no === k) || {}).teks || '';
+        const sc = ini ? ps : 1;
+        c.globalAlpha = ini ? 1 : 0.72;
+        kartu(W / 2, cy, 620, 108, sc, (x, yy) => {
+          c.fillStyle = ini ? OREN : '#2a9d8f'; c.beginPath(); c.arc(x + 62, yy + 54, 36, 0, Math.PI * 2); c.fill();
+          teks(ini ? String(k) : '✓', x + 62, yy + 56, { size: 38, warna: '#fff', bobot: 900 });
+          const sz = pas(label, 34, ini && st.follow ? 330 : 470, 800);
+          teks(label, x + 118, yy + 56, { size: sz, warna: '#16324f', align: 'left' });
+          if (ini && st.follow) { const ikut = t > t0 + 1.1; c.fillStyle = ikut ? '#e8eef1' : '#3a86ff'; rr(x + 456, yy + 31, 144, 46, 14); c.fill(); teks(ikut ? 'Mengikuti ✓' : 'Ikuti', x + 528, yy + 55, { size: 20, warna: ikut ? '#16324f' : '#fff' }); }
+          if (ini && st.ktp) teks('🪪', x + 560, yy + 56, { size: 50 });
+        }, { bg: KREM });
+        c.globalAlpha = 1;
+      }
+      return;
+    }
+    case 'chip':                // daftar fitur kiri, muncul satu per satu
+      return st.items.forEach((str, k) => {
+        const tk = st.lanjut && k === 0 ? -99 : t0 + (st.lanjut ? k - 1 : k) * 0.45;
+        const sc = popS(t, tk); if (sc <= 0) return;
+        const size = 32, w = ukur(str, size) + 52, cy = (st.y || 330) + k * 84;
+        denganSkala(44 + w / 2, cy, sc, () => { c.fillStyle = 'rgba(15,76,92,.92)'; rr(44, cy - 34, w, 68, 34); c.fill(); teks(str, 44 + w / 2, cy + 2, { size, warna: '#fff' }); });
+      });
+    case 'tangga': {            // tangga jabatan: penanda "kamu" naik dari bawah ke atas
+      const nItem = st.items.length, y0 = st.y || 820, dy = 120;
+      st.items.forEach((str, k) => {
+        const cy = y0 - k * dy, cx = 210 + k * 70, tk = t0 + k * 0.35, sc = popS(t, tk); if (sc <= 0) return;
+        const w = ukur(str, 32) + 56, puncak = k === nItem - 1;
+        denganSkala(cx, cy, sc, () => { c.fillStyle = puncak ? KUNING : '#ffffff'; rr(cx - w / 2, cy - 36, w, 72, 20); c.fill(); c.lineWidth = 4; c.strokeStyle = TEAL; c.stroke(); teks(str, cx, cy + 2, { size: 32, warna: TEAL }); });
+        if (k > 0 && sc > 0.9) teks('▲', 210 + (k - 0.5) * 70, y0 - (k - 0.5) * dy, { size: 26, warna: '#fff', garis: 6, warnaGaris: TEAL });
+      });
+      const u = Math.min(nItem - 1, Math.max(0, (t - t0 - 0.6) / ((s.dur - 0.8) / (nItem - 1))));
+      const k0 = Math.floor(u), f2 = ease(u - k0), k1 = Math.min(nItem - 1, k0 + 1), kk = k0 + (k1 - k0) * f2;
+      const cx = 210 + kk * 70, cy = y0 - kk * dy, w = ukur(st.items[Math.round(kk)], 32) + 56;
+      if (t > t0 + 0.4) pil('⬅ kamu', cx + w / 2 + 90, cy, popS(t, t0 + 0.4), 'oren', 28, 18);
+      return;
+    }
+    case 'voting': {            // kartu LIVE: bar suara bertambah, pemenang dapat mahkota
+      const it = st.items, maks = Math.max(...it.map(x => x[1])), cy = st.y || 560, hh = 100 + it.length * 92;
+      const prog = Math.min(1, Math.max(0, (t - t0 - 0.3) / 2.2)), menang = prog >= 1;
+      return kartu(W / 2, cy, 600, hh, ps, (x, yy) => {
+        c.fillStyle = TEAL; rr(x, yy, 600, 70, [26, 26, 0, 0]); c.fill();
+        c.fillStyle = (Math.floor(t * 2) % 2) ? '#e63946' : '#ff6b6b'; c.beginPath(); c.arc(x + 40, yy + 35, 11, 0, Math.PI * 2); c.fill();
+        teks('LIVE · KOMEN = SUARA', x + 300, yy + 37, { size: 28, warna: KUNING });
+        it.forEach(([nm, n], k) => {
+          const y0 = yy + 92 + k * 92, juara = menang && n === maks, nn = Math.round(n * ease(prog));
+          if (juara) { c.fillStyle = 'rgba(255,209,102,.35)'; rr(x + 14, y0 - 12, 572, 84, 18); c.fill(); }
+          teks(nm + (juara ? '  👑' : ''), x + 34, y0 + 14, { size: 30, warna: '#16324f', align: 'left' });
+          c.fillStyle = '#eadfcb'; rr(x + 34, y0 + 42, 430, 18, 9); c.fill();
+          c.fillStyle = juara ? OREN : '#2a9d8f'; rr(x + 34, y0 + 42, Math.max(18, 430 * (n / maks) * ease(prog)), 18, 9); c.fill();
+          teks(`❤️ ${nn}`, x + 566, y0 + 50, { size: 26, warna: '#5b7083', align: 'right', bobot: 700 });
+        });
+      }, { bg: KREM });
+    }
     case 'lahan': {
       if (t < s.start + s.dur * 0.4) return;
       const [px, py] = proyeksi(V(+lahanB.x, 0.5, +lahanB.z));
@@ -374,6 +502,25 @@ window.video = {
     sorot.visible = ada && ks > 0;
     sorot.material.opacity = Math.min(1, Math.max(0, ks)) * (0.42 + Math.sin(t * 6) * 0.14);
     kamera(t);
+    const pj = s.darjo === 'pojok';
+    if (pj) { scPojok.add(darjo); darjo.position.set(0, darjo.position.y, 0); darjo.rotation.y = -0.35; }
+    else { scene.add(darjo); darjo.position.set(0, darjo.position.y, 0.6); darjo.rotation.y = 0; }
+    // siang → malam (naskah "malam": true)
+    // jam per baris (naskah "jam": [[fraksi, jam], ...]) → siang/malam berganti di tengah kalimat
+    if (s.jam) {
+      const u = (t - s.start) / s.dur, kf = s.jam; let h = kf[0][1];
+      for (let k = 1; k < kf.length; k++) if (u >= kf[k - 1][0]) h = kf[k - 1][1] + (kf[k][1] - kf[k - 1][1]) * ease((u - kf[k - 1][0]) / (kf[k][0] - kf[k - 1][0]));
+      world.setJam(h);
+    } else if (i > 0 && SEG[i - 1].jam) world.setJam(NASKAH.jam ?? 9.3);
+    // avatar "@kamu" muncul, lalu label namanya muncul
+    if (kamu) {
+      const muncul = s.muncul === 'avatar' ? popS(t, s.start + 1.6, 0.4) : 1;
+      kamu.g.scale.setScalar(kamu._s * Math.max(0.0001, muncul));
+      if (kamu._lbl) {
+        const ls = s.muncul === 'avatar' ? 0 : s.muncul === 'label' ? popS(t, s.start + 0.6, 0.35) : 1;
+        kamu._lbl.scale.copy(kamu._ls).multiplyScalar(Math.max(0.0001, ls));
+      }
+    }
     // saat kamera dekat, sembunyikan warga yang lewat di antara kamera dan Cak Darjo
     const dekat = /^(closeup|medium|ayam)/.test(String(s.kamera || 'closeup'));
     for (const ch of world.karakter()) {
@@ -383,9 +530,25 @@ window.video = {
       const label = ch.g.children.find(o => o.isSprite);          // label nama terlalu dekat → terlalu besar di layar
       if (label) label.visible = !(dekat && Math.hypot(p.x, p.z - 0.6) < 7);
     }
+    for (const l of labelBangunan) { l.getWorldPosition(_wp); l.visible = String(s.kamera).startsWith("warga") ? false : _wp.distanceTo(camera.position) > 13; }
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.drawImage(gl, 0, 0, out.width, out.height);
+    if (s.hujan != null) {            // hujan: langit meredup + garis air jatuh
+      const u = (t - s.start) / s.dur, k = Math.min(1, Math.max(0, (u - s.hujan) / 0.06));
+      if (k > 0) {
+        c.save(); c.scale(SKALA, SKALA);
+        c.fillStyle = `rgba(40,60,85,${0.38 * k})`; c.fillRect(0, 0, W, H);
+        c.strokeStyle = `rgba(210,225,240,${0.7 * k})`; c.lineWidth = 2; c.beginPath();
+        for (let r = 0; r < 160; r++) { const x = (r * 97.3 + t * 120) % (W + 100) - 50, y = (r * 211.7 + t * 1500) % (H + 60) - 30; c.moveTo(x, y); c.lineTo(x - 7, y + 30); }
+        c.stroke(); c.restore();
+      }
+    }
+    if (pj) {
+      rPojok.render(scPojok, camPojok);
+      const masuk = i > 0 && SEG[i - 1].darjo === 'pojok' ? 1 : easeOut((t - mulai(i)) / 0.45);
+      c.drawImage(rPojok.domElement, (W - PW + 10 + (1 - masuk) * PW) * SKALA, (H - PH) * SKALA, PW * SKALA, PH * SKALA);
+    }
     overlay(t);
     return out.toDataURL('image/jpeg', mutu);
   },
