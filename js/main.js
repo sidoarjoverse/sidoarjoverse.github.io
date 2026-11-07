@@ -2,6 +2,8 @@ import { createWorld, potretWarga } from './world.js';
 import * as D from './data.js';
 import { CONFIG } from './config.js';
 import { lookFor, drawPortrait } from './avatar.js';
+import { mulaiRamai, KALIMAT, EMOTE, teksChat } from './ramai.js';
+let ramai = null;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -440,6 +442,8 @@ async function mulaiMain() {
   setTimeout(() => $('mainHint').classList.add('hide'), 5000);
 }
 function berhentiMain() {
+  if (ramai) ramai.pamit();
+  $('chatPal').hidden = true;
   world.selesaiMain();
   document.body.classList.remove('bermain');
   $('mainUI').hidden = true;
@@ -447,6 +451,14 @@ function berhentiMain() {
   lepasJoy();
 }
 $('btnMain').onclick = mulaiMain;
+// sapa warga lain: kalimat template & emote (tanpa chat bebas, aman untuk semua umur)
+$('chatBtn').onclick = () => {
+  const p = $('chatPal');
+  if (p.hidden) p.innerHTML = '<small>Sapa warga yang online:</small>' + KALIMAT.map((_, i) => `<button type="button" data-i="${i}">${esc(teksChat(i, saya))}</button>`).join('')
+    + EMOTE.map((e, k) => `<button type="button" class="emo" data-i="${100 + k}">${e}</button>`).join('');
+  p.hidden = !p.hidden;
+};
+$('chatPal').onclick = e => { const b = e.target.closest('button[data-i]'); if (!b) return; if (ramai) ramai.chat(+b.dataset.i); else world.gelembung(null, teksChat(+b.dataset.i, saya)); $('chatPal').hidden = true; };
 $('mainStop').onclick = berhentiMain;
 
 // joystick layar sentuh
@@ -505,6 +517,7 @@ async function mulai() {
   sidikKota = JSON.stringify(kota);
   if (kodeSaya) { try { saya = await D.cariKode(kodeSaya); } catch (_) {} if (!saya) { localStorage.removeItem(KEY_KTP); localStorage.removeItem(KEY_PIN); kodeSaya = ''; pinSaya = ''; } }
   if (world) { await refreshWarga(); $('loading').classList.add('done'); }
+  if (world && !D.DEMO) ramai = mulaiRamai({ world, saya: () => saya, onJumlah: n => { const el = $('online'); el.hidden = n < 1; el.textContent = `🟢 ${n} warga online`; } });
   renderInfo(); renderKTP(); renderDonasi(); renderAkun();
   renderPemilu();
   setInterval(segarkan, 120000);

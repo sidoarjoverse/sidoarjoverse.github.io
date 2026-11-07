@@ -81,6 +81,21 @@ function canvasTex(cv) {
 }
 
 // Label teks melayang (nama warga, status bangunan)
+// gelembung chat (Mode Ramai): kotak putih + ekor kecil
+function gelembungSprite(text) {
+  const dpr = 3, fs = 26, cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+  ctx.font = `700 ${fs}px system-ui, sans-serif, "Noto Color Emoji"`;
+  const W = Math.ceil(ctx.measureText(text).width) + 34, H = fs + 22, T = 12;
+  cv.width = W * dpr; cv.height = (H + T) * dpr; ctx.scale(dpr, dpr);
+  ctx.font = `700 ${fs}px system-ui, sans-serif, "Noto Color Emoji"`;
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#0f4c5c'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.roundRect(1.5, 1.5, W - 3, H - 3, 16); ctx.moveTo(W / 2 - 9, H - 2); ctx.lineTo(W / 2, H + T - 2); ctx.lineTo(W / 2 + 9, H - 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.fillRect(W / 2 - 8, H - 5, 16, 4);
+  ctx.fillStyle = '#16324f'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.fillText(text, W / 2, H / 2 + 1);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(cv), depthWrite: false, depthTest: false }));
+  sp.center.set(0.5, 0); sp.scale.set(0.7 * W / H, 0.7 * (H + T) / H, 1); sp.renderOrder = 12;
+  return sp;
+}
 function textSprite(text, { bg = 'rgba(255,255,255,.94)', fg = '#123', size = 0.62, border = null } = {}) {
   const dpr = 3, fs = 26;
   const cv = document.createElement('canvas');
@@ -1094,6 +1109,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
       ayam.push({ g, cx, cz, tx: g.position.x, tz: g.position.z, wait: ra() * 2, ra });
     }
     jadwalMaskot();
+    for (const [kode, e] of [...tamu]) { tamu.delete(kode); if (e.w) pasangTamu(kode, { w: e.w, x: e.tx, z: e.tz, ry: e.ry, j: e.jalan }); }
   }
 
   function jadwalMaskot() {
@@ -1264,6 +1280,58 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     for (const [px, pz] of pohonPos) if ((x - px) ** 2 + (z - pz) ** 2 < 0.3) return false;
     return true;
   }
+  // ---------- Mode Ramai: warga lain yang sedang online (data dari ramai.js)
+  const tamu = new Map();   // kode -> { c, sendiri, tx, tz, ry, jalan, w }
+  function cariChar(kode) { return chars.find(x => x.g.userData.pick.data && x.g.userData.pick.data.kode === kode); }
+  function lepasChar(c) {
+    c.dikontrol = false; c.to = null; c.path = []; c.wait = 1;
+    c.from = nearestNode(c.g.position.x, c.g.position.z); c.g.position.y = 0;
+  }
+  function pasangTamu(kode, d) {
+    let e = tamu.get(kode);
+    if (e && !chars.includes(e.c)) { tamu.delete(kode); e = null; }   // peta baru saja dibangun ulang
+    if (!e) {
+      let c = cariChar(kode), sendiri = false;
+      if (c && c === pemain) return;
+      if (!c) {
+        c = spawn(lookFor(d.w), {}, { label: '🟢 ' + d.w.nama, labelStyle: { bg: 'rgba(22,130,90,.96)', fg: '#fff', size: 0.85 }, jenis: 'warga', data: d.w }, rng(kode));
+        sendiri = true;
+      }
+      c.dikontrol = true; c.to = null; c.path = [];
+      c.g.position.set(d.x, 0, d.z); c.g.rotation.y = d.ry || 0;
+      e = { c, sendiri }; tamu.set(kode, e);
+    }
+    Object.assign(e, { tx: d.x, tz: d.z, ry: d.ry || 0, jalan: !!d.j, w: d.w });
+  }
+  function hapusTamu(kode) {
+    const e = tamu.get(kode); if (!e) return;
+    tamu.delete(kode);
+    if (e.sendiri) { const i = chars.indexOf(e.c); if (i >= 0) chars.splice(i, 1); charsG.remove(e.c.g); }
+    else if (chars.includes(e.c)) lepasChar(e.c);
+  }
+  let waktuKini = 0;
+  function stepTamu(dt, t) {
+    for (const e of tamu.values()) {
+      const p = e.c.g.position, a = e.c.g.userData.anim;
+      const dx = e.tx - p.x, dz = e.tz - p.z, jarak = Math.hypot(dx, dz);
+      if (jarak > 12) { p.x = e.tx; p.z = e.tz; } else { const k = Math.min(1, dt * 7); p.x += dx * k; p.z += dz * k; }
+      let df = e.ry - e.c.g.rotation.y; df = Math.atan2(Math.sin(df), Math.cos(df)); e.c.g.rotation.y += df * Math.min(1, dt * 10);
+      const jalan = e.jalan || jarak > 0.08, sw = jalan ? Math.sin(t * 11) * 0.7 : 0;
+      a.legs[0].rotation.x = sw; a.legs[1].rotation.x = -sw; a.arms[0].rotation.x = -sw; a.arms[1].rotation.x = sw;
+      const diJembatan = Math.abs(p.x) < 1.8 && p.z > 19.9 && p.z < 26.1;
+      p.y = (diJembatan ? 0.3 : 0) + (jalan ? Math.abs(Math.cos(t * 11)) * 0.05 : 0);
+    }
+    // gelembung chat menghilang setelah 5 detik
+    for (const c of chars) { const gb = c.g.userData.gelembung; if (gb && t > gb.userData.sampai) { c.g.remove(gb); gb.material.map.dispose(); gb.material.dispose(); c.g.userData.gelembung = null; } }
+  }
+  function gelembung(kode, teks) {
+    const c = kode === null ? pemain : cariChar(kode); if (!c) return;
+    const lama = c.g.userData.gelembung; if (lama) c.g.remove(lama);
+    const sp = gelembungSprite(teks), s = c.g.scale.x || 0.62;
+    sp.position.y = 3.6; sp.scale.multiplyScalar(1 / s * 0.82); sp.userData.sampai = waktuKini + 5;
+    c.g.add(sp); c.g.userData.gelembung = sp;
+  }
+
   function stepPemain(dt, t) {
     const c = pemain, a = c.g.userData.anim, p = c.g.position;
     const mag = Math.min(1, Math.hypot(masukan.x, masukan.y));
@@ -1307,7 +1375,9 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
   const timer = new THREE.Timer(); timer.connect(document);
   function langkah(dt, t, kameraManual) {
     for (const c of chars) { stepChar(c, dt, t); if (c.g.userData.tick) c.g.userData.tick(t); }
+    waktuKini = t;
     if (pemain) stepPemain(dt, t);
+    stepTamu(dt, t);
     for (const a of ayam) stepAyam(a, dt, t);
     for (const c of awanG.children) { c.position.x += c.userData.v * dt; if (c.position.x > 70) c.position.x = -70; }
     if (fokus) {
@@ -1382,6 +1452,10 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     },
     gerak(x, y) { masukan.x = x; masukan.y = y; },
     sedangMain: () => !!pemain,
+    // Mode Ramai
+    tamu: pasangTamu, tamuPergi: hapusTamu, gelembung,
+    jumlahTamu: () => tamu.size,
+    statusPemain: () => pemain ? { x: pemain.g.position.x, z: pemain.g.position.z, ry: pemain.g.rotation.y, j: Math.hypot(masukan.x, masukan.y) > 0.08 } : null,
     karakter: () => chars,
     // ----- untuk mode video (manual)
     frame(dt, t) { langkah(dt, t, true); },

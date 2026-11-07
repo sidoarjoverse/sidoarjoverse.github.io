@@ -204,3 +204,18 @@ button { font: inherit; cursor: pointer; }
 body.bermain .hint, body.bermain .cta, body.bermain .zoom #cariCak, body.bermain .warga-card { display: none; }
 body.bermain .card { bottom: 180px; }
 @media (hover: hover) and (pointer: fine) { .joy { opacity: .85; } }
+/* Mode Ramai */
+.online { position: absolute; left: 12px; top: 116px; background: rgba(22,130,90,.95); color: #fff; font-weight: 800; font-size: 13px;
+  padding: 6px 12px; border-radius: 999px; box-shadow: 0 3px 0 #0d5a3e; z-index: 5; pointer-events: none; }
+.online[hidden] { display: none; }
+body.bermain .online { top: 58px; }
+.chatbtn { position: absolute; right: 16px; bottom: 112px; width: 58px; height: 58px; border-radius: 50%; border: 3px solid #fff;
+  background: var(--teal); font-size: 26px; box-shadow: 0 4px 0 #082d36; z-index: 6; }
+.chatpal { position: absolute; right: 12px; bottom: 182px; width: min(320px, calc(100% - 24px)); max-height: 46vh; overflow: auto;
+  background: var(--krem); border: 2px solid var(--teal); border-radius: 16px; padding: 10px; box-shadow: 0 6px 18px rgba(0,0,0,.25); z-index: 7;
+  display: flex; flex-wrap: wrap; gap: 6px; }
+.chatpal[hidden] { display: none; }
+.chatpal button { border: 0; border-radius: 999px; background: #fff; color: var(--ink); font-weight: 700; font-size: 14px; padding: 8px 12px;
+  box-shadow: 0 2px 0 #d9cfb9; }
+.chatpal button.emo { font-size: 20px; padding: 6px 10px; }
+.chatpal small { width: 100%; color: var(--teal2); font-weight: 700; }
