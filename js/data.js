@@ -51,7 +51,16 @@ async function kotaBawaan() {
 }
 
 // ---------- data kota ----------
-export async function ambilKota() {
+// DAY otomatis: jika "day_mulai" (tanggal DAY 1, YYYY-MM-DD) diisi, DAY = jumlah hari sejak tanggal itu + 1 (pergantian 00.00 WIB)
+export function tanggalWIB(d = new Date()) { return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }); }
+export function hitungDay(k) {
+  if (!k || !/^\d{4}-\d{2}-\d{2}$/.test(k.day_mulai || '')) return k ? k.day : 0;
+  const hari = Math.round((Date.parse(tanggalWIB()) - Date.parse(k.day_mulai)) / 864e5);
+  return Math.max(0, hari + 1);
+}
+const denganDay = k => { if (k && k.day_mulai) k.day = hitungDay(k); return k; };
+export async function ambilKota() { return denganDay(await ambilKotaMentah()); }
+async function ambilKotaMentah() {
   if (DEMO) {
     const s = localStorage.getItem(KEY_KOTA);
     if (s) { try { return JSON.parse(s); } catch (_) {} }

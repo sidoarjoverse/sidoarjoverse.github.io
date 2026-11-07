@@ -67,9 +67,9 @@ const SEKSI = {
   umum() {
     setTimeout(async () => { const el = $('statKtp'); if (el) { try { el.textContent = new Intl.NumberFormat('id-ID').format(await D.hitungWarga()); } catch (e) { el.textContent = '?'; } } });
     return `<div class="row stat"><div><small>Total KTP warga (otomatis)</small><b id="statKtp">…</b></div><div><small>Follower (isi manual di bawah)</small><b>${new Intl.NumberFormat('id-ID').format(kota.follower || 0)}</b></div></div>
-    <div class="tip">Update angka <b>follower</b> dan <b>DAY</b> setiap hari setelah posting. Angka follower tampil sebagai jumlah WARGA di peta. Jumlah KTP dihitung otomatis setiap ada warga yang membuat KTP.</div>
+    <div class="tip">Update angka <b>follower</b> setiap hari setelah posting. <b>DAY</b> naik sendiri setiap pukul 00.00 WIB, dihitung dari <b>Tanggal DAY 1</b> (isi sekali saja; kosongkan jika ingin mengatur DAY manual). Angka follower tampil sebagai jumlah WARGA di peta. Jumlah KTP dihitung otomatis setiap ada warga yang membuat KTP.</div>
     <div class="row"><div class="grid">
-      ${inp('nama', 'Nama website')}${inp('kota', 'Nama kota')}${inp('day', 'DAY ke-', 'num')}${inp('follower', 'Jumlah follower (warga)', 'num')}
+      ${inp('nama', 'Nama website')}${inp('kota', 'Nama kota')}${inp('day_mulai', 'Tanggal DAY 1 (DAY dihitung otomatis)', 'date', 'data-rerender="1"')}${kota.day_mulai ? `<div class="fld"><label class="k">DAY hari ini (otomatis)</label><b style="font-size:1.4em">DAY ${D.hitungDay(kota)}</b></div>` : inp('day', 'DAY ke- (manual, kosongkan tanggal di samping)', 'num')}${inp('follower', 'Jumlah follower (warga)', 'num')}
       ${inp('tagline', 'Tagline', 'text', 'style="grid-column:1/-1"')}
       ${inp('jalan', 'Jalan aspal sudah dibangun', 'bool')}${inp('ayam', 'Jumlah ayam berkeliaran (0–20)', 'num', 'min="0" max="20"')}
       ${inp('papan.tampil', 'Tampilkan papan pengumuman di peta', 'bool')}${inp('papan.judul', 'Papan pengumuman: judul')}
@@ -289,6 +289,7 @@ $('simpan').onclick = async () => {
   const btn = $('simpan'); btn.disabled = true; $('status').textContent = 'Menyimpan…';
   try {
     for (const b of kota.bangunan) { b.progres = Math.max(0, Math.min(100, +b.progres || 0)); if (b.status === 'selesai') b.progres = 100; }
+    if (kota.day_mulai) kota.day = D.hitungDay(kota);
     await D.simpanKota(kota);
     kotor = false; $('status').textContent = '✅ Tersimpan! Peta sudah diperbarui.';
     setTimeout(() => { if (!kotor) $('simpanbar').hidden = true; }, 2500);

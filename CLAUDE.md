@@ -6,7 +6,8 @@ Bahasa komunikasi dengan pemilik: **Bahasa Indonesia**, santai dan jelas (pemili
 
 ## Konsep media sosial (jangan diubah tanpa persetujuan pemilik)
 - Follow = jadi warga. Komen dengan like terbanyak, besok dibangun. Seri harian "DAY X".
-- Website: peta 3D, KTP warga (+PIN), klasemen 18 kecamatan, Pemilu (1 KTP = 1 suara), donasi, mode jalan-jalan.
+- DAY otomatis: Admin → Umum → "Tanggal DAY 1" (`kota.day_mulai`); `hitungDay()` di `js/data.js` (ganti 00.00 WIB).
+- Website: peta 3D, KTP warga (tanpa PIN), klasemen 18 kecamatan, Pemilu (1 KTP = 1 suara), donasi, mode jalan-jalan.
 - Event bertahap sesuai follower: 1.000 = Pemilihan Ketua RT, 3.000 = Camat Verse, 5.000 = sponsor/ruko mitra, 10.000 = Wakil Kepala Kota.
 - Tetap fiktif & sopan: tanpa politik nyata, SARA, nama pejabat/merek asli. Jangan meniru karakter/nama/kalimat akun lain (mis. @sekolahbebaz): hanya format yang boleh mirip.
 
