@@ -348,7 +348,7 @@ const catat = (t, j) => sfx.push([+t.toFixed(3), j]);
 
 // waktu munculnya setiap stiker
 SEG.forEach((s, i) => {
-  (s.stiker || []).forEach((st, k) => { st._t0 = s.start + (st.tunda ?? (k === 0 ? 0.15 : 0.45 + k * 0.3)); });
+  (s.stiker || []).forEach((st, k) => { const td = st.tunda ?? (k === 0 ? 0.15 : 0.45 + k * 0.3); st._s0 = s.start + td; st._t0 = (st.lanjut ? mulai(i) : s.start) + td; });   // lanjut: tampil sejak adegan dimulai (tanpa kedip); stempel tetap ikut suara
   (s.isi || []).forEach(([td]) => catat(s.start + td, 'pop'));
   if (s.sfx === 'krik') catat(s.start + s.dur + 0.1, 'krik');
   else if (s.sfx === 'whoosh') catat(mulai(i) + 0.02, 'whoosh');
@@ -361,7 +361,7 @@ SEG.forEach((s, i) => {
     if (st.jenis === 'tangga') st.items.forEach((_, k) => catat(st._t0 + k * 0.35, 'pop'));
     if (st.jenis === 'ide') st.items.forEach((_, k) => catat(s.start + 0.2 + k * s.dur * 0.18, 'pop'));
     if (st.jenis === 'komen') st.items.forEach((_, k) => catat(st._t0 + 0.3 + k * 0.5, 'pop'));
-    if (st.jenis === 'protes') { if (!st.lanjut) catat(st._t0, 'pop'); if (st.stempel != null) catat(st._t0 + st.stempel, 'stempel'); }
+    if (st.jenis === 'protes') { if (!st.lanjut) catat(st._t0, 'pop'); if (st.stempel != null) catat(st._s0 + st.stempel, 'stempel'); }
     if (st.jenis === 'hitung' && !st.lanjut) catat(st._t0, 'pop');
     if (st.jenis === 'tumpuk') st.items.forEach((_, k) => catat(st._t0 + k * 0.22 + 0.4, 'pop'));
   }
@@ -392,7 +392,7 @@ function gambarKartuKomen(akun, isi, like, cx, cy, kLike = 1, kabur = 0) {
   return h;
 }
 function kartuProtes(st, t, t0, ps) {
-  const cy = st.y || 470, naik = st.naik ? 1 + Math.max(0, t - t0) * 0.06 : Math.min(1, 0.55 + (t - t0) / 1.2 * 0.45);
+  const cy = st.y || 470, naik = st.naik ? 1 + Math.max(0, t - (st._naikT0 ?? t0)) * 0.06 : st.lanjut ? 1 : Math.min(1, 0.55 + (t - t0) / 1.2 * 0.45);
   let h = 0;
   denganSkala(W / 2, cy, ps, () => {
     const kb = !st.kabur ? 0 : st.buka == null ? 1 : 1 - Math.min(1, Math.max(0, (t - t0 - st.buka) / 0.6));
@@ -405,7 +405,7 @@ function kartuProtes(st, t, t0, ps) {
     } else pil('💬 KOMEN WARGA', W / 2 - 195, cy - h / 2 - 6, 1, 'oren', 19, 18);
   });
   if (st.stempel != null) {          // stempel ✅ DIBANGUN mendarat di kartu
-    const ts = t0 + st.stempel, u = (t - ts) / 0.3; if (u <= 0) return;
+    const ts = st._s0 + st.stempel, u = (t - ts) / 0.3; if (u <= 0) return;
     const sk = u >= 1 ? 1 : 2.4 - 1.4 * easeOut(u);
     c.save(); c.globalAlpha = Math.min(1, u * 2); c.translate(W / 2 + 150, cy + 8); c.rotate(-0.16); c.scale(sk, sk);
     c.lineWidth = 7; c.strokeStyle = '#1f9d55'; c.fillStyle = 'rgba(255,255,255,.88)';
@@ -415,6 +415,12 @@ function kartuProtes(st, t, t0, ps) {
     c.restore();
   }
 }
+// kartu komen lanjutan yang like-nya terus naik: lanjutkan hitungan dari kartu yang sama di baris sebelumnya
+SEG.forEach((s, i) => (s.stiker || []).forEach(st => {
+  if (st.jenis !== 'protes' || !st.lanjut || !st.naik || i === 0) return;
+  const lama = (SEG[i - 1].stiker || []).find(x => x.jenis === 'protes' && x.akun === st.akun);
+  if (lama) { st._naikT0 = lama._naikT0 ?? lama._t0; st.like = lama.like; }
+}));
 function gambarStiker(st, s, i, t, slot) {
   const t0 = st._t0, ps = popS(t, t0);
   const y = 170 + slot * 110;
