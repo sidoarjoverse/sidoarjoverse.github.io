@@ -49,6 +49,7 @@ renderer.setSize(W, H, false);
 camera.fov = 40; camera.aspect = W / H; camera.updateProjectionMatrix();
 
 const darjo = makeCakDarjo();
+const senter = new THREE.SpotLight('#fff3d0', 0, 16, 0.32, 0.5, 1.2); senter.position.set(0.35, 1.25, 0.3); darjo.add(senter); darjo.add(senter.target); senter.target.position.set(0.2, 0.2, 6);
 const lampuDarjo = new THREE.PointLight('#ffe7c2', 0, 9, 1.4); lampuDarjo.position.set(0.9, 2.7, 3.4); scene.add(lampuDarjo);   // lampu muka Cak Darjo saat malam
 darjo.position.set(0, 0, 0.6);
 scene.add(darjo);
@@ -208,6 +209,10 @@ function bidikan(jenis, sebelum) {
     case 'atas': return { a: { pos: V(lahanB.x + 4, 9, lahanB.z + 12), look: V(lahanB.x + 2, 0, lahanB.z + 3) }, b: { pos: V(+lahanB.x, 25, lahanB.z + 11), look: V(+lahanB.x, 0, +lahanB.z) }, e: easeOut };
     case 'papan': return { a: { pos: V(0.3, 2.35, 7.9), look: V(0, 2.05, 0.6) }, b: { pos: V(0.6, 2.35, 7.3), look: V(0, 2.05, 0.6) }, e: ease };
     case 'warga': return { a: { pos: V(-2.6, 3.1, 9.6), look: V(-5, 1.25, 2) }, b: { pos: V(-3.4, 2.7, 8.4), look: V(-5, 1.3, 2) }, e: ease };
+    case 'cctv': {     // kamera pengawas di pojok: cctv:<id rumah>
+      const b = kota.bangunan.find(x => x.id === arg) || { x: -17.7, z: 11.2 }, bx = +b.x, bz = +b.z;
+      return { a: { pos: V(bx - 5.5, 8.5, bz + 9.5), look: V(bx - 0.2, 0.6, bz + 4.6) }, b: { pos: V(bx - 5.5, 8.5, bz + 9.5), look: V(bx, 0.6, bz + 4.8) }, e: ease, cctv: true };
+    }
     case 'sinema': {   // shot sinematik kota: sinema:drone | sinema:jalan | sinema:putar:<id> | sinema:pintu:<id>
       const [, jenisS, id] = String(jenis).split(':');
       const b = kota.bangunan.find(x => x.id === id) || { x: 0, z: 0 }, bx = +b.x, bz = +b.z;
@@ -736,10 +741,28 @@ window.video = {
       if (u > 0 && u < 1.1) { const a = 0.35 * (1 - u / 1.1); camera.position.x += Math.sin(t * 91) * a; camera.position.y += Math.sin(t * 73) * a * 0.7; }
     }
     aturHantu(t, s);
-    { const jm = NASKAH.jam ?? 9.3, gelap = (jm > 18.5 || jm < 5.5) && s.darjo !== 'pojok'; lampuDarjo.intensity = gelap ? 16 : 0; }
+    { const jm = NASKAH.jam ?? 9.3, gelap = (jm > 18.5 || jm < 5.5) && s.darjo !== 'pojok'; lampuDarjo.intensity = gelap && !s.footage ? 16 : 0; }
+    senter.intensity = s.footage ? 40 : 0;
+    if (!s.footage) { const a = darjo.userData.anim; a.legs[0].rotation.x = a.legs[1].rotation.x = 0; }
     const pj = s.darjo === 'pojok';
     const diDalam = DALAM && SHOT[i].dalam;
     if (pj) { scPojok.add(darjo); darjo.position.set(0, darjo.position.y, 0); darjo.rotation.y = -0.35; }
+    else if (s.footage) {          // Cak Darjo ronda di lokasi (adegan rekaman CCTV)
+      const f = s.footage, u = (t - mulai(i)) / (selesai(i) - mulai(i));
+      scene.add(darjo);
+      let x = f.dari[0], z = f.dari[1], ry = f.ry ?? Math.PI, lompat = 0, lari = 0;
+      const jalanK = Math.min(1, u / (f.jalan ?? 0.6)); x += (f.ke[0] - f.dari[0]) * ease(jalanK); z += (f.ke[1] - f.dari[1]) * ease(jalanK);
+      const melangkah = f.jalan != null && u < f.jalan;
+      if (f.kaget != null && u >= f.kaget) {
+        const v = u - f.kaget; lompat = Math.max(0, Math.sin(Math.min(1, v * 6) * Math.PI)) * 0.9;
+        if (v > (f.diam ?? 0.3)) { lari = (v - (f.diam ?? 0.3)) * (selesai(i) - mulai(i)) * (f.cepat || 4.5); ry = 0.15; }
+      }
+      darjo.position.set(x + lari * 0.35, lompat + (melangkah || lari ? Math.abs(Math.sin(t * 11)) * 0.06 : 0), z + lari);
+      darjo.rotation.y = ry;
+      const a = darjo.userData.anim, sw = lari ? Math.sin(t * 22) * 1.1 : melangkah ? Math.sin(t * 9) * 0.5 : 0;
+      a.legs[0].rotation.x = sw; a.legs[1].rotation.x = -sw;
+      if (lari) { tangan.rotation.set(-sw, 0, 0.3); if (tanganKiri) tanganKiri.rotation.set(sw, 0, -0.3); }
+    }
     else if (diDalam) { DALAM.scene.add(darjo); darjo.position.set(-1.75, darjo.position.y, 2.9); darjo.rotation.y = 0.3; }
     else { scene.add(darjo); darjo.position.set(0, darjo.position.y, 0.6); darjo.rotation.y = 0; }
     // siang → malam (naskah "malam": true)
@@ -763,11 +786,11 @@ window.video = {
     for (const ch of world.karakter()) {
       if (ch.g === world.maskot().g) continue;
       const p = ch.g.position;
-      ch.g.visible = !(dekat && p.z > 0.0 && Math.abs(p.x) < 4.5);
+      ch.g.visible = !(dekat && p.z > 0.0 && Math.abs(p.x) < 4.5) && !s.footage;
       const label = ch.g.children.find(o => o.isSprite);          // label nama terlalu dekat → terlalu besar di layar
-      if (label) label.visible = !(dekat && Math.hypot(p.x, p.z - 0.6) < 7) && ch.g.position.distanceTo(camera.position) > 9;
+      if (label) label.visible = !(dekat && Math.hypot(p.x, p.z - 0.6) < 7) && ch.g.position.distanceTo(camera.position) > 9 && !String(s.kamera).startsWith('cctv');
     }
-    for (const l of labelBangunan) { l.getWorldPosition(_wp); l.visible = /^(warga|sinema)/.test(String(s.kamera)) ? false : _wp.distanceTo(camera.position) > 13; }
+    for (const l of labelBangunan) { l.getWorldPosition(_wp); l.visible = /^(warga|sinema|cctv)/.test(String(s.kamera)) ? false : _wp.distanceTo(camera.position) > 13; }
     aturJalan(t); aturTamu(t);
     { const u = (t - s.start) / s.dur, kh = s.hujan != null ? Math.min(1, Math.max(0, (u - s.hujan) / 0.08)) * (s.hujanKuat ?? 1) : 0; if (Math.abs(world.hujan() - kh) > 0.01) world.setHujan(kh); }
     world.setLampuMati(!!s.lampuMati || (s.kedip && (Math.sin(t * 29) + Math.sin(t * 13.7) > 0.4 || (t * 7) % 3 < 0.5)));
@@ -778,7 +801,32 @@ window.video = {
       renderer.render(DALAM.scene, DALAM.cam);
     }
     c.setTransform(1, 0, 0, 1, 0, 0);
+    const cctv = SHOT[i].cctv;
+    if (cctv) c.filter = 'grayscale(0.75) contrast(1.25) brightness(1.7) sepia(0.25) hue-rotate(60deg)';
     c.drawImage(gl, 0, 0, out.width, out.height);
+    c.filter = 'none';
+    if (cctv) {                       // tampilan rekaman kamera pengawas
+      c.save(); c.scale(SKALA, SKALA);
+      c.fillStyle = 'rgba(0,0,0,.18)'; for (let y = (t * 60) % 4; y < H; y += 4) c.fillRect(0, y, W, 1.4);
+      for (let k = 0; k < 220; k++) { const h = Math.sin(k * 12.9898 + Math.floor(t * 30) * 78.233) * 43758.5453; const r = h - Math.floor(h); c.fillStyle = `rgba(255,255,255,${0.05 + r * 0.08})`; c.fillRect((r * 9973) % W, (r * 7919 * 3) % H, 2, 2); }
+      const yb = 128;
+      if (Math.floor(t * 2) % 2 === 0) { c.fillStyle = '#ff2b2b'; c.beginPath(); c.arc(56, yb, 11, 0, Math.PI * 2); c.fill(); }
+      teks('REC', 76, yb + 1, { size: 26, warna: '#fff', bobot: 800, align: 'left', garis: 5, warnaGaris: 'rgba(0,0,0,.6)' });
+      teks(NASKAH.cctvLabel || 'CAM 03 · BLOK A', W - 40, yb + 1, { size: 24, warna: '#fff', bobot: 700, align: 'right', garis: 5, warnaGaris: 'rgba(0,0,0,.6)' });
+      const i0 = SHOT.findIndex(x => x.cctv), dtk = Math.floor(t - mulai(i0)) + (NASKAH.cctvDetik || 13);
+      const kotak = (obj, h, lb, warna) => {            // kotak pelacak ala CCTV
+        const [x1, y1] = proyeksi(obj.position.clone().add(V(0, h, 0))), [x2, y2] = proyeksi(obj.position.clone());
+        const tinggi = Math.max(60, y2 - y1), lebar = tinggi * 0.7;
+        c.strokeStyle = warna; c.lineWidth = 3; c.strokeRect(x1 - lebar / 2, y1 - 8, lebar, tinggi + 16);
+        teks(lb, x1 - lebar / 2, y1 - 24, { size: 20, warna, bobot: 800, align: 'left', garis: 5, warnaGaris: 'rgba(0,0,0,.7)' });
+      };
+      if (s.footage) kotak(darjo, 2.4, 'CAK DARJO', '#ffd166');
+      if (hantu.visible) kotak(hantu, 2.6, '??? ' + (Math.floor(t * 3) % 2 ? '⚠️' : ''), '#ff4d4d');
+      teks(`00:00:${String(dtk % 60).padStart(2, '0')}  ${NASKAH.cctvTanggal || '13/11/2026'}`, W - 40, H - 150, { size: 24, warna: '#fff', bobot: 700, align: 'right', garis: 5, warnaGaris: 'rgba(0,0,0,.6)' });
+      c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 3;
+      for (const [x, y, dx, dy] of [[30, 100, 1, 1], [W - 30, 100, -1, 1], [30, H - 120, 1, -1], [W - 30, H - 120, -1, -1]]) { c.beginPath(); c.moveTo(x, y + dy * 40); c.lineTo(x, y); c.lineTo(x + dx * 40, y); c.stroke(); }
+      c.restore();
+    }
     if (s.hujan != null) {            // hujan: langit meredup + garis air jatuh
       const u = (t - s.start) / s.dur, k = Math.min(1, Math.max(0, (u - s.hujan) / 0.06));
       if (k > 0) {
