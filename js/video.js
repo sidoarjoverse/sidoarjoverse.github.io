@@ -473,8 +473,24 @@ function overlay(t) {
   if (NASKAH.day != null) {   // lencana DAY di kiri atas, akun di kanan atas
     const lb = `DAY ${NASKAH.day}`; const lw = ukur(lb, 30) + 36;
     c.fillStyle = '#16181d'; rr(36, 40, lw, 52, 14); c.fill(); teks(lb, 36 + lw / 2, 67, { size: 30, warna: KUNING });
+    if (NASKAH.episode != null) {   // lencana EPS kecil di samping DAY, selama video
+      const le = `EPS ${NASKAH.episode}`, ew = ukur(le, 26) + 30;
+      c.fillStyle = OREN; rr(36 + lw + 12, 43, ew, 46, 13); c.fill(); teks(le, 36 + lw + 12 + ew / 2, 67, { size: 26, warna: '#fff' });
+    }
     teks('@sidoarjoverse', W - 40, 66, { size: 24, warna: 'rgba(255,255,255,.92)', align: 'right', garis: 6, warnaGaris: 'rgba(15,76,92,.6)' });
   } else teks('@sidoarjoverse', 40, 64, { size: 26, warna: 'rgba(255,255,255,.92)', align: 'left', garis: 6, warnaGaris: 'rgba(15,76,92,.6)' });
+  if (NASKAH.episode != null && t < 2.6) {   // aturan: setiap video dibuka dengan keterangan episode
+    const k = popS(t, 0.05, 0.4), keluar = t > 2.2 ? Math.max(0, 1 - (t - 2.2) / 0.4) : 1;
+    c.save(); c.globalAlpha = keluar;
+    denganSkala(W / 2, 395, k, () => {
+      const lb = `EPISODE ${NASKAH.episode}`, w = ukur(lb, 64, 900) + 90;
+      c.fillStyle = 'rgba(15,76,92,.94)'; rr(W / 2 - w / 2, 340, w, 110, 30); c.fill();
+      c.strokeStyle = KUNING; c.lineWidth = 6; c.stroke();
+      teks(lb, W / 2, 398, { size: 64, warna: KUNING, bobot: 900 });
+      if (NASKAH.seri) teks(NASKAH.seri, W / 2, 482, { size: 32, warna: '#fff', garis: 8, warnaGaris: 'rgba(15,76,92,.8)' });
+    });
+    c.restore();
+  }
   const i = segPada(t), s = SEG[i];
   let slot = 0;
   for (const st of s.stiker || []) { if (t >= st._t0) gambarStiker(st, s, i, t, slot); if (['pil', 'papan'].includes(st.jenis)) slot++; }

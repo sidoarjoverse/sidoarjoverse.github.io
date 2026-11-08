@@ -49,3 +49,6 @@ Contoh satu baris naskah:
 - Rumahku: admin → Bangunan → "Buat 1 blok perumahan" (6 rumah `huni: true`); warga klik rumah → Tempati / Masuk rumah (`js/rumah.js`, interior 3D).
 - Uji di localhost dengan `?demo` agar tidak menyentuh database asli.
 - Folder rencana `konten-30-hari/` dan `roadmap-fitur/` sengaja tidak di-commit (repo publik).
+
+## Aturan video: keterangan episode
+Setiap video WAJIB dibuka dengan keterangan episode. Isi `"episode": N` (dan opsional `"seri": "..."`) di `naskah.json`: video.js menampilkan kartu "EPISODE N" di 2,6 detik pertama + lencana "EPS N" di samping DAY. Baris kedua naskah menyebut "Sidoarjo Vers, episode …". Video peluncuran = Episode 4.
