@@ -51,24 +51,8 @@ function ruangan(rumah, r) {
   return vb.build();
 }
 
-let aktif = null;
-export function tutupRumah() { if (aktif) aktif(); }
-
-// rumah: data bangunan; p: penghuni (atau null); aksi: [{label, kelas, onClick}]
-export function bukaRumah({ rumah, p, aksi = [] }) {
-  tutupRumah();
-  const el = document.createElement('div'); el.className = 'rumah-modal';
-  const judul = p ? `🏠 Rumah ${p.nama}` : '🔑 Rumah kosong';
-  el.innerHTML = `<div class="rumah-kotak"><div class="rumah-atas"><div><b>${judul.replace(/</g, '&lt;')}</b><small>${(rumah.nama || '').replace(/</g, '&lt;')}${p ? ` · ${p.pekerjaan} · Kec. ${p.kecamatan}`.replace(/</g, '&lt;') : ''}</small></div>
-    <button type="button" class="rumah-x" aria-label="Keluar">✕</button></div><canvas class="rumah-cv"></canvas><div class="rumah-aksi"></div></div>`;
-  document.body.appendChild(el);
-  const cv = el.querySelector('canvas'), kotak = el.querySelector('.rumah-aksi');
-  aksi.forEach(a => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + (a.kelas || ''); b.textContent = a.label; b.onclick = () => a.onClick(b); kotak.appendChild(b); });
-  const keluar = document.createElement('button'); keluar.type = 'button'; keluar.className = 'btn ghost'; keluar.textContent = '🚪 Keluar'; keluar.onclick = () => tutup(); kotak.appendChild(keluar);
-
-  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
-  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
-  renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.shadowMap.enabled = true;
+// isi ruangan (dipakai modal "Masuk rumah" dan perender video)
+export function adeganRumah(rumah, p) {
   const scene = new THREE.Scene(); scene.background = new THREE.Color('#e9dcc6');
   scene.add(new THREE.HemisphereLight('#fff4e0', '#6b5a48', 1.5));
   const sun = new THREE.DirectionalLight('#ffe3bd', 1.6); sun.position.set(2, 6, 6); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
@@ -90,6 +74,28 @@ export function bukaRumah({ rumah, p, aksi = [] }) {
     const kardus = new VB(); for (const [x, z, h] of [[0.4, 0.8, 0.5], [0.95, 0.9, 0.4], [0.65, 0.75, 0.35]]) kardus.box(x, x === 0.65 ? 0.5 : 0, z, 0.55, h, 0.5, '#c8a26b');
     scene.add(kardus.build());
   }
+  return { scene, ch, tangan };
+}
+
+let aktif = null;
+export function tutupRumah() { if (aktif) aktif(); }
+
+// rumah: data bangunan; p: penghuni (atau null); aksi: [{label, kelas, onClick}]
+export function bukaRumah({ rumah, p, aksi = [] }) {
+  tutupRumah();
+  const el = document.createElement('div'); el.className = 'rumah-modal';
+  const judul = p ? `🏠 Rumah ${p.nama}` : '🔑 Rumah kosong';
+  el.innerHTML = `<div class="rumah-kotak"><div class="rumah-atas"><div><b>${judul.replace(/</g, '&lt;')}</b><small>${(rumah.nama || '').replace(/</g, '&lt;')}${p ? ` · ${p.pekerjaan} · Kec. ${p.kecamatan}`.replace(/</g, '&lt;') : ''}</small></div>
+    <button type="button" class="rumah-x" aria-label="Keluar">✕</button></div><canvas class="rumah-cv"></canvas><div class="rumah-aksi"></div></div>`;
+  document.body.appendChild(el);
+  const cv = el.querySelector('canvas'), kotak = el.querySelector('.rumah-aksi');
+  aksi.forEach(a => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + (a.kelas || ''); b.textContent = a.label; b.onclick = () => a.onClick(b); kotak.appendChild(b); });
+  const keluar = document.createElement('button'); keluar.type = 'button'; keluar.className = 'btn ghost'; keluar.textContent = '🚪 Keluar'; keluar.onclick = () => tutup(); kotak.appendChild(keluar);
+
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
+  renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.shadowMap.enabled = true;
+  const { scene, ch, tangan } = adeganRumah(rumah, p);
   const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 60); camera.position.set(0.5, 3.0, 8.0);
   const kontrol = new OrbitControls(camera, cv); kontrol.target.set(0, 1.2, -0.2);
   Object.assign(kontrol, { enablePan: false, enableDamping: true, minDistance: 3.5, maxDistance: 9.5, minPolarAngle: 0.7, maxPolarAngle: 1.45, minAzimuthAngle: -0.75, maxAzimuthAngle: 0.75 });
