@@ -4,7 +4,28 @@ import { CONFIG } from './config.js';
 import { lookFor, drawPortrait } from './avatar.js';
 import { mulaiRamai, KALIMAT, EMOTE, teksChat } from './ramai.js';
 import { bukaRumah, tutupRumah } from './rumah.js';
-let penghuniMap = null;   // null = fitur rumah belum dipasang di database
+let penghuniMap = null;
+// ---------- cuaca: hujan ikut cuaca asli Sidoarjo (Open-Meteo, gratis tanpa key); admin bisa paksa cerah/hujan
+const KODE_HUJAN = new Set([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99]);
+let hujanAsli = 0;
+async function cekCuaca() {
+  terapkanCuaca();
+  try {
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-7.45&longitude=112.72&current=precipitation,rain,weather_code&timezone=Asia%2FJakarta', { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+    const c = (await r.json()).current || {};
+    const mm = Math.max(+c.rain || 0, +c.precipitation || 0);
+    hujanAsli = KODE_HUJAN.has(+c.weather_code) || mm > 0 ? Math.min(1, 0.35 + mm / 3) : 0;
+  } catch (_) { /* gagal cek cuaca: biarkan */ }
+  terapkanCuaca();
+}
+function terapkanCuaca() {
+  if (!world) return;
+  const uji = new URLSearchParams(location.search).get('hujan');
+  const mode = (kota && kota.cuaca) || 'asli';
+  const k = uji != null ? (+uji || 1) : mode === 'hujan' ? 0.8 : mode === 'cerah' ? 0 : hujanAsli;
+  if (Math.abs(world.hujan() - k) > 0.01) world.setHujan(k);
+  jamWIB();
+}   // null = fitur rumah belum dipasang di database
 let ramai = null;
 
 const $ = id => document.getElementById(id);
@@ -38,7 +59,7 @@ function jamWIB() {
   const jam = now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
   $('clock').textContent = `${tgl} · ${jam} WIB`;
   const h = +now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta', hour: 'numeric', hour12: false }) % 24;
-  $('phase').textContent = h >= 4 && h < 10 ? 'PAGI' : h < 15 && h >= 10 ? 'SIANG' : h >= 15 && h < 18 ? 'SORE' : 'MALAM';
+  $('phase').textContent = (h >= 4 && h < 10 ? 'PAGI' : h < 15 && h >= 10 ? 'SIANG' : h >= 15 && h < 18 ? 'SORE' : 'MALAM') + (world && world.hujan && world.hujan() > 0 ? ' · 🌧️ HUJAN' : '');
 }
 
 function renderHeader() {
@@ -321,7 +342,7 @@ async function segarkan() {
     if (sk !== sidikKota) {
       sidikKota = sk; kota = k;
       renderHeader(); renderInfo(); renderDonasi(); renderAkun();
-      if (world) { world.setKota(kota); sidikWarga = ''; muatPenghuni.sidik = null; }
+      if (world) { world.setKota(kota); sidikWarga = ''; muatPenghuni.sidik = null; terapkanCuaca(); }
     }
     if (world) { await refreshWarga(); await muatPenghuni(); }
     if (document.querySelector('#view-pemilu.active')) renderPemilu();
@@ -561,6 +582,7 @@ async function mulai() {
   // KTP lama (dibuat sebelum ada PIN): ambil PIN-nya sekali dari HP ini
   if (saya && !pinSaya) { const pin = await D.klaimPin(kodeSaya); if (pin) { pinSaya = pin; localStorage.setItem(KEY_PIN, pin); } }
   await muatPenghuni(true);
+  cekCuaca(); setInterval(cekCuaca, 15 * 60 * 1000);
   if (world && !D.DEMO) ramai = mulaiRamai({ world, saya: () => saya, onJumlah: n => { const el = $('online'); el.hidden = n < 1; el.textContent = `🟢 ${n} warga online`; } });
   renderInfo(); renderKTP(); renderDonasi(); renderAkun();
   renderPemilu();

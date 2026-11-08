@@ -71,6 +71,7 @@ const SEKSI = {
     <div class="row"><div class="grid">
       ${inp('nama', 'Nama website')}${inp('kota', 'Nama kota')}${inp('day_mulai', 'Tanggal DAY 1 (DAY dihitung otomatis)', 'date', 'data-rerender="1"')}${kota.day_mulai ? `<div class="fld"><label class="k">DAY hari ini (otomatis)</label><b style="font-size:1.4em">DAY ${D.hitungDay(kota)}</b></div>` : inp('day', 'DAY ke- (manual, kosongkan tanggal di samping)', 'num')}${inp('follower', 'Jumlah follower (warga)', 'num')}
       ${inp('tagline', 'Tagline', 'text', 'style="grid-column:1/-1"')}
+      ${sel('cuaca', 'Cuaca di peta', [['asli', '🌦️ Ikut cuaca asli Sidoarjo'], ['cerah', '☀️ Selalu cerah'], ['hujan', '🌧️ Paksa hujan (untuk konten)']])}
       ${inp('jalan', 'Jalan aspal sudah dibangun', 'bool')}${inp('ayam', 'Jumlah ayam berkeliaran (0–20)', 'num', 'min="0" max="20"')}
       ${inp('papan.tampil', 'Tampilkan papan pengumuman di peta', 'bool')}${inp('papan.judul', 'Papan pengumuman: judul')}
       ${inp('papan.isi', 'Papan pengumuman: isi (pakai baris baru, maks ±6 baris)', 'area')}

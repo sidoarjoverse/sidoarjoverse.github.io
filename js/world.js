@@ -1204,6 +1204,28 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     a.g.rotation.y = Math.atan2(dx, dz);
   }
 
+  // ---------- hujan (ikut cuaca asli Sidoarjo; diatur dari main.js / video)
+  let hujan = 0;
+  const N_HUJAN = RINGAN ? 700 : 1600;
+  const posHujan = new Float32Array(N_HUJAN * 6), velHujan = new Float32Array(N_HUJAN);
+  const geoHujan = new THREE.BufferGeometry(); geoHujan.setAttribute('position', new THREE.BufferAttribute(posHujan, 3));
+  const tetes = new THREE.LineSegments(geoHujan, new THREE.LineBasicMaterial({ color: '#cfe0f0', transparent: true, opacity: 0.55, fog: false }));
+  tetes.frustumCulled = false; tetes.visible = false; scene.add(tetes);
+  const rh = rng(77);
+  for (let i = 0; i < N_HUJAN; i++) { posHujan[i * 6] = (rh() - 0.5) * 70; posHujan[i * 6 + 1] = rh() * 30; posHujan[i * 6 + 2] = (rh() - 0.5) * 70; velHujan[i] = 22 + rh() * 10; }
+  function stepHujan(dt) {
+    if (!hujan) return;
+    const cx = controls.target.x, cz = controls.target.z, n = Math.floor(N_HUJAN * Math.min(1, 0.25 + hujan * 0.75));
+    geoHujan.setDrawRange(0, n * 2);
+    for (let i = 0; i < n; i++) {
+      const j = i * 6; let y = posHujan[j + 1] - velHujan[i] * dt;
+      if (y < 0) { y += 30; posHujan[j] = cx + (rh() - 0.5) * 70; posHujan[j + 2] = cz + (rh() - 0.5) * 70; }
+      posHujan[j + 1] = y; posHujan[j + 3] = posHujan[j] - 0.12; posHujan[j + 4] = y + 0.9; posHujan[j + 5] = posHujan[j + 2];
+    }
+    geoHujan.attributes.position.needsUpdate = true;
+  }
+  function setHujan(k) { hujan = Math.max(0, Math.min(1, +k || 0)); tetes.visible = hujan > 0; updateLangit(); }
+
   // ---------- siang & malam (WIB)
   const LANGIT = [
     [0, '#1b2440', 0.3, 0.18], [4.5, '#263052', 0.35, 0.18], [5.5, '#f0c3a0', 0.9, 1.0], [7, '#d6e2e4', 1.4, 2.3],
@@ -1229,8 +1251,10 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     malam = h < 5.6 || h >= 18.2;
     cA.set(c0).lerp(cB.set(c1), k);
     scene.fog.color.copy(cA); scene.background = langitGradasi(cA, malam);
-    hemi.intensity = e0 + (e1 - e0) * k;
-    sun.intensity = s0 + (s1 - s0) * k;
+    hemi.intensity = (e0 + (e1 - e0) * k) * (1 - hujan * 0.25);
+    sun.intensity = (s0 + (s1 - s0) * k) * (1 - hujan * 0.7);
+    if (hujan) { cA.lerp(cB.set('#8f9ba4'), hujan * 0.3); scene.fog.color.copy(cA); scene.background = langitGradasi(cA, malam); }
+    scene.fog.near = 60 - hujan * 12; scene.fog.far = 165 - hujan * 30;
     const ang = ((h - 6) / 12) * Math.PI;
     sun.position.set(Math.cos(ang) * 40, Math.max(12, Math.sin(ang) * 55), 22);
     sun.color.set(h < 6 || h > 18.5 ? '#9fb4ff' : h < 8 || h > 16.5 ? '#ffc98f' : '#ffe3bd');
@@ -1392,6 +1416,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     waktuKini = t;
     if (pemain) stepPemain(dt, t);
     stepTamu(dt, t);
+    stepHujan(dt);
     for (const a of ayam) stepAyam(a, dt, t);
     for (const c of awanG.children) { c.position.x += c.userData.v * dt; if (c.position.x > 70) c.position.x = -70; }
     if (fokus) {
@@ -1467,6 +1492,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     },
     gerak(x, y) { masukan.x = x; masukan.y = y; },
     sedangMain: () => !!pemain,
+    setHujan, hujan: () => hujan,
     setPenghuni(map, kodeSaya) { penghuniTerakhir = map || {}; kodeRumahSaya = kodeSaya || ''; pasangPapanRumah(); },
     // Mode Ramai
     tamu: pasangTamu, tamuPergi: hapusTamu, gelembung,
