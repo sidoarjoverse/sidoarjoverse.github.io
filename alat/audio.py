@@ -22,7 +22,13 @@ def tada():
     return out
 def stempel():
     x = t(0.25); return 0.7 * np.sin(2 * np.pi * 90 * x) * np.exp(-x * 22) + 0.25 * rng.standard_normal(len(x)) * np.exp(-x * 40)
-SFX = {'pop': pop(), 'whoosh': whoosh(), 'krik': krik(), 'tada': tada(), 'stempel': stempel()}
+def petir():
+    x = t(1.8); n = rng.standard_normal(len(x)); lp = np.convolve(n, np.ones(60) / 60, 'same')
+    return 1.6 * lp * (np.exp(-x * 2.2) + 0.6 * np.exp(-np.maximum(0, x - 0.35) * 3) * (x > 0.35))
+def seram():
+    x = t(2.4); f = 110 + 40 * np.sin(2 * np.pi * 0.7 * x); env = np.sin(np.pi * x / 2.4) ** 2
+    return 0.35 * env * (np.sin(2 * np.pi * np.cumsum(f) / SR) + 0.5 * np.sin(2 * np.pi * np.cumsum(f * 1.5) / SR))
+SFX = {'petir': petir(), 'seram': seram(), 'pop': pop(), 'whoosh': whoosh(), 'krik': krik(), 'tada': tada(), 'stempel': stempel()}
 mix = baca('vo_track.wav').copy()
 for tt, j in json.load(open('sfx.json')):
     s = SFX.get(j); i = int(tt * SR)

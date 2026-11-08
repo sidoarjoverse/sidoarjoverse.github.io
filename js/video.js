@@ -49,6 +49,7 @@ renderer.setSize(W, H, false);
 camera.fov = 40; camera.aspect = W / H; camera.updateProjectionMatrix();
 
 const darjo = makeCakDarjo();
+const lampuDarjo = new THREE.PointLight('#ffe7c2', 0, 9, 1.4); lampuDarjo.position.set(0.9, 2.7, 3.4); scene.add(lampuDarjo);   // lampu muka Cak Darjo saat malam
 darjo.position.set(0, 0, 0.6);
 scene.add(darjo);
 const tangan = darjo.children.find(c => c.isGroup && c.position.x > 0.3 && c.position.y > 1.1);
@@ -128,6 +129,26 @@ function aturJalan(t) {
 // warga online (naskah "tamu": [{kode, nama, gender, kecamatan, pekerjaan, baris, tunda, dari:[x,z], ke:[x,z]}]) + gelembung chat (baris "chat": [[tunda, kode, teks]])
 const TAMU = (NASKAH.tamu || []).map(d => Object.assign({ w: { kode: d.kode, nama: d.nama, gender: d.gender || 'L', kecamatan: d.kecamatan || 'Sidoarjo', pekerjaan: d.pekerjaan || 'Warga' } }, d));
 const chatTerkirim = new Set();
+// hantu sarung putih (naskah "hantu": {x, z}; baris "hantu": {dari: fraksi, ke: [x, z] (opsional), skala, kedip})
+const hantu = new THREE.Group(); hantu.visible = false; scene.add(hantu);
+{
+  const putih = new THREE.MeshStandardMaterial({ color: '#f4f6f8', emissive: '#c9d6e3', emissiveIntensity: 0.55, roughness: 0.9, transparent: true, opacity: 0.93 });
+  const badan = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.78, 1.7, 18, 1, true), putih); badan.position.y = 1.05; hantu.add(badan);
+  const kepala = new THREE.Mesh(new THREE.SphereGeometry(0.47, 20, 16), putih); kepala.position.y = 1.95; hantu.add(kepala);
+  for (let k = 0; k < 6; k++) { const ek = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.3, 8), putih); const a = k / 6 * Math.PI * 2; ek.position.set(Math.cos(a) * 0.68, 0.12, Math.sin(a) * 0.68); ek.rotation.x = Math.PI; hantu.add(ek); }
+  const hitam = new THREE.MeshBasicMaterial({ color: '#16181d' });
+  for (const x of [-0.16, 0.16]) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 8), hitam); m.position.set(x, 2.02, 0.43); m.scale.set(1, 1.5, 0.5); hantu.add(m); }
+  const sinar = new THREE.PointLight('#cfe3ff', 3, 7, 1.6); sinar.position.set(0, 1.6, 0.6); hantu.add(sinar);
+}
+const HANTU0 = NASKAH.hantu || { x: -17.7, z: 13.6 };
+function aturHantu(t, s) {
+  const h = s.hantu; if (!h) { hantu.visible = false; return; }
+  const u = (t - s.start) / s.dur; if (u < (h.dari || 0)) { hantu.visible = false; return; }
+  const k = ease(Math.min(1, (u - (h.dari || 0)) / Math.max(0.05, (h.lama || 0.6)))), ke = h.ke || [HANTU0.x, HANTU0.z];
+  hantu.visible = !h.kedip || Math.sin(t * 37) + Math.sin(t * 23) > -0.6;
+  hantu.position.set(HANTU0.x + (ke[0] - HANTU0.x) * k, 0.35 + Math.sin(t * 2.6) * 0.18, HANTU0.z + (ke[1] - HANTU0.z) * k);
+  hantu.scale.setScalar(h.skala || 1); hantu.rotation.y = Math.atan2(camera.position.x - hantu.position.x, camera.position.z - hantu.position.z) + Math.sin(t * 1.7) * 0.15;
+}
 // penghuni rumah (naskah baris "isi": [[tunda, idRumah, {nama, kode, gender}]] → papan nama di depan rumah, kumulatif)
 let penghuniKini = '';
 function aturPenghuni(t) {
@@ -187,6 +208,16 @@ function bidikan(jenis, sebelum) {
     case 'atas': return { a: { pos: V(lahanB.x + 4, 9, lahanB.z + 12), look: V(lahanB.x + 2, 0, lahanB.z + 3) }, b: { pos: V(+lahanB.x, 25, lahanB.z + 11), look: V(+lahanB.x, 0, +lahanB.z) }, e: easeOut };
     case 'papan': return { a: { pos: V(0.3, 2.35, 7.9), look: V(0, 2.05, 0.6) }, b: { pos: V(0.6, 2.35, 7.3), look: V(0, 2.05, 0.6) }, e: ease };
     case 'warga': return { a: { pos: V(-2.6, 3.1, 9.6), look: V(-5, 1.25, 2) }, b: { pos: V(-3.4, 2.7, 8.4), look: V(-5, 1.3, 2) }, e: ease };
+    case 'sinema': {   // shot sinematik kota: sinema:drone | sinema:jalan | sinema:putar:<id> | sinema:pintu:<id>
+      const [, jenisS, id] = String(jenis).split(':');
+      const b = kota.bangunan.find(x => x.id === id) || { x: 0, z: 0 }, bx = +b.x, bz = +b.z;
+      if (jenisS === 'drone') return { a: { pos: V(42, 34, 44), look: V(0, 0, 2) }, b: { pos: V(-18, 27, 46), look: V(-10, 0, 4) }, e: ease };
+      if (jenisS === 'jalan') return { a: { pos: V(6, 1.7, 22), look: V(-8, 1.4, 12) }, b: { pos: V(-4, 1.7, 18.5), look: V(bx || -17.7, 1.6, bz || 11.2) }, e: ease };
+      if (jenisS === 'putar') { const R = 15, h = 6, a0 = 0.15, a1 = 1.05;
+        return { a: { pos: V(bx + Math.sin(a0) * R, h, bz + Math.cos(a0) * R), look: V(bx, 1.4, bz) }, b: { pos: V(bx + Math.sin(a1) * R, h - 1.5, bz + Math.cos(a1) * R), look: V(bx, 1.4, bz) }, e: ease, putar: { bx, bz, R, h, a0, a1 } }; }
+      if (jenisS === 'pintu') return { a: { pos: V(bx + 3.5, 2.6, bz + 14), look: V(bx, 1.5, bz + 1) }, b: { pos: V(bx + 0.8, 1.9, bz + 7.2), look: V(bx, 1.5, bz + 1) }, e: ease };
+      return { a: { pos: V(30, 25, 35), look: V(0, 0, 0) }, b: { pos: V(20, 20, 30), look: V(0, 0, 0) }, e: ease };
+    }
     case 'rumah': {   // review deretan rumah satu blok (mis. rumah:blokA)
       const bl = (arg || 'blokA').replace(/^blok/i, ''), rs = kota.bangunan.filter(b => b.blok === bl);
       const cx = rs.length ? rs.reduce((a, b) => a + +b.x, 0) / rs.length : -22, cz = rs.length ? rs.reduce((a, b) => a + +b.z, 0) / rs.length : 8;
@@ -209,6 +240,7 @@ function kamera(t) {
   const k = sh.e((t - mulai(i)) / d);
   const cam = sh.dalam && DALAM ? DALAM.cam : camera;
   cam.position.copy(sh.a.pos).lerp(sh.b.pos, k);
+  if (sh.putar) { const o = sh.putar, a = o.a0 + (o.a1 - o.a0) * k; cam.position.set(o.bx + Math.sin(a) * o.R, o.h - 1.5 * k, o.bz + Math.cos(a) * o.R); }
   cam.lookAt(sh.a.look.clone().lerp(sh.b.look, k));
 }
 
@@ -350,6 +382,8 @@ const catat = (t, j) => sfx.push([+t.toFixed(3), j]);
 SEG.forEach((s, i) => {
   (s.stiker || []).forEach((st, k) => { const td = st.tunda ?? (k === 0 ? 0.15 : 0.45 + k * 0.3); st._s0 = s.start + td; st._t0 = (st.lanjut ? mulai(i) : s.start) + td; });   // lanjut: tampil sejak adegan dimulai (tanpa kedip); stempel tetap ikut suara
   (s.isi || []).forEach(([td]) => catat(s.start + td, 'pop'));
+  if (s.kilat != null) catat(s.start + s.dur * s.kilat, 'petir');
+  if (s.hantu) catat(s.start + s.dur * (s.hantu.dari || 0), 'seram');
   if (s.sfx === 'krik') catat(s.start + s.dur + 0.1, 'krik');
   else if (s.sfx === 'whoosh') catat(mulai(i) + 0.02, 'whoosh');
   else if (s.sfx === 'stempel') catat(s.start + s.dur * 0.8, 'stempel');
@@ -363,6 +397,8 @@ SEG.forEach((s, i) => {
     if (st.jenis === 'komen') st.items.forEach((_, k) => catat(st._t0 + 0.3 + k * 0.5, 'pop'));
     if (st.jenis === 'protes') { if (!st.lanjut) catat(st._t0, 'pop'); if (st.stempel != null) catat(st._s0 + st.stempel, 'stempel'); }
     if (st.jenis === 'hitung' && !st.lanjut) catat(st._t0, 'pop');
+    if (st.jenis === 'kertas' && !st.lanjut) catat(st._t0, 'pop');
+    if (st.jenis === 'petunjuk') st.items.forEach((_, k) => { if (!(st.lanjut && k < (st.sudah || 0))) catat(st._t0 + k * (st.jeda || 0.9), 'pop'); });
     if (st.jenis === 'tumpuk') st.items.forEach((_, k) => catat(st._t0 + k * 0.22 + 0.4, 'pop'));
   }
 });
@@ -426,7 +462,32 @@ function gambarStiker(st, s, i, t, slot) {
   const y = 170 + slot * 110;
   switch (st.jenis) {
     case 'pil': return pil(st.teks, W / 2, st.y || y, ps, st.warna || 'kuning');
-    case 'protes': return kartuProtes(st, t, t0, st.lanjut ? 1 : ps);   // lanjut = kartu dari baris sebelumnya, tidak muncul ulang
+    case 'protes': return kartuProtes(st, t, t0, st.lanjut ? 1 : ps);
+    case 'kertas': {          // kertas misterius bertulisan tangan, sebagian kabur
+      const cx = W / 2, cy = st.y || 560;
+      return denganSkala(cx, cy, st.lanjut ? 1 : ps, () => {
+        c.save(); c.translate(cx, cy); c.rotate(-0.07);
+        c.fillStyle = 'rgba(0,0,0,.3)'; c.fillRect(-250 + 8, -130 + 10, 500, 260);
+        c.fillStyle = '#f3ead2'; c.fillRect(-250, -130, 500, 260);
+        c.strokeStyle = 'rgba(120,150,200,.35)'; c.lineWidth = 2; for (let k = 0; k < 5; k++) { c.beginPath(); c.moveTo(-230, -70 + k * 46); c.lineTo(230, -70 + k * 46); c.stroke(); }
+        teks('📝 PETUNJUK', -230, -102, { size: 24, warna: '#b5541b', align: 'left' });
+        const br = (st.teks || '').split('|');
+        br.forEach((b, k) => { if (st.kabur && k === br.length - 1) c.filter = `blur(${4 * SKALA}px)`; teks(b, -220, -40 + k * 50, { size: 40, warna: '#20304a', bobot: 700, align: 'left' }); c.filter = 'none'; });
+        c.restore();
+      });
+    }
+    case 'petunjuk': {        // kartu petunjuk bernomor, muncul satu per satu
+      return st.items.forEach(([ik, lb], k) => {
+        const tk = t0 + k * (st.jeda || 0.9), sk = (st.lanjut && k < (st.sudah || 0)) ? 1 : popS(t, tk); if (sk <= 0) return;
+        const y = (st.y || 170) + k * 112;
+        kartu(W / 2, y, 560, 92, sk, (x, yy) => {
+          c.fillStyle = '#16324f'; c.beginPath(); c.arc(x + 50, yy + 46, 30, 0, Math.PI * 2); c.fill();
+          teks(String(k + 1), x + 50, yy + 48, { size: 30, warna: KUNING });
+          teks(ik, x + 118, yy + 48, { size: 42 });
+          teks(lb, x + 165, yy + 48, { size: 30, warna: '#16324f', align: 'left' });
+        }, { bg: KREM, tepi: OREN });
+      });
+    }   // lanjut = kartu dari baris sebelumnya, tidak muncul ulang
     case 'hitung': {          // penghitung rumah terisi, mis. "🏠 3/6 TERISI"
       const n = window._nIsi || 0, tot = st.total || 6, kd = (st.lanjut ? 1 : popS(t, t0)) * (1 + 0.08 * Math.max(0, Math.sin(t * 8)));
       return pil(`🏠 ${n}/${tot} TERISI${n >= tot ? ' · PENUH!' : ''}`, W / 2, st.y || 600, kd, n >= tot - 1 ? 'merah' : 'kuning', 40);
@@ -670,6 +731,12 @@ window.video = {
     sorot.visible = ada && ks > 0;
     sorot.material.opacity = Math.min(1, Math.max(0, ks)) * (0.42 + Math.sin(t * 6) * 0.14);
     kamera(t);
+    if (s.getar != null) {           // layar bergetar (kaget)
+      const u = t - (s.start + s.dur * s.getar);
+      if (u > 0 && u < 1.1) { const a = 0.35 * (1 - u / 1.1); camera.position.x += Math.sin(t * 91) * a; camera.position.y += Math.sin(t * 73) * a * 0.7; }
+    }
+    aturHantu(t, s);
+    { const jm = NASKAH.jam ?? 9.3, gelap = (jm > 18.5 || jm < 5.5) && s.darjo !== 'pojok'; lampuDarjo.intensity = gelap ? 16 : 0; }
     const pj = s.darjo === 'pojok';
     const diDalam = DALAM && SHOT[i].dalam;
     if (pj) { scPojok.add(darjo); darjo.position.set(0, darjo.position.y, 0); darjo.rotation.y = -0.35; }
@@ -698,12 +765,12 @@ window.video = {
       const p = ch.g.position;
       ch.g.visible = !(dekat && p.z > 0.0 && Math.abs(p.x) < 4.5);
       const label = ch.g.children.find(o => o.isSprite);          // label nama terlalu dekat → terlalu besar di layar
-      if (label) label.visible = !(dekat && Math.hypot(p.x, p.z - 0.6) < 7);
+      if (label) label.visible = !(dekat && Math.hypot(p.x, p.z - 0.6) < 7) && ch.g.position.distanceTo(camera.position) > 9;
     }
-    for (const l of labelBangunan) { l.getWorldPosition(_wp); l.visible = String(s.kamera).startsWith("warga") ? false : _wp.distanceTo(camera.position) > 13; }
+    for (const l of labelBangunan) { l.getWorldPosition(_wp); l.visible = /^(warga|sinema)/.test(String(s.kamera)) ? false : _wp.distanceTo(camera.position) > 13; }
     aturJalan(t); aturTamu(t);
     { const u = (t - s.start) / s.dur, kh = s.hujan != null ? Math.min(1, Math.max(0, (u - s.hujan) / 0.08)) * (s.hujanKuat ?? 1) : 0; if (Math.abs(world.hujan() - kh) > 0.01) world.setHujan(kh); }
-    world.setLampuMati(!!s.lampuMati);
+    world.setLampuMati(!!s.lampuMati || (s.kedip && (Math.sin(t * 29) + Math.sin(t * 13.7) > 0.4 || (t * 7) % 3 < 0.5)));
     const nIsi = aturPenghuni(t); window._nIsi = nIsi;
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     if (diDalam) {
@@ -722,6 +789,17 @@ window.video = {
         c.stroke(); c.restore();
       }
     }
+    c.save(); c.scale(SKALA, SKALA);
+    if (NASKAH.vinyet || s.vinyet) {   // tepi layar gelap (suasana misteri)
+      const g = c.createRadialGradient(W / 2, H / 2, H * 0.28, W / 2, H / 2, H * 0.72);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(5,8,20,${NASKAH.vinyet || 0.55})`); c.fillStyle = g; c.fillRect(0, 0, W, H);
+    }
+    if (s.kilat != null) {             // kilat putih
+      const u = t - (s.start + s.dur * s.kilat), a = u < 0 ? 0 : u < 0.12 ? 0.9 : u < 0.3 ? 0.9 * (1 - (u - 0.12) / 0.18) : u > 0.42 && u < 0.5 ? 0.6 : 0;
+      if (a > 0) { c.fillStyle = `rgba(235,242,255,${a})`; c.fillRect(0, 0, W, H); }
+    }
+    if (NASKAH.bioskop || s.bioskop) { c.fillStyle = '#000'; c.fillRect(0, 0, W, 96); c.fillRect(0, H - 96, W, 96); }   // garis hitam ala film
+    c.restore();
     if (pj) {
       rPojok.render(scPojok, camPojok);
       const masuk = i > 0 && SEG[i - 1].darjo === 'pojok' ? 1 : easeOut((t - mulai(i)) / 0.45);
