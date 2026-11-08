@@ -94,7 +94,11 @@ const SEKSI = {
       ${inp(`bangunan.${i}.usulan`, 'Usulan dari', 'text', 'style="grid-column:1/-1"')}
       ${inp(`bangunan.${i}.ket`, 'Keterangan', 'area')}
     </div></div>`).join('')}
-    <button class="btn tambah" id="addB">+ Tambah bangunan</button>`;
+    <button class="btn tambah" id="addB">+ Tambah bangunan</button>
+    <div class="row"><div class="hd"><b>🏘️ Kompleks perumahan warga (Rumahku)</b></div>
+      <div class="tip">Satu tombol = 1 blok berisi 6 rumah yang bisa <b>ditempati warga</b> (klik rumah → Tempati / Masuk rumah). Blok ditaruh otomatis di kavling kosong.
+      Sekarang ada <b>${(kota.bangunan || []).filter(b => b.huni).length}</b> rumah warga. Perlu <code>02-pemilu.sql</code> + <code>03-rumah.sql</code> sudah dijalankan di Supabase.</div>
+      <button class="btn oren" id="addKompleks">🏘️ Buat 1 blok perumahan (6 rumah)</button></div>`;
   },
   info() {
     const list = kota.info || [];
@@ -268,6 +272,19 @@ function render() {
     if (confirm('Hapus item ini?')) { arr.splice(idx, 1); tandai(); render(); }
   });
   const on = (id, fn) => { const el = $(id); if (el) el.onclick = () => { fn(); tandai(); render(); }; };
+  on('addKompleks', () => {
+    const bs = kota.bangunan = kota.bangunan || [];
+    const KAVLING = [[-22, 8], [22, 8], [-22, -8], [22, -8], [-8, 8], [8, 8], [-8, -8], [8, -8], [-22, -22], [22, -22], [-8, -22], [8, -22]];
+    const kosong = KAVLING.find(([x, z]) => !bs.some(b => b.tampil !== false && Math.abs(+b.x - x) < 7.5 && Math.abs(+b.z - z) < 7.5) && Math.hypot(x - 2.9, z + 2.9) > 8);
+    if (!kosong) { alert('Tidak ada kavling kosong lagi. Hapus/pindahkan bangunan lain dulu.'); return; }
+    const huruf = 'ABCDEFGHIJKL', blokAda = new Set(bs.filter(b => b.huni).map(b => b.blok));
+    const blok = [...huruf].find(h => !blokAda.has(h)) || 'Z';
+    const [cx, cz] = kosong;
+    [[-4.3, 3.2, 0], [0, 3.2, 0], [4.3, 3.2, 0], [-4.3, -3.2, 180], [0, -3.2, 180], [4.3, -3.2, 180]].forEach(([dx, dz, rot], k) => bs.push({
+      id: `rmh-${blok}${k + 1}`, nama: `Rumah Blok ${blok} No. ${k + 1}`, tipe: 'rumah', x: cx + dx, z: cz + dz, rot, status: 'selesai', progres: 100,
+      day: String(kota.day || ''), usulan: '', ket: 'Rumah warga: ketuk untuk masuk atau menempati.', tampil: true, huni: true, blok, no: k + 1 }));
+    alert(`Blok ${blok} (6 rumah) dibuat di x ${cx}, z ${cz}. Klik "Simpan & Publikasikan" supaya muncul di peta.`);
+  });
   on('addB', () => kota.bangunan.push({ id: idBaru('b'), nama: 'Bangunan Baru', tipe: 'rumah', x: 8, z: 8, rot: 0, status: 'lahan', progres: 0, day: String(kota.day || ''), usulan: '', ket: '', tampil: true }));
   on('addI', () => (kota.info = kota.info || []).unshift({ id: idBaru('i'), judul: '', isi: '', label: 'Pengumuman', tanggal: new Date().toISOString().slice(0, 10), pin: false }));
   on('addD', () => (kota.donasi = kota.donasi || []).push({ id: idBaru('d'), judul: 'Program Baru', ket: '', link: '', tombol: 'Donasi di sini', target: 1000000, terkumpul: 0 }));

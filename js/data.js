@@ -332,3 +332,43 @@ export async function hapusKandidat(id) {
   const sesi = sesiAdmin();
   await rest(`/rest/v1/kandidat?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' }, sesi && sesi.token);
 }
+
+// ---------- RUMAHKU (03-rumah.sql) ----------
+const KEY_RUMAH = 'sv_rumah_' + CONFIG.KOTA_ID;
+const rumahDemo = () => { try { return JSON.parse(localStorage.getItem(KEY_RUMAH) || '{}'); } catch (_) { return {}; } };
+// { [rumah_id]: { kode, nama, gender, kecamatan, pekerjaan, sejak } } — null bila fitur belum dipasang di database
+export async function penghuni() {
+  if (DEMO) { const r = rumahDemo(), ws = wargaDemo(), out = {}; for (const [id, x] of Object.entries(r)) { const w = ws.find(w => w.kode === x.kode); if (w) out[id] = Object.assign({ sejak: x.sejak }, w); } return out; }
+  try {
+    const rows = await rest('/rest/v1/penghuni?select=*');
+    return Object.fromEntries(rows.map(r => [r.rumah_id, r]));
+  } catch (e) { if (/penghuni|404|PGRST/i.test(e.message)) return null; throw e; }
+}
+export async function tempatiRumah(kode, pin, rumahId) {
+  kode = (kode || '').trim().toUpperCase(); pin = (pin || '').trim().toUpperCase();
+  if (!DEMO) return rest('/rest/v1/rpc/tempati_rumah', { method: 'POST', body: JSON.stringify({ p_kode: kode, p_pin: pin, p_rumah: rumahId }) });
+  const w = wargaDemo().find(x => x.kode === kode);
+  if (!w || w.pin !== pin) throw new Error('KTP tidak dikenali. Tempati rumah dari HP tempat KTP-mu dibuat.');
+  const r = rumahDemo();
+  if (r[rumahId] && r[rumahId].kode !== kode) throw new Error('Rumah ini sudah ditempati warga lain.');
+  for (const id of Object.keys(r)) if (r[id].kode === kode) delete r[id];
+  r[rumahId] = { kode, sejak: new Date().toISOString() };
+  localStorage.setItem(KEY_RUMAH, JSON.stringify(r));
+  return { ok: true, rumah: rumahId };
+}
+export async function tinggalkanRumah(kode, pin) {
+  kode = (kode || '').trim().toUpperCase(); pin = (pin || '').trim().toUpperCase();
+  if (!DEMO) return rest('/rest/v1/rpc/tinggalkan_rumah', { method: 'POST', body: JSON.stringify({ p_kode: kode, p_pin: pin }) });
+  const r = rumahDemo(); for (const id of Object.keys(r)) if (r[id].kode === kode) delete r[id];
+  localStorage.setItem(KEY_RUMAH, JSON.stringify(r)); return { ok: true };
+}
+// KTP lama (sebelum ada PIN): ambil PIN satu kali dari HP pemiliknya
+export async function klaimPin(kode) {
+  if (DEMO) return null;
+  try { return await rest('/rest/v1/rpc/klaim_pin', { method: 'POST', body: JSON.stringify({ p_kode: kode }) }); } catch (_) { return null; }
+}
+// admin: keluarkan penghuni
+export async function kosongkanRumah(rumahId) {
+  if (DEMO) { const r = rumahDemo(); delete r[rumahId]; localStorage.setItem(KEY_RUMAH, JSON.stringify(r)); return; }
+  return rest(`/rest/v1/rumah_warga?rumah_id=eq.${encodeURIComponent(rumahId)}`, { method: 'DELETE' }, (sesiAdmin() || {}).token);
+}

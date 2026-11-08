@@ -219,3 +219,12 @@ body.bermain .online { top: 58px; }
   box-shadow: 0 2px 0 #d9cfb9; }
 .chatpal button.emo { font-size: 20px; padding: 6px 10px; }
 .chatpal small { width: 100%; color: var(--teal2); font-weight: 700; }
+
+/* Rumahku: bagian dalam rumah */
+.rumah-modal { position: fixed; inset: 0; background: rgba(10,25,35,.72); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 12px; }
+.rumah-kotak { width: min(720px, 100%); height: min(640px, 92vh); background: var(--krem); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+.rumah-atas { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: var(--teal); color: #fff; }
+.rumah-atas b { display: block; font-size: 18px; } .rumah-atas small { opacity: .85; font-size: 12px; }
+.rumah-x { border: 0; background: rgba(255,255,255,.18); color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; }
+.rumah-cv { flex: 1; width: 100%; min-height: 0; display: block; touch-action: none; }
+.rumah-aksi { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; justify-content: center; }

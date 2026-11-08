@@ -973,7 +973,20 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
   }
 
   // ---------- bangunan
+  // ---------- rumah warga (Rumahku): papan nama penghuni di atas rumah
+  const rumahHolder = new Map(); let penghuniTerakhir = {}, kodeRumahSaya = '';
+  function pasangPapanRumah() {
+    for (const [id, h] of rumahHolder) {
+      const lama = h.userData.papanRumah; if (lama) { h.remove(lama); lama.material.map.dispose(); lama.material.dispose(); }
+      const p = penghuniTerakhir[id], saya = p && kodeRumahSaya && p.kode === kodeRumahSaya;
+      const sp = p ? textSprite((saya ? '⭐ Rumahku · ' : '🏠 ') + p.nama, saya ? { bg: 'rgba(15,76,92,.96)', fg: '#ffd166', size: 0.9 } : { bg: 'rgba(255,255,255,.95)', fg: '#16324f', size: 0.8, border: '#2a9d8f' })
+        : textSprite('🔑 Kosong · ketuk untuk menempati', { bg: 'rgba(255,248,236,.95)', fg: '#8a5a00', size: 0.7, border: '#f2a33a' });
+      sp.position.set(0, 3.55, 0); h.add(sp); h.userData.papanRumah = sp;
+      h.userData.pick.data.penghuni = p || null;
+    }
+  }
   function buildBangunan() {
+    rumahHolder.clear();
     bangunanG.clear();
     bangunanPos.clear();
     const fps = [];
@@ -1030,6 +1043,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
       holder.rotation.y = -rot;
       bangunanG.add(holder);
       if (b.id) bangunanPos.set(b.id, new THREE.Vector3(+b.x, 0, +b.z));
+      if (b.huni && b.id && b.status === 'selesai') rumahHolder.set(b.id, holder);
     }
     // papan pengumuman (isi diatur admin)
     const pp = Object.assign({}, PAPAN_BAWAAN, kota.papan || {});
@@ -1406,6 +1420,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     setKota(k) {
       kota = k;
       const fps = buildBangunan();
+      pasangPapanRumah();
       rintangan = fps;
       buildStatic(fps);
       jadwalMaskot();
@@ -1452,6 +1467,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     },
     gerak(x, y) { masukan.x = x; masukan.y = y; },
     sedangMain: () => !!pemain,
+    setPenghuni(map, kodeSaya) { penghuniTerakhir = map || {}; kodeRumahSaya = kodeSaya || ''; pasangPapanRumah(); },
     // Mode Ramai
     tamu: pasangTamu, tamuPergi: hapusTamu, gelembung,
     jumlahTamu: () => tamu.size,
@@ -1465,3 +1481,4 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     bisaDi,
   };
 }
+export { VB, mat };

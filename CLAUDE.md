@@ -45,6 +45,7 @@ Contoh satu baris naskah:
 
 ## Teknis singkat
 - Situs statis (GitHub Pages, repo `sidoarjoverse/sidoarjoverse.github.io`, branch `main`) + Supabase (`js/config.js`, key publishable boleh publik).
-- SQL: `supabase/schema.sql` (sudah) dan `supabase/02-pemilu.sql` (pemilik perlu menjalankan di SQL Editor bila belum).
+- SQL: `supabase/schema.sql` (sudah), lalu `02-pemilu.sql` dan `03-rumah.sql` (pemilik perlu menjalankan berurutan di SQL Editor bila belum).
+- Rumahku: admin → Bangunan → "Buat 1 blok perumahan" (6 rumah `huni: true`); warga klik rumah → Tempati / Masuk rumah (`js/rumah.js`, interior 3D).
 - Uji di localhost dengan `?demo` agar tidak menyentuh database asli.
 - Folder rencana `konten-30-hari/` dan `roadmap-fitur/` sengaja tidak di-commit (repo publik).

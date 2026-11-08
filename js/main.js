@@ -3,6 +3,8 @@ import * as D from './data.js';
 import { CONFIG } from './config.js';
 import { lookFor, drawPortrait } from './avatar.js';
 import { mulaiRamai, KALIMAT, EMOTE, teksChat } from './ramai.js';
+import { bukaRumah, tutupRumah } from './rumah.js';
+let penghuniMap = null;   // null = fitur rumah belum dipasang di database
 let ramai = null;
 
 const $ = id => document.getElementById(id);
@@ -58,7 +60,41 @@ function statusChip(b) {
   return `<span class="chip ${s}">${t}</span>`;
 }
 
+function kartuRumah(b) {
+  const p = b.penghuni, mine = p && saya && p.kode === saya.kode;
+  const rumahku = saya && penghuniMap && Object.entries(penghuniMap).find(([, x]) => x.kode === saya.kode);
+  let tombol = '<button class="btn" id="btnMasuk">🚪 Masuk rumah</button>';
+  if (!p && penghuniMap) tombol += saya ? `<button class="btn oren" id="btnTempati">🔑 ${rumahku ? 'Pindah ke rumah ini' : 'Tempati rumah ini'}</button>` : '<button class="btn oren" id="btnBikinKtp">🪪 Bikin KTP dulu</button>';
+  return `<div class="lab" style="color:var(--teal2);font-weight:800;font-size:12px">🏘️ RUMAH WARGA</div><h3>${esc(b.nama)}</h3>
+    ${p ? `<div class="meta">${mine ? '⭐ Rumahmu' : `Penghuni: <b>${esc(p.nama)}</b>`} · ${esc(p.pekerjaan)} · Kec. ${esc(p.kecamatan)}</div>` : `<div class="meta">${penghuniMap ? 'Kosong, siap ditempati 🔑' : 'Segera bisa ditempati warga'}</div>`}
+    <div class="ktp-acts" style="justify-content:flex-start">${tombol}</div><p class="err" id="rumahErr"></p>`;
+}
+async function tempati(b, tombol) {
+  const err = $('rumahErr') || { textContent: '' };
+  if (!pinSaya) { err.textContent = 'Rumah hanya bisa ditempati dari HP tempat KTP-mu dibuat.'; if (tombol) tombol.textContent = '⚠️ Buka dari HP pembuat KTP'; return false; }
+  try {
+    if (tombol) { tombol.disabled = true; tombol.textContent = '⏳ Pindahan…'; }
+    await D.tempatiRumah(kodeSaya, pinSaya, b.id);
+    await muatPenghuni(true);
+    return true;
+  } catch (e) { err.textContent = e.message; if (tombol) { tombol.disabled = false; tombol.textContent = '⚠️ ' + e.message; } return false; }
+}
+function masukRumah(b) {
+  const p = (penghuniMap || {})[b.id] || null, mine = p && saya && p.kode === saya.kode;
+  const aksi = [];
+  if (!p && saya && penghuniMap) aksi.push({ label: '🔑 Tempati rumah ini', kelas: 'oren', onClick: async t => { if (await tempati(b, t)) { tutupRumah(); masukRumah(b); } } });
+  if (mine) aksi.push({ label: 'Pindah / tinggalkan', kelas: 'ghost', onClick: async t => {
+    if (!confirm('Tinggalkan rumah ini? Rumahnya jadi kosong dan bisa ditempati warga lain.')) return;
+    try { t.disabled = true; await D.tinggalkanRumah(kodeSaya, pinSaya); await muatPenghuni(true); tutupRumah(); } catch (e) { t.textContent = '⚠️ ' + e.message; }
+  } });
+  bukaRumah({ rumah: b, p, aksi });
+}
+async function muatPenghuni(paksa) {
+  if (!world || !(kota.bangunan || []).some(b => b.huni)) return;
+  try { const m = await D.penghuni(); const sk = JSON.stringify(m); if (paksa || sk !== muatPenghuni.sidik) { muatPenghuni.sidik = sk; penghuniMap = m; world.setPenghuni(m || {}, kodeSaya); } } catch (e) { console.warn('penghuni', e); }
+}
 function kartuBangunan(b) {
+  if (b.huni && b.status === 'selesai') return kartuRumah(b);
   if (b.papan) return `<div class="lab" style="color:var(--teal2);font-weight:800;font-size:12px">📌 PAPAN PENGUMUMAN</div><h3>${esc(b.nama)}</h3><p style="white-space:pre-line;font-size:15px;line-height:1.5">${esc(b.ket)}</p>`;
   const p = b.status === 'selesai' ? 100 : (+b.progres || 0);
   return `<h3>${esc(b.nama)}</h3>${statusChip(b)}
@@ -100,6 +136,11 @@ function onPick(p, obj) {
   if (fm) { try { fm.getContext('2d').drawImage(potretWarga(p.data, 96, '#cfe8ef'), 0, 0, 96, 96); } catch (_) { drawPortrait(fm.getContext('2d'), 0, 0, 96, 96, lookFor(p.data)); } }
   const bi = $('btnIkuti'); if (bi) bi.onclick = () => { world.ikuti(obj); bi.textContent = '🎥 Mengikuti…'; };
   const bk = $('btnKtpku'); if (bk) bk.onclick = () => buka('ktp');
+  if (p.jenis === 'bangunan' && p.data.huni) {
+    const bm = $('btnMasuk'); if (bm) bm.onclick = () => masukRumah(p.data);
+    const bt = $('btnTempati'); if (bt) bt.onclick = async () => { if (await tempati(p.data, bt)) onPick({ jenis: 'bangunan', data: p.data }); };
+    const bb = $('btnBikinKtp'); if (bb) bb.onclick = () => buka('ktp');
+  }
 }
 
 // ---------------------------------------------------------------- info & riwayat
@@ -280,9 +321,9 @@ async function segarkan() {
     if (sk !== sidikKota) {
       sidikKota = sk; kota = k;
       renderHeader(); renderInfo(); renderDonasi(); renderAkun();
-      if (world) { world.setKota(kota); sidikWarga = ''; }
+      if (world) { world.setKota(kota); sidikWarga = ''; muatPenghuni.sidik = null; }
     }
-    if (world) await refreshWarga();
+    if (world) { await refreshWarga(); await muatPenghuni(); }
     if (document.querySelector('#view-pemilu.active')) renderPemilu();
   } catch (e) { console.warn('segarkan', e); }
 }
@@ -517,6 +558,9 @@ async function mulai() {
   sidikKota = JSON.stringify(kota);
   if (kodeSaya) { try { saya = await D.cariKode(kodeSaya); } catch (_) {} if (!saya) { localStorage.removeItem(KEY_KTP); localStorage.removeItem(KEY_PIN); kodeSaya = ''; pinSaya = ''; } }
   if (world) { await refreshWarga(); $('loading').classList.add('done'); }
+  // KTP lama (dibuat sebelum ada PIN): ambil PIN-nya sekali dari HP ini
+  if (saya && !pinSaya) { const pin = await D.klaimPin(kodeSaya); if (pin) { pinSaya = pin; localStorage.setItem(KEY_PIN, pin); } }
+  await muatPenghuni(true);
   if (world && !D.DEMO) ramai = mulaiRamai({ world, saya: () => saya, onJumlah: n => { const el = $('online'); el.hidden = n < 1; el.textContent = `🟢 ${n} warga online`; } });
   renderInfo(); renderKTP(); renderDonasi(); renderAkun();
   renderPemilu();
