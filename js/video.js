@@ -292,6 +292,7 @@ function bagianBersuara(sg) {
   return iv.length ? iv : [[sg.start, sg.start + sg.dur]];
 }
 const potongan = SEG.map(sg => {
+  if (sg.potong) return sg.potong.map(([t0, t1, x]) => ({ t0, t1, x }));   // dari alat/rekaman.py (waktu kata asli)
   const kata = sg.cap.split(' '); const chunk = []; let cur = [];
   for (const k of kata) {
     if (cur.length && (cur.join(' ') + ' ' + k).length > 22) { chunk.push(cur.join(' ')); cur = []; }
@@ -301,11 +302,28 @@ const potongan = SEG.map(sg => {
   if (cur.length) chunk.push(cur.join(' '));
   const iv = bagianBersuara(sg), total = iv.reduce((x, [a, b]) => x + b - a, 0);
   const waktu = frac => { let sisa = frac * total; for (const [a, b] of iv) { if (sisa <= b - a) return a + sisa; sisa -= b - a; } return iv[iv.length - 1][1]; };
+  // waktu dibagi menurut suku kata di bagian yang benar-benar bersuara; potongan setelah tanda baca
+  // ditempelkan ke awal frasa terdekat (sesudah jeda napas) supaya tidak tertinggal
+  const suku = x => Math.max(1, (x.toLowerCase().replace(/ktp/g, 'katepe').match(/[aiueo]+/g) || []).length);
+  {
+    const tot = chunk.reduce((a, x) => a + suku(x), 0); let acc = 0;
+    const r = chunk.map((x, k) => {
+      let t0 = waktu(acc / tot); acc += suku(x);
+      if (k > 0 && /[.!?,…:]$/.test(chunk[k - 1])) {
+        const dekat = iv.map(v => v[0]).filter(a => Math.abs(a - t0) < 0.7).sort((p, q) => Math.abs(p - t0) - Math.abs(q - t0))[0];
+        if (dekat != null) t0 = dekat;
+      }
+      return { t0: t0 - 0.1, x };
+    });
+    for (let k = 1; k < r.length; k++) r[k].t0 = Math.max(r[k].t0, r[k - 1].t0 + 0.35);
+    r.forEach((c, k) => { c.t1 = k < r.length - 1 ? r[k + 1].t0 - 0.12 : iv[iv.length - 1][1]; });
+    return r;
+  }
   const tot = chunk.reduce((a, x) => a + x.length, 0); let acc = 0;
   return chunk.map(x => { const r = { t0: waktu(acc / tot), t1: waktu((acc + x.length) / tot), x }; acc += x.length; return r; });
 }).flat();
 function subtitle(t) {
-  const p = potongan.find(p => t >= p.t0 - 0.05 && t < p.t1 + 0.12);
+  const p = potongan.findLast(p => t >= p.t0 - 0.05 && t < p.t1 + 0.12);
   if (!p) return;
   const s = popS(t, p.t0 - 0.05, 0.18) * 0.12 + 0.88;
   const pj = SEG[segPada(t)].darjo === 'pojok';
@@ -344,7 +362,7 @@ SEG.forEach((s, i) => {
     if (st.jenis === 'ide') st.items.forEach((_, k) => catat(s.start + 0.2 + k * s.dur * 0.18, 'pop'));
     if (st.jenis === 'komen') st.items.forEach((_, k) => catat(st._t0 + 0.3 + k * 0.5, 'pop'));
     if (st.jenis === 'protes') { if (!st.lanjut) catat(st._t0, 'pop'); if (st.stempel != null) catat(st._t0 + st.stempel, 'stempel'); }
-    if (st.jenis === 'hitung') catat(st._t0, 'pop');
+    if (st.jenis === 'hitung' && !st.lanjut) catat(st._t0, 'pop');
     if (st.jenis === 'tumpuk') st.items.forEach((_, k) => catat(st._t0 + k * 0.22 + 0.4, 'pop'));
   }
 });
@@ -402,9 +420,9 @@ function gambarStiker(st, s, i, t, slot) {
   const y = 170 + slot * 110;
   switch (st.jenis) {
     case 'pil': return pil(st.teks, W / 2, st.y || y, ps, st.warna || 'kuning');
-    case 'protes': return kartuProtes(st, t, t0, ps);
+    case 'protes': return kartuProtes(st, t, t0, st.lanjut ? 1 : ps);   // lanjut = kartu dari baris sebelumnya, tidak muncul ulang
     case 'hitung': {          // penghitung rumah terisi, mis. "🏠 3/6 TERISI"
-      const n = window._nIsi || 0, tot = st.total || 6, kd = popS(t, t0) * (1 + 0.08 * Math.max(0, Math.sin(t * 8)));
+      const n = window._nIsi || 0, tot = st.total || 6, kd = (st.lanjut ? 1 : popS(t, t0)) * (1 + 0.08 * Math.max(0, Math.sin(t * 8)));
       return pil(`🏠 ${n}/${tot} TERISI${n >= tot ? ' · PENUH!' : ''}`, W / 2, st.y || 600, kd, n >= tot - 1 ? 'merah' : 'kuning', 40);
     }
     case 'tumpuk': {          // kartu komen protes berjatuhan menumpuk
