@@ -1232,7 +1232,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     [15, '#d6e2e4', 1.5, 2.6], [17.2, '#f1bf93', 1.1, 1.6], [18.4, '#4a4a70', 0.55, 0.45], [19.5, '#1b2440', 0.32, 0.18], [24, '#1b2440', 0.3, 0.18],
   ];
   const cA = new THREE.Color(), cB = new THREE.Color();
-  let malam = false;
+  let malam = false, lampuMati = false;
   const cvLangit = document.createElement('canvas'); cvLangit.width = 4; cvLangit.height = 256;
   const texLangit = new THREE.CanvasTexture(cvLangit); texLangit.colorSpace = THREE.SRGBColorSpace;
   function langitGradasi(bawah, gelapMalam) {
@@ -1260,8 +1260,9 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     sun.color.set(h < 6 || h > 18.5 ? '#9fb4ff' : h < 8 || h > 16.5 ? '#ffc98f' : '#ffe3bd');
     const glow = malam ? '#ffcf6b' : '#000000';
     winMat.emissive.set(glow); winMat.emissiveIntensity = malam ? 0.9 : 0;
-    lampMat.emissive.set(malam ? '#ffe0a0' : '#000'); lampMat.emissiveIntensity = malam ? 1.3 : 0;
-    MAT_PENDAR.visible = MAT_SINAR.visible = malam;
+    const nyala = malam && !lampuMati;   // lampuMati: hanya untuk adegan video "sebelum ada lampu"
+    lampMat.emissive.set(nyala ? '#ffe0a0' : '#000'); lampMat.emissiveIntensity = nyala ? 1.3 : 0;
+    MAT_PENDAR.visible = MAT_SINAR.visible = nyala;
     return { jam: h, malam };
   }
   setInterval(updateLangit, 30000);
@@ -1493,6 +1494,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     gerak(x, y) { masukan.x = x; masukan.y = y; },
     sedangMain: () => !!pemain,
     setHujan, hujan: () => hujan,
+    setLampuMati(v) { if (lampuMati !== !!v) { lampuMati = !!v; updateLangit(); } },
     setPenghuni(map, kodeSaya) { penghuniTerakhir = map || {}; kodeRumahSaya = kodeSaya || ''; pasangPapanRumah(); },
     // Mode Ramai
     tamu: pasangTamu, tamuPergi: hapusTamu, gelembung,

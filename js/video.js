@@ -114,7 +114,37 @@ if (kamu) { pasang(kamu, TITIK_W.x, TITIK_W.z, 0.35); kamu._s = kamu.g.scale.x; 
 [[-7.3, 0.4, 0.6], [-2.9, 0.1, -0.4], [-8.1, 3.1, 0.9], [-1.9, 2.6, -0.7]].forEach(([x, z, r], k) => tetangga[k] && pasang(tetangga[k], x, z, r));
 
 // label bangunan (bukan label warga) disembunyikan bila terlalu dekat kamera
-const labelBangunan = []; scene.traverse(o => { if (o.isSprite && o.material.blending !== THREE.AdditiveBlending && !world.karakter().some(ch => ch.g === o.parent)) labelBangunan.push(o); });
+const labelBangunan = [];
+const kumpulLabel = () => { labelBangunan.length = 0; scene.traverse(o => { if (o.isSprite && o.material.blending !== THREE.AdditiveBlending && !world.karakter().some(ch => ch.g === o.parent)) labelBangunan.push(o); }); };
+kumpulLabel();
+// jalan tanah → aspal di tengah kalimat (naskah baris "aspal": fraksi)
+const jalanAwal = !!kota.jalan;
+function aturJalan(t) {
+  let on = jalanAwal;
+  SEG.forEach((sg, k) => { if (sg.aspal != null && t >= sg.start + sg.dur * sg.aspal) on = true; });
+  if (on !== !!kota.jalan) { kota.jalan = on; world.setKota(kota); kumpulLabel(); }
+}
+// warga online (naskah "tamu": [{kode, nama, gender, kecamatan, pekerjaan, baris, tunda, dari:[x,z], ke:[x,z]}]) + gelembung chat (baris "chat": [[tunda, kode, teks]])
+const TAMU = (NASKAH.tamu || []).map(d => Object.assign({ w: { kode: d.kode, nama: d.nama, gender: d.gender || 'L', kecamatan: d.kecamatan || 'Sidoarjo', pekerjaan: d.pekerjaan || 'Warga' } }, d));
+const chatTerkirim = new Set();
+function aturTamu(t) {
+  for (const d of TAMU) {
+    const sg = SEG[d.baris]; if (!sg) continue;
+    const t0 = mulai(d.baris) + (d.tunda || 0); if (t < t0) continue;
+    const u = Math.min(1, (t - t0) / (d.lama || 2.6)), e = ease(u);
+    const x = d.dari[0] + (d.ke[0] - d.dari[0]) * e, z = d.dari[1] + (d.ke[1] - d.dari[1]) * e;
+    const ry = u < 1 ? Math.atan2(d.ke[0] - d.dari[0], d.ke[1] - d.dari[1]) : (d.ry ?? 0.4);
+    world.tamu(d.kode, { w: d.w, x, z, ry, j: u < 1 });
+    if (!d._kecil) {   // label 🟢 dibuat untuk layar HP; di video dikecilkan supaya seukuran label warga lain
+      const ch = world.karakter().find(c => c.g.userData.pick && c.g.userData.pick.data && c.g.userData.pick.data.kode === d.kode);
+      const lb = ch && ch.g.children.find(o => o.isSprite);
+      if (lb) { lb.scale.multiplyScalar(d.skalaLabel || 0.5); d._kecil = true; }
+    }
+  }
+  SEG.forEach((sg, k) => (sg.chat || []).forEach(([tunda, kode, teks], j) => {
+    const id = k + ':' + j; if (!chatTerkirim.has(id) && t >= sg.start + tunda) { chatTerkirim.add(id); world.gelembung(kode, teks); }
+  }));
+}
 const _wp = new THREE.Vector3();
 // ------------------------------------------------------------ util
 const ease = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
@@ -134,6 +164,7 @@ function bidikan(jenis, sebelum) {
     case 'atas': return { a: { pos: V(lahanB.x + 4, 9, lahanB.z + 12), look: V(lahanB.x + 2, 0, lahanB.z + 3) }, b: { pos: V(+lahanB.x, 25, lahanB.z + 11), look: V(+lahanB.x, 0, +lahanB.z) }, e: easeOut };
     case 'papan': return { a: { pos: V(0.3, 2.35, 7.9), look: V(0, 2.05, 0.6) }, b: { pos: V(0.6, 2.35, 7.3), look: V(0, 2.05, 0.6) }, e: ease };
     case 'warga': return { a: { pos: V(-2.6, 3.1, 9.6), look: V(-5, 1.25, 2) }, b: { pos: V(-3.4, 2.7, 8.4), look: V(-5, 1.3, 2) }, e: ease };
+    case 'ramai': return { a: { pos: V(3.0, 5.2, 17.0), look: V(0, 0.9, 3.4) }, b: { pos: V(1.9, 4.7, 15.4), look: V(0, 0.9, 3.4) }, e: ease };   // warga online di alun-alun
     case 'ayam': return { a: { pos: V(2.6, 1.3, 5.2), look: V(0.9, 0.7, 1.3) }, b: { pos: V(2.2, 1.05, 4.4), look: V(0.9, 0.7, 1.3) }, e: ease };
     case 'bangunan': {
       const b = kota.bangunan.find(x => x.id === arg) || lahanB;
@@ -281,14 +312,72 @@ SEG.forEach((s, i) => {
     if (st.jenis === 'tangga') st.items.forEach((_, k) => catat(st._t0 + k * 0.35, 'pop'));
     if (st.jenis === 'ide') st.items.forEach((_, k) => catat(s.start + 0.2 + k * s.dur * 0.18, 'pop'));
     if (st.jenis === 'komen') st.items.forEach((_, k) => catat(st._t0 + 0.3 + k * 0.5, 'pop'));
+    if (st.jenis === 'protes') { if (!st.lanjut) catat(st._t0, 'pop'); if (st.stempel != null) catat(st._t0 + st.stempel, 'stempel'); }
+    if (st.jenis === 'tumpuk') st.items.forEach((_, k) => catat(st._t0 + k * 0.22 + 0.4, 'pop'));
   }
 });
 
+// kartu komentar ala media sosial, pusat (cx, cy)
+const WARNA_AV = ['#e76f51', '#2a9d8f', '#8338ec', '#f4a261', '#3a86ff', '#e63946'];
+function bungkus(str, size, maks) {
+  const out = [[]]; let lw = 0;
+  for (const k of str.split(' ')) { const w = ukur(k + ' ', size, 600); if (lw + w > maks && out[out.length - 1].length) { out.push([]); lw = 0; } out[out.length - 1].push(k); lw += w; }
+  return out.map(b => b.join(' '));
+}
+function gambarKartuKomen(akun, isi, like, cx, cy, kLike = 1, kabur = false) {
+  const w = 640, size = 27, br = bungkus(isi, size, w - 130), h = 104 + br.length * 36;
+  const x = cx - w / 2, y = cy - h / 2;
+  c.fillStyle = 'rgba(0,0,0,.25)'; rr(x, y + 7, w, h, 26); c.fill();
+  c.fillStyle = '#fff'; rr(x, y, w, h, 26); c.fill();
+  let hs = 0; for (const ch of akun) hs = (hs * 31 + ch.charCodeAt(0)) % 997;
+  c.fillStyle = WARNA_AV[hs % WARNA_AV.length]; c.beginPath(); c.arc(x + 52, y + 50, 29, 0, Math.PI * 2); c.fill();
+  teks((akun.replace('@', '')[0] || '?').toUpperCase(), x + 52, y + 52, { size: 30, warna: '#fff', bobot: 900 });
+  if (kabur) c.filter = `blur(${9 * SKALA}px)`;
+  teks(akun, x + 96, y + 38, { size: 23, warna: '#16181d', bobot: 800, align: 'left' });
+  br.forEach((b, k) => teks(b, x + 96, y + 74 + k * 36, { size, warna: '#2b2f36', bobot: 600, align: 'left' }));
+  c.filter = 'none';
+  const n = Math.round(like * kLike).toLocaleString('id-ID');
+  teks(`❤️ ${n}`, x + 96, y + h - 26, { size: 22, warna: '#e63946', bobot: 800, align: 'left' });
+  teks('Balas', x + 96 + ukur(`❤️ ${n}`, 22) + 30, y + h - 26, { size: 21, warna: '#8a8f98', bobot: 700, align: 'left' });
+  return h;
+}
+function kartuProtes(st, t, t0, ps) {
+  const cy = st.y || 470, naik = st.naik ? 1 + Math.max(0, t - t0) * 0.06 : Math.min(1, 0.55 + (t - t0) / 1.2 * 0.45);
+  let h = 0;
+  denganSkala(W / 2, cy, ps, () => {
+    h = gambarKartuKomen(st.akun, st.teks, st.like, W / 2, cy, naik, !!st.kabur);
+    if (st.kabur) {
+      teks('???', W / 2, cy + 6, { size: 80, warna: KUNING, bobot: 900, garis: 16, warnaGaris: TEAL });
+      pil('❤️ LIKE TERBANYAK', W / 2, cy - h / 2 - 26, 1, 'merah', 24);
+    } else pil('💬 KOMEN WARGA', W / 2 - 195, cy - h / 2 - 6, 1, 'oren', 19, 18);
+  });
+  if (st.stempel != null) {          // stempel ✅ DIBANGUN mendarat di kartu
+    const ts = t0 + st.stempel, u = (t - ts) / 0.3; if (u <= 0) return;
+    const sk = u >= 1 ? 1 : 2.4 - 1.4 * easeOut(u);
+    c.save(); c.globalAlpha = Math.min(1, u * 2); c.translate(W / 2 + 150, cy + 8); c.rotate(-0.16); c.scale(sk, sk);
+    c.lineWidth = 7; c.strokeStyle = '#1f9d55'; c.fillStyle = 'rgba(255,255,255,.88)';
+    const lb = st.teksStempel || '✅ DIBANGUN', w = ukur(lb, 40, 900) + 40;
+    rr(-w / 2, -38, w, 76, 14); c.fill(); c.stroke();
+    teks(lb, 0, 2, { size: 40, warna: '#1f9d55', bobot: 900 });
+    c.restore();
+  }
+}
 function gambarStiker(st, s, i, t, slot) {
   const t0 = st._t0, ps = popS(t, t0);
   const y = 170 + slot * 110;
   switch (st.jenis) {
     case 'pil': return pil(st.teks, W / 2, st.y || y, ps, st.warna || 'kuning');
+    case 'protes': return kartuProtes(st, t, t0, ps);
+    case 'tumpuk': {          // kartu komen protes berjatuhan menumpuk
+      st.items.forEach((it, k) => {
+        const tk = t0 + k * 0.22, u = (t - tk) / 0.45; if (u <= 0) return;
+        const e = easeOut(Math.min(1, u)), x0 = [230, 470, 330, 520, 190, 420][k % 6], y1 = 1150 + (k % 3) * 45 - Math.floor(k / 3) * 30;
+        const rot = [-0.12, 0.09, -0.05, 0.14, 0.04, -0.1][k % 6] * e;
+        c.save(); c.translate(x0, -200 + (y1 + 200) * e); c.rotate(rot); c.scale(0.62, 0.62);
+        gambarKartuKomen(it[0], it[1], it[2], 0, 0, 1, false); c.restore();
+      });
+      return;
+    }
     case 'papan': return pil(st.teks, W / 2, y, ps, 'oren', 34);
     case 'url': return pil(st.teks, W / 2, st.y || 230, ps, 'teal', 34);
     case 'kartu_teks': {
@@ -547,6 +636,9 @@ window.video = {
       if (label) label.visible = !(dekat && Math.hypot(p.x, p.z - 0.6) < 7);
     }
     for (const l of labelBangunan) { l.getWorldPosition(_wp); l.visible = String(s.kamera).startsWith("warga") ? false : _wp.distanceTo(camera.position) > 13; }
+    aturJalan(t); aturTamu(t);
+    { const u = (t - s.start) / s.dur, kh = s.hujan != null ? Math.min(1, Math.max(0, (u - s.hujan) / 0.08)) * (s.hujanKuat ?? 1) : 0; if (Math.abs(world.hujan() - kh) > 0.01) world.setHujan(kh); }
+    world.setLampuMati(!!s.lampuMati);
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.drawImage(gl, 0, 0, out.width, out.height);
@@ -554,7 +646,7 @@ window.video = {
       const u = (t - s.start) / s.dur, k = Math.min(1, Math.max(0, (u - s.hujan) / 0.06));
       if (k > 0) {
         c.save(); c.scale(SKALA, SKALA);
-        c.fillStyle = `rgba(40,60,85,${0.38 * k})`; c.fillRect(0, 0, W, H);
+        c.fillStyle = `rgba(40,60,85,${0.26 * k})`; c.fillRect(0, 0, W, H);
         c.strokeStyle = `rgba(210,225,240,${0.7 * k})`; c.lineWidth = 2; c.beginPath();
         for (let r = 0; r < 160; r++) { const x = (r * 97.3 + t * 120) % (W + 100) - 50, y = (r * 211.7 + t * 1500) % (H + 60) - 30; c.moveTo(x, y); c.lineTo(x - 7, y + 30); }
         c.stroke(); c.restore();
