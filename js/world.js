@@ -4,6 +4,7 @@ import { OrbitControls } from '../vendor/OrbitControls.js';
 import { mergeGeometries } from '../vendor/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from '../vendor/RoundedBoxGeometry.js';
 import { lookFor } from './avatar.js';
+import { KAV_W, KAV_D, KAVLING_PERUMAHAN } from './tipe.js';
 
 // ---------------------------------------------------------------- material & builder
 const UNIT = new THREE.BoxGeometry(1, 1, 1);
@@ -152,6 +153,7 @@ function buildGraph() {
     const zs = x === 0 ? [-26, -16, 0, 16, 28] : [-26, -16, 0, 16];
     let prev = null; for (const z of zs) { const n = add(x, z); if (prev) link(prev, n); prev = n; }
   }
+  grafKawasan(add, link);
   return nodes;
 }
 
@@ -210,6 +212,180 @@ function pagarKeliling(vb, w, d, warna = '#e9e2d0') {
   for (let z = -d / 2; z <= d / 2 + 0.01; z += step) { vb.box(-w / 2, 0, z, 0.15, 0.7, 0.15, warna); vb.box(w / 2, 0, z, 0.15, 0.7, 0.15, warna); }
   vb.box(0, 0.45, -d / 2, w, 0.1, 0.08, warna).box(0, 0.45, d / 2, w, 0.1, 0.08, warna);
   vb.box(-w / 2, 0.45, 0, 0.08, 0.1, d, warna).box(w / 2, 0.45, 0, 0.08, 0.1, d, warna);
+}
+
+// ---------------------------------------------------------------- kawasan baru (perluasan kota)
+// Barat: Kawasan Perumahan (padang luas, kavling 40 rumah per blok). Timur: Pusat Kota (lahan monumen & mal, perempatan bangjo).
+export const BATAS = { x0: -150, x1: 140, z0: -86, z1: 36 };
+const JALAN_BARU = [   // [x1, z1, x2, z2, garis tengah?]
+  [-150, 0, -28, 0, true],            // jalan raya barat (sambungan jalan tengah kota)
+  [-62, 0, -62, -82, false],          // jalan penghubung perumahan
+  [-146, -40, -34, -40, false],       // jalan perumahan baris belakang
+  [28, 0, 140, 0, true],              // jalan raya timur ke pusat kota
+  [62, -82, 62, 19, true], [100, -82, 100, 19, true],
+  [34, -42, 136, -42, true],
+];
+const PEREMPATAN = [[62, 0], [100, 0], [62, -42], [100, -42], [-62, 0]];
+export const LAHAN_KOTA = [
+  { id: 'lahan-monumen', nama: 'LAHAN MONUMEN', x: 45, z: -21, w: 22, d: 34 },
+  { id: 'lahan-mal-1', nama: 'LAHAN MAL', x: 81, z: -21, w: 32, d: 34 },
+  { id: 'lahan-mal-2', nama: 'LAHAN MAL', x: 81, z: -63, w: 32, d: 36 },
+  { id: 'lahan-mal-3', nama: 'LAHAN MAL', x: 119, z: -21, w: 30, d: 34 },
+  { id: 'lahan-gedung-1', nama: 'LAHAN GEDUNG', x: 119, z: -63, w: 30, d: 36 },
+  { id: 'lahan-gedung-2', nama: 'LAHAN GEDUNG', x: 45, z: -63, w: 22, d: 36 },
+];
+export function grafKawasan(add, link) {
+  const rantai = pts => { let p = null; for (const [x, z] of pts) { const n = add(x, z); if (p) link(p, n); p = n; } };
+  rantai([[-26, 0], [-48, 0], [-62, 0], [-76, 0], [-104, 0], [-132, 0]]);
+  rantai([[-62, 0], [-62, -40], [-62, -80]]);
+  rantai([[-36, -40], [-48, -40], [-62, -40], [-76, -40], [-104, -40], [-132, -40]]);
+  rantai([[26, 0], [45, 0], [62, 0], [81, 0], [100, 0], [119, 0], [136, 0]]);
+  rantai([[62, 0], [62, -42], [62, -80]]); rantai([[100, 0], [100, -42], [100, -80]]);
+  rantai([[36, -42], [62, -42], [81, -42], [100, -42], [134, -42]]);
+}
+function dalamJalanBaru(x, z, m = 0) {
+  for (const [x1, z1, x2, z2] of JALAN_BARU) {
+    const lw = ROAD_W / 2 + m;
+    if (z1 === z2 && Math.abs(z - z1) < lw && x > Math.min(x1, x2) - m && x < Math.max(x1, x2) + m) return true;
+    if (x1 === x2 && Math.abs(x - x1) < lw && z > Math.min(z1, z2) - m && z < Math.max(z1, z2) + m) return true;
+  }
+  return false;
+}
+// tanah di luar kota lama + jalan raya baru + bangjo + lahan + kavling perumahan
+function bangunKawasan(statik, kota, footprints, r) {
+  const g = new VB();
+  const { x0, x1, z0, z1 } = BATAS;
+  const tanah = [[x0, z0, -32, RIVER[0]], [x0, RIVER[1], -32, z1], [32, z0, x1, RIVER[0]], [32, RIVER[1], x1, z1], [-32, z0, 32, -32]];
+  for (const [a, b, c, d] of tanah) g.box((a + c) / 2, -0.62, (b + d) / 2, c - a, 0.6, d - b, '#a3b868');
+  for (const [a, c] of [[x0, -32], [32, x1]]) { g.box((a + c) / 2, -1.4, 23, c - a, 0.8, 4, '#6f5a3c'); g.box((a + c) / 2, -0.75, 23, c - a, 0.5, 4, 'water'); }
+  const gt = g.build({ shadow: false }); gt.children.forEach(m => { m.castShadow = false; }); statik.add(gt);
+
+  const j = new VB();
+  for (const [ax, az, bx, bz, garis] of JALAN_BARU) {
+    const hor = az === bz, len = Math.abs(hor ? bx - ax : bz - az), cx = (ax + bx) / 2, cz = (az + bz) / 2;
+    j.box(cx, 0, cz, hor ? len : ROAD_W, 0.06, hor ? ROAD_W : len, '#6e6b67');
+    // trotoar: dipotong di setiap mulut perempatan / pertigaan
+    const lo = hor ? Math.min(ax, bx) : Math.min(az, bz), hi = hor ? Math.max(ax, bx) : Math.max(az, bz);
+    const potong = PEREMPATAN.filter(([px, pz]) => hor ? pz === az && px > lo - 1 && px < hi + 1 : px === ax && pz > lo - 1 && pz < hi + 1).map(([px, pz]) => hor ? px : pz);
+    if (hor && az === 0) potong.push(ax < 0 ? -28 : 28);
+    const titik = [lo, ...potong.flatMap(c => [c - ROAD_W / 2 - 0.5, c + ROAD_W / 2 + 0.5]), hi].sort((p, q) => p - q);
+    for (let k = 0; k + 1 < titik.length; k += 2) {
+      const u0 = Math.max(lo, titik[k]), u1 = Math.min(hi, titik[k + 1]); if (u1 - u0 < 0.3) continue;
+      const m = (u0 + u1) / 2;
+      for (const s of [-1, 1]) j.box(hor ? m : cx + s * (ROAD_W / 2 + 0.25), 0, hor ? cz + s * (ROAD_W / 2 + 0.25) : m, hor ? u1 - u0 : 0.5, 0.12, hor ? 0.5 : u1 - u0, '#d8d0bf');
+    }
+    const dekatSimpang = (x, z) => PEREMPATAN.some(([px, pz]) => Math.abs(px - x) < 4.5 && Math.abs(pz - z) < 4.5) || (Math.abs(x) < 30 && Math.abs(z) < 30);
+    for (let t = 1; t < len; t += 2.2) {
+      const x = hor ? Math.min(ax, bx) + t : ax, z = hor ? az : Math.min(az, bz) + t;
+      if (garis && !dekatSimpang(x, z)) j.box(x, 0.061, z, hor ? 1.1 : 0.14, 0.01, hor ? 0.14 : 1.1, '#f1f1f1');
+    }
+    for (let t = 6; t < len; t += 12) {   // lampu jalan
+      const x = hor ? Math.min(ax, bx) + t : ax + ROAD_W / 2 + 0.6, z = hor ? az - ROAD_W / 2 - 0.6 : Math.min(az, bz) + t;
+      if (dekatSimpang(x, z) || (Math.abs(x) < 33 && Math.abs(z) < 33)) continue;
+      if (KAVLING_PERUMAHAN.some(K => Math.abs(x - K.x) < 4.5 && Math.abs(z - (K.z + KAV_D / 2)) < 4)) continue;   // jangan halangi gapura
+      j.box(x, 0, z, 0.15, 2.8, 0.15, '#3a3a3a').box(x, 2.65, z, 0.4, 0.18, 0.4, 'lamp');
+    }
+  }
+  for (const [px, pz] of PEREMPATAN) {   // zebra cross di tiap mulut perempatan
+    j.box(px, 0.005, pz, ROAD_W + 0.4, 0.062, ROAD_W + 0.4, '#6e6b67');
+    for (const s of [-1, 1]) for (let k = -1; k <= 1; k += 0.5) {
+      if (dalamJalanBaru(px + s * 2.6, pz)) j.box(px + s * 2.6, 0.062, pz + k, 1.0, 0.01, 0.28, '#f4f4f4');
+      if (dalamJalanBaru(px, pz + s * 2.6)) j.box(px + k, 0.062, pz + s * 2.6, 0.28, 0.01, 1.0, '#f4f4f4');
+    }
+  }
+  statik.add(j.build());
+
+  // bangjo (lampu lalu lintas) di perempatan
+  for (const [px, pz] of PEREMPATAN) {
+    for (const [sx, sz, arah] of [[1, 1, 'z'], [-1, -1, 'z'], [1, -1, 'x'], [-1, 1, 'x']]) {
+      const x = px + sx * (ROAD_W / 2 + 0.7), z = pz + sz * (ROAD_W / 2 + 0.7);
+      if (!dalamJalanBaru(arah === 'z' ? px : x + sx * 1.5, arah === 'z' ? z + sz * 1.5 : pz)) continue;   // jalan di sisi itu tidak ada
+      const tiang = new THREE.Mesh(UNIT, mat('#2d3436')); tiang.scale.set(0.16, 3.2, 0.16); tiang.position.set(x, 1.6, z); tiang.castShadow = true; statik.add(tiang);
+      const kepala = new THREE.Group(); kepala.position.set(x, 3.0, z);
+      kepala.rotation.y = arah === 'z' ? (sz > 0 ? 0 : Math.PI) : (sx > 0 ? Math.PI / 2 : -Math.PI / 2);
+      const kotak = new THREE.Mesh(UNIT, mat('#1e2326')); kotak.scale.set(0.42, 1.2, 0.3); kepala.add(kotak);
+      ['m', 'k', 'h'].forEach((w, i) => {
+        const l = new THREE.Mesh(GEO_BANGJO, MAT_BANGJO[arah][w]); l.position.set(0, 0.36 - i * 0.36, 0.16); kepala.add(l);
+      });
+      statik.add(kepala);
+    }
+  }
+
+  // lahan kosong pusat kota (hilang otomatis kalau admin sudah menaruh bangunan di situ)
+  const lh = new VB();
+  for (const L of LAHAN_KOTA) {
+    if (footprints.some(f => Math.abs(f.x - L.x) < L.w / 2 && Math.abs(f.z - L.z) < L.d / 2)) continue;
+    lh.box(L.x, 0, L.z, L.w - 1, 0.08, L.d - 1, '#c2a172');
+    for (let i = 0; i < 10; i++) lh.box(L.x + (r() - 0.5) * (L.w - 4), 0.08, L.z + (r() - 0.5) * (L.d - 4), 0.6 + r(), 0.25, 0.6 + r(), '#9a7548');
+    for (let x = -L.w / 2 + 0.5; x <= L.w / 2 - 0.5; x += 1.5) for (const s of [-1, 1]) lh.box(L.x + x, 0, L.z + s * (L.d / 2 - 0.5), 0.14, 0.8, 0.14, '#d9c7a3');
+    for (let z = -L.d / 2 + 0.5; z <= L.d / 2 - 0.5; z += 1.5) for (const s of [-1, 1]) lh.box(L.x + s * (L.w / 2 - 0.5), 0, L.z + z, 0.14, 0.8, 0.14, '#d9c7a3');
+    lh.box(L.x, 0, L.z + L.d / 2 - 0.5, L.w - 1, 0.1, 0.06, '#d9c7a3').box(L.x, 0.55, L.z + L.d / 2 - 0.5, L.w - 1, 0.08, 0.06, '#d9c7a3');
+    lh.box(L.x - 2, 0, L.z + L.d / 2 - 1.2, 0.2, 2.6, 0.2, '#6b4a2a').box(L.x + 2, 0, L.z + L.d / 2 - 1.2, 0.2, 2.6, 0.2, '#6b4a2a');
+    const sg = signMesh(L.nama, 4.6, 1.0, '#f4ecd8', '#5c4033'); sg.position.set(L.x, 2.4, L.z + L.d / 2 - 1.08); statik.add(sg);
+    const sg2 = signMesh('komen like terbanyak 👇', 4.6, 0.6, '#ffd166', '#3d2a00'); sg2.position.set(L.x, 1.6, L.z + L.d / 2 - 1.08); statik.add(sg2);
+  }
+  statik.add(lh.build());
+
+  // kavling perumahan
+  const pr = new VB(), daftar = (kota && kota.perumahan) || [];
+  KAVLING_PERUMAHAN.forEach((K, i) => {
+    const p = daftar.find(d => d.kavling === i);
+    const depan = K.z + KAV_D / 2;
+    if (!p) {   // kavling kosong
+      for (let x = -KAV_W / 2; x <= KAV_W / 2; x += 2) for (const s of [-1, 1]) pr.box(K.x + x, 0, K.z + s * KAV_D / 2, 0.14, 0.7, 0.14, '#e9e2d0');
+      for (let z = -KAV_D / 2; z <= KAV_D / 2; z += 2) for (const s of [-1, 1]) pr.box(K.x + s * KAV_W / 2, 0, K.z + z, 0.14, 0.7, 0.14, '#e9e2d0');
+      pr.box(K.x, 0, depan - 1.2, 0.2, 2.4, 0.2, '#6b4a2a');
+      const sg = signMesh('KAVLING PERUMAHAN', 4.4, 0.9, '#f4ecd8', '#2a6f4f'); sg.position.set(K.x, 2.1, depan - 1.08); statik.add(sg);
+      return;
+    }
+    // jalan paving perumahan (tanpa garis)
+    const PV = '#8d8a84', TP = '#cfc8b8';
+    for (const x of [-5.6, 5.6]) { pr.box(K.x + x, 0, K.z - 1.6, ROAD_W, 0.07, KAV_D - 3.2, PV); for (const s of [-1, 1]) pr.box(K.x + x + s * 1.65, 0, K.z - 1.6, 0.3, 0.12, KAV_D - 3.2, TP); }
+    pr.box(K.x, 0, depan - 2.2, 14.2, 0.07, 3, PV);
+    pr.box(K.x, 0, depan - 0.1, 5.4, 0.07, 3.2, PV);   // mulut masuk ke jalan raya
+    for (const x of [-5.6, 5.6]) for (let z = -14; z <= 10; z += 8) pr.box(K.x + x + 1.7, 0, K.z + z, 0.12, 2.4, 0.12, '#3a3a3a').box(K.x + x + 1.7, 2.3, K.z + z, 0.32, 0.16, 0.32, 'lamp');
+    // tembok keliling (kecuali pintu masuk)
+    const T = '#e3d6bd';
+    pr.box(K.x, 0, K.z - KAV_D / 2, KAV_W, 1.1, 0.25, T);
+    for (const s of [-1, 1]) { pr.box(K.x + s * KAV_W / 2, 0, K.z, 0.25, 1.1, KAV_D, T); pr.box(K.x + s * 7.2, 0, depan, 7.6, 1.1, 0.25, T); }
+    // gapura perumahan
+    for (const s of [-1, 1]) { pr.box(K.x + s * 3.1, 0, depan, 0.6, 4.4, 0.6, '#f1e6cf'); pr.box(K.x + s * 3.1, 4.4, depan, 0.8, 0.3, 0.8, '#b5523b'); }
+    pr.box(K.x, 3.5, depan, 5.6, 0.95, 0.4, '#2a6f4f');
+    const sg = signMesh('PERUMAHAN ' + (p.nama || '').toUpperCase(), 5.5, 0.66, '#2a6f4f', '#ffd166'); sg.position.set(K.x, 3.98, depan + 0.32); statik.add(sg);
+    const sb = signMesh('BLOK ' + p.blok, 2.4, 0.5, '#ffd166', '#2a6f4f'); sb.position.set(K.x, 3.1, depan + 0.32); sb.scale.setScalar(0.9); statik.add(sb);
+    // taman kecil & pohon di belakang rumah
+    for (let z = -15; z <= 12; z += 6.5) { pr.bola(K.x, 0, K.z + z, 0.9, 0.6, 0.9, '~#7a9a4a'); }
+    pohon(pr, K.x - 10.4, depan - 1.2, r); pohon(pr, K.x + 10.4, depan - 1.2, r);
+  });
+  statik.add(pr.build());
+
+  // pepohonan di padang luas (hindari jalan, kavling, lahan)
+  const ph = new VB(); const pos = [];
+  const kenaKavling = (x, z) => KAVLING_PERUMAHAN.some(K => Math.abs(x - K.x) < KAV_W / 2 + 1.5 && Math.abs(z - K.z) < KAV_D / 2 + 3)
+    || LAHAN_KOTA.some(L => Math.abs(x - L.x) < L.w / 2 + 1 && Math.abs(z - L.z) < L.d / 2 + 1);
+  for (let i = 0, n = 0; i < 2500 && n < 260; i++) {
+    const x = x0 + 3 + r() * (x1 - x0 - 6), z = z0 + 3 + r() * (z1 - z0 - 6);
+    if (Math.abs(x) < 34 && z > -34) continue;
+    if (z > RIVER[0] - 1.5 && z < RIVER[1] + 1.5) continue;
+    if (dalamJalanBaru(x, z, 1.6) || kenaKavling(x, z)) continue;
+    if (footprints.some(f => Math.abs(x - f.x) < f.w / 2 + 1.5 && Math.abs(z - f.z) < f.d / 2 + 1.5)) continue;
+    pohon(ph, x, z, r, (z > 17 || r() < 0.3) ? 'kelapa' : 'biasa'); pos.push([x, z]); n++;
+  }
+  statik.add(ph.build());
+  return pos;
+}
+// bangjo: lampu merah/kuning/hijau yang bergantian (arah x dan arah z)
+const GEO_BANGJO = new THREE.SphereGeometry(0.13, 10, 8);
+const MAT_BANGJO = {};
+for (const a of ['x', 'z']) MAT_BANGJO[a] = {
+  m: new THREE.MeshStandardMaterial({ color: '#5a1414', emissive: '#ff2a2a', emissiveIntensity: 0 }),
+  k: new THREE.MeshStandardMaterial({ color: '#5a4a14', emissive: '#ffc21a', emissiveIntensity: 0 }),
+  h: new THREE.MeshStandardMaterial({ color: '#14451f', emissive: '#22e06b', emissiveIntensity: 0 }),
+};
+function stepBangjo(t) {
+  const c = t % 16;   // 0–6.5 hijau arah x, 6.5–8 kuning x, 8–14.5 hijau z, 14.5–16 kuning z
+  const st = { x: c < 6.5 ? 'h' : c < 8 ? 'k' : 'm', z: c < 8 ? 'm' : c < 14.5 ? 'h' : 'k' };
+  for (const a of ['x', 'z']) for (const w of ['m', 'k', 'h']) MAT_BANGJO[a][w].emissiveIntensity = st[a] === w ? 2.4 : 0;
 }
 
 export const TIPE = {
@@ -831,7 +1007,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
   controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
   controls.addEventListener('change', () => {
     const t = controls.target;
-    const cx = THREE.MathUtils.clamp(t.x, -30, 30), cz = THREE.MathUtils.clamp(t.z, -30, 32);
+    const cx = THREE.MathUtils.clamp(t.x, BATAS.x0 + 8, BATAS.x1 - 8), cz = THREE.MathUtils.clamp(t.z, BATAS.z0 + 6, 32);
     if (cx !== t.x || cz !== t.z) { camera.position.x += cx - t.x; camera.position.z += cz - t.z; t.x = cx; t.z = cz; }
   });
 
@@ -843,7 +1019,8 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
   sun.shadow.mapSize.set(RINGAN ? 1024 : 2048, RINGAN ? 1024 : 2048);
   Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 140 });
   sun.shadow.bias = -0.0006; sun.shadow.radius = RINGAN ? 2 : 4;
-  scene.add(sun);
+  scene.add(sun); scene.add(sun.target);
+  const sunOff = new THREE.Vector3(30, 50, 20);
 
   const statik = new THREE.Group(); scene.add(statik);
   const bangunanG = new THREE.Group(); scene.add(bangunanG);
@@ -923,6 +1100,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     // pohon & semak di tepi sungai
     for (let x = -30; x <= 30; x += 3.3) { if (Math.abs(x) < 3) continue; if (r() < 0.5) pohon(pohonVB, x, RIVER[0] - 0.9, r, 'kelapa'); else pohonVB.bola(x, 0, RIVER[0] - 0.8, 1.1, 0.8, 1.1, '~#7a9a4a'); }
     statik.add(pohonVB.build());
+    pohonPos.push(...bangunKawasan(statik, kota, footprints, r));
 
     // ---- detail tanah: ribuan helai rumput, bunga kecil, batu bersegi, bukit di kejauhan
     const diJalan = (x, z, m) => {
@@ -951,22 +1129,22 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     const batu = tabur(geoBatu, new THREE.MeshStandardMaterial({ color: '#bdb5a5', roughness: 0.95, flatShading: true }), 45,
       (x, z) => !diJalan(x, z, 0.8) && !diBangunan(x, z, 1) && !pohonPos.some(([px, pz]) => (px - x) ** 2 + (pz - z) ** 2 < 2), () => 0.6 + r() * 1.3);
     batu.castShadow = true;
-    for (let i = 0; i < 26; i++) {   // bukit low-poly mengelilingi kota (kabut membuatnya samar)
-      const a = (i / 26) * Math.PI * 2 + r() * 0.1, rr = 95 + r() * 20;
+    for (let i = 0; i < 34; i++) {   // bukit low-poly mengelilingi kota (kabut membuatnya samar)
+      const a = (i / 34) * Math.PI * 2 + r() * 0.1, rr = 1 + r() * 0.15;
       const bk = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), mat(['~#a3ad74', '~#98a56c', '~#b0b585'][i % 3]));
-      bk.scale.set(16 + r() * 14, 3 + r() * 5, 14 + r() * 10); bk.position.set(Math.cos(a) * rr, -1.2, Math.sin(a) * rr); bk.rotation.y = r() * 3;
+      bk.scale.set(16 + r() * 14, 3 + r() * 5, 14 + r() * 10); bk.position.set(-5 + Math.cos(a) * rr * 185, -1.2, -25 + Math.sin(a) * rr * 120); bk.rotation.y = r() * 3;
       statik.add(bk);
     }
 
     // awan
     awanG.clear();
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 16; i++) {
       const vb = new VB();
       const n = 3 + Math.floor(r() * 3);
       for (let k = 0; k < n; k++) vb.bola(k * 1.8 - n, r() * 0.6, (r() - 0.5) * 2, 2.8 + r() * 1.5, 1.6 + r(), 2.4 + r() * 1.2, '~#fbf7ef');
       const c = vb.build({ shadow: false });
       c.children.forEach(m => { m.material = MAT_AWAN; });
-      c.position.set((r() - 0.5) * 170, 58 + r() * 12, (r() - 0.5) * 140); c.scale.setScalar(1.1);
+      c.position.set(-5 + (r() - 0.5) * 300, 58 + r() * 12, -25 + (r() - 0.5) * 180); c.scale.setScalar(1.1);
       c.userData.v = 0.4 + r() * 0.6;
       awanG.add(c);
     }
@@ -980,10 +1158,14 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
       const lama = h.userData.papanRumah; if (lama) { h.remove(lama); lama.material.map.dispose(); lama.material.dispose(); }
       const p = penghuniTerakhir[id], saya = p && kodeRumahSaya && p.kode === kodeRumahSaya;
       const sp = p ? textSprite((saya ? '⭐ Rumahku · ' : '🏠 ') + p.nama, saya ? { bg: 'rgba(15,76,92,.96)', fg: '#ffd166', size: 0.9 } : { bg: 'rgba(255,255,255,.95)', fg: '#16324f', size: 0.8, border: '#2a9d8f' })
-        : textSprite('🔑 Kosong · ketuk untuk menempati', { bg: 'rgba(255,248,236,.95)', fg: '#8a5a00', size: 0.7, border: '#f2a33a' });
+        : textSprite(h.userData.pick.data.kawasan ? '🔑 Kosong' : '🔑 Kosong · ketuk untuk menempati', { bg: 'rgba(255,248,236,.95)', fg: '#8a5a00', size: 0.7, border: '#f2a33a' });
+      h.userData.jarakPapan = p ? 60 : h.userData.pick.data.kawasan ? 24 : 1e4;
       sp.position.set(0, 3.55, 0); h.add(sp); h.userData.papanRumah = sp;
       h.userData.pick.data.penghuni = p || null;
     }
+  }
+  function papanLod(cam) {   // papan nama rumah hanya tampil kalau kamera cukup dekat (perumahan 40 rumah)
+    for (const h of rumahHolder.values()) { const p = h.userData.papanRumah; if (p) { const r = h.userData.jarakPapan || 1e4; p.visible = (h.position.x - cam.x) ** 2 + (h.position.z - cam.z) ** 2 < r * r; } }
   }
   function buildBangunan() {
     rumahHolder.clear();
@@ -1256,7 +1438,8 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     if (hujan) { cA.lerp(cB.set('#8f9ba4'), hujan * 0.3); scene.fog.color.copy(cA); scene.background = langitGradasi(cA, malam); }
     scene.fog.near = 60 - hujan * 12; scene.fog.far = 165 - hujan * 30;
     const ang = ((h - 6) / 12) * Math.PI;
-    sun.position.set(Math.cos(ang) * 40, Math.max(12, Math.sin(ang) * 55), 22);
+    sunOff.set(Math.cos(ang) * 40, Math.max(12, Math.sin(ang) * 55), 22);
+    sun.position.copy(sunOff).add(sun.target.position);
     sun.color.set(h < 6 || h > 18.5 ? '#9fb4ff' : h < 8 || h > 16.5 ? '#ffc98f' : '#ffe3bd');
     const glow = malam ? '#ffcf6b' : '#000000';
     winMat.emissive.set(glow); winMat.emissiveIntensity = malam ? 0.9 : 0;
@@ -1313,7 +1496,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
   const masukan = { x: 0, y: 0 };
   const _f = new THREE.Vector3();
   function bisaDi(x, z) {
-    if (x < -31 || x > 31 || z < -31 || z > 32.5) return false;
+    if (x < BATAS.x0 + 2 || x > BATAS.x1 - 2 || z < BATAS.z0 + 2 || z > 32.5) return false;
     if (z > RIVER[0] - 0.3 && z < RIVER[1] + 0.3 && Math.abs(x) > (kota && kota.jalan ? 1.5 : 0.85)) return false; // hanya lewat jembatan
     for (const f of rintangan) if (!f.lewat && Math.abs(x - f.x) < f.w / 2 + 0.15 && Math.abs(z - f.z) < f.d / 2 + 0.15) return false;
     for (const [px, pz] of pohonPos) if ((x - px) ** 2 + (z - pz) ** 2 < 0.3) return false;
@@ -1419,7 +1602,13 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     stepTamu(dt, t);
     stepHujan(dt);
     for (const a of ayam) stepAyam(a, dt, t);
-    for (const c of awanG.children) { c.position.x += c.userData.v * dt; if (c.position.x > 70) c.position.x = -70; }
+    for (const c of awanG.children) { c.position.x += c.userData.v * dt; if (c.position.x > 160) c.position.x = -170; }
+    stepBangjo(t);
+    if (!kameraManual) {   // matahari & bayangan ikut area yang sedang dilihat (peta sekarang luas)
+      const tg = controls.target; sun.target.position.set(tg.x, 0, tg.z); sun.position.x = tg.x + sunOff.x; sun.position.z = tg.z + sunOff.z;
+      sun.target.updateMatrixWorld();
+      papanLod(camera.position);
+    }
     if (fokus) {
       fokus.t = Math.min(1, fokus.t + dt * 1.8);
       const e = 1 - Math.pow(1 - fokus.t, 3);
@@ -1504,7 +1693,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     // ----- untuk mode video (manual)
     frame(dt, t) { langkah(dt, t, true); },
     setJam(h) { jamTetap = h; updateLangit(); },
-    scene, camera, renderer,
+    scene, camera, renderer, controls,
     posisiPemain: () => pemain ? [pemain.g.position.x, pemain.g.position.z] : null,
     bisaDi,
   };
