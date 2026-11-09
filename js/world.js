@@ -374,6 +374,103 @@ function bangunKawasan(statik, kota, footprints, r) {
   statik.add(ph.build());
   return pos;
 }
+// ---------------------------------------------------------------- hutan larangan & pegunungan (batas luar peta)
+const TEBAL_HUTAN = 30;
+const MAT_GUNUNG = [];   // warna gunung diatur ulang tiap ganti jam (tanpa kabut supaya tetap tampak jauh)
+function bangunHutan(statik, r, ringan) {
+  const { x0, x1, z0, z1 } = BATAS, T = TEBAL_HUTAN;
+  const lantai = new VB();
+  for (const [a, b, c, d] of [[x0 - T, z0 - T, x1 + T, z0], [x0 - T, z1, x1 + T, z1 + T], [x0 - T, z0, x0, RIVER[0]], [x0 - T, RIVER[1], x0, z1], [x1, z0, x1 + T, RIVER[0]], [x1, RIVER[1], x1 + T, z1]])
+    lantai.box((a + c) / 2, -0.62, (b + d) / 2, c - a, 0.6, d - b, '#5f7a3a');
+  for (const [a, c] of [[x0 - T, x0], [x1, x1 + T]]) { lantai.box((a + c) / 2, -1.4, 23, c - a, 0.8, 4, '#6f5a3c'); lantai.box((a + c) / 2, -0.75, 23, c - a, 0.5, 4, 'water'); }
+  const gl = lantai.build({ shadow: false }); gl.children.forEach(m => { m.castShadow = false; }); statik.add(gl);
+
+  // ribuan pohon rimbun (instanced supaya ringan)
+  const N = ringan ? 2600 : 5200;
+  const geoBatang = new THREE.CylinderGeometry(0.16, 0.24, 1, 5); geoBatang.translate(0, 0.5, 0);
+  const geoBulat = new THREE.IcosahedronGeometry(1, 0);
+  const geoCemara = new THREE.ConeGeometry(1, 1, 6); geoCemara.translate(0, 0.5, 0);
+  const mk = (geo, n) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true }), n); m.receiveShadow = true; m.frustumCulled = false; return m; };
+  const batang = mk(geoBatang, N), bulat = mk(geoBulat, N * 2), cemara = mk(geoCemara, N * 2);
+  let nb = 0, nl = 0, nc = 0;
+  const o = new THREE.Object3D(), cl = new THREE.Color();
+  const HIJAU = ['#3f6b2e', '#4a7a34', '#36602a', '#55843a', '#2f5426'], CEMARA = ['#2c5130', '#34603a', '#27482b', '#3d6b3f'];
+  const taruh = (im, k, x, y, z, sx, sy, sz, c) => { o.position.set(x, y, z); o.rotation.set(0, r() * 6.28, 0); o.scale.set(sx, sy, sz); o.updateMatrix(); im.setMatrixAt(k, o.matrix); im.setColorAt(k, cl.set(c)); };
+  for (let t = 0; t < N * 4 && nb < N; t++) {
+    const x = x0 - T + r() * (x1 - x0 + 2 * T), z = z0 - T + r() * (z1 - z0 + 2 * T);
+    const dx = Math.max(x0 - x, x - x1, 0), dz = Math.max(z0 - z, z - z1, 0), dalam = Math.max(dx, dz);
+    if (dalam <= 0.3) continue;
+    if (z > RIVER[0] - 0.8 && z < RIVER[1] + 0.8 && (x < x0 || x > x1)) continue;
+    const h = 3.5 + Math.min(1, dalam / T) * 5 + r() * 3;   // makin dalam makin tinggi & gelap
+    taruh(batang, nb++, x, 0, z, 1, h * 0.55, 1, '#5a4029');
+    if (r() < 0.45) {
+      const w = 1.4 + r() * 1.1;
+      taruh(cemara, nc++, x, h * 0.3, z, w, h * 0.85, w, CEMARA[Math.floor(r() * CEMARA.length)]);
+      if (nc < N * 2) taruh(cemara, nc++, x, h * 0.62, z, w * 0.7, h * 0.6, w * 0.7, CEMARA[Math.floor(r() * CEMARA.length)]);
+    } else {
+      const w = 1.6 + r() * 1.4;
+      taruh(bulat, nl++, x, h * 0.62, z, w, w * 0.9, w, HIJAU[Math.floor(r() * HIJAU.length)]);
+      if (nl < N * 2) taruh(bulat, nl++, x + (r() - 0.5) * 1.2, h * 0.62 + w * 0.55, z + (r() - 0.5) * 1.2, w * 0.7, w * 0.65, w * 0.7, HIJAU[Math.floor(r() * HIJAU.length)]);
+    }
+  }
+  // semak lebat di garis tepi hutan
+  const semak = mk(geoBulat, 900);
+  let ns = 0;
+  const tepi = (x, z) => { if (ns < 900 && !(z > RIVER[0] - 0.8 && z < RIVER[1] + 0.8)) taruh(semak, ns++, x, 0.3, z, 0.9 + r() * 0.8, 0.7 + r() * 0.5, 0.9 + r() * 0.8, HIJAU[Math.floor(r() * HIJAU.length)]); };
+  for (let x = x0; x <= x1; x += 1.3) { tepi(x + r(), z0 - 0.6 - r()); tepi(x + r(), z1 + 0.6 + r()); }
+  for (let z = z0; z <= z1; z += 1.3) { tepi(x0 - 0.6 - r(), z + r()); tepi(x1 + 0.6 + r(), z + r()); }
+  for (const [im, n] of [[batang, nb], [bulat, nl], [cemara, nc], [semak, ns]]) { im.count = n; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; statik.add(im); }
+
+  // papan "DILARANG MASUK · HUTAN LARANGAN" di ujung jalan & sepanjang tepi hutan
+  const papan = [];
+  for (const [ax, az, bx, bz] of JALAN_BARU) for (const [x, z] of [[ax, az], [bx, bz]]) {
+    if (x <= x0 + 0.5) papan.push([x0 + 1.2, z, Math.PI / 2, true]);
+    else if (x >= x1 - 0.5) papan.push([x1 - 1.2, z, -Math.PI / 2, true]);
+    else if (z <= z0 + 6) papan.push([x, z - 1.5, 0, true]);
+  }
+  for (let x = x0 + 20; x < x1 - 10; x += 38) { if (!papan.some(p => Math.abs(p[0] - x) < 8 && p[1] < z0 + 8)) papan.push([x, z0 + 1.6, 0, false]); papan.push([x, z1 - 1.4, Math.PI, false]); }
+  for (let z = z0 + 18; z < z1 - 4; z += 36) { if (z > RIVER[0] - 3 && z < RIVER[1] + 3) continue; for (const [x, ry] of [[x0 + 1.6, Math.PI / 2], [x1 - 1.6, -Math.PI / 2]]) if (!papan.some(p => Math.abs(p[1] - z) < 8 && Math.abs(p[0] - x) < 4)) papan.push([x, z, ry, false]); }
+  const kayu = new VB();
+  for (const [x, z, ry, portal] of papan) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry;
+    const v = new VB();
+    v.box(-1.3, 0, 0, 0.18, 2.6, 0.18, '#4a3420').box(1.3, 0, 0, 0.18, 2.6, 0.18, '#4a3420');
+    if (portal) {   // palang jalan merah-putih
+      v.box(0, 0, 0.6, 0.2, 1.0, 0.2, '#4a3420').box(3.4, 0, 0.6, 0.2, 1.0, 0.2, '#4a3420').box(-3.4, 0, 0.6, 0.2, 1.0, 0.2, '#4a3420');
+      for (let k = 0; k < 8; k++) v.box(-3.15 + k * 0.9, 0.75, 0.6, 0.9, 0.22, 0.12, k % 2 ? '#ffffff' : '#d62828');
+    }
+    g.add(v.build());
+    const s1 = signMesh('⛔ DILARANG MASUK', 3.0, 0.75, '#c1121f', '#ffffff'); s1.position.set(0, 2.15, 0.1); g.add(s1);
+    const s2 = signMesh('HUTAN LARANGAN', 3.0, 0.6, '#1b1b1b', '#ffd166'); s2.position.set(0, 1.5, 0.1); g.add(s2);
+    const s3 = s1.clone(); s3.rotation.y = Math.PI; s3.position.z = -0.02; g.add(s3);
+    statik.add(g);
+  }
+
+  // pegunungan di kejauhan
+  MAT_GUNUNG.length = 0;
+  const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+  for (let lapis = 0; lapis < 2; lapis++) {
+    const n = lapis ? 30 : 40, rx = (x1 - x0) / 2 + T + 70 + lapis * 90, rz = (z1 - z0) / 2 + T + 70 + lapis * 90;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + r() * 0.12;
+      const tinggi = (lapis ? 70 : 38) + r() * (lapis ? 55 : 30), lebar = tinggi * (0.75 + r() * 0.35);
+      const m = new THREE.MeshLambertMaterial({ flatShading: true, fog: false });
+      m.userData.dasar = new THREE.Color(lapis ? '#5f7a8c' : ['#4f7045', '#5a7a4c', '#486a40'][i % 3]); m.userData.kabut = lapis ? 0.4 : 0.22;
+      MAT_GUNUNG.push(m);
+      const g = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 5 + Math.floor(r() * 3), 2), m);
+      g.scale.set(lebar, tinggi, lebar * (0.8 + r() * 0.4)); g.position.set(cx + Math.cos(a) * rx * (0.95 + r() * 0.1), tinggi / 2 - 4, cz + Math.sin(a) * rz * (0.95 + r() * 0.1)); g.rotation.y = r() * 3;
+      statik.add(g);
+      if (lapis && r() < 0.5) {   // puncak berkabut putih
+        const pm = new THREE.MeshLambertMaterial({ flatShading: true, fog: false }); pm.userData.dasar = new THREE.Color('#e8eef2'); pm.userData.kabut = 0.4; MAT_GUNUNG.push(pm);
+        const p = new THREE.Mesh(new THREE.ConeGeometry(1, 1, g.geometry.parameters.radialSegments), pm);
+        p.scale.set(lebar * 0.22, tinggi * 0.2, lebar * 0.22 * (g.scale.z / lebar)); p.position.set(g.position.x, g.position.y + tinggi * 0.41, g.position.z); p.rotation.y = g.rotation.y; statik.add(p);
+      }
+    }
+  }
+}
+function warnaGunung(kabut, malam) {
+  for (const m of MAT_GUNUNG) { m.color.copy(m.userData.dasar).lerp(kabut, m.userData.kabut); if (malam) m.color.multiplyScalar(0.32); }
+}
 // bangjo: lampu merah/kuning/hijau yang bergantian (arah x dan arah z)
 const GEO_BANGJO = new THREE.SphereGeometry(0.13, 10, 8);
 const MAT_BANGJO = {};
@@ -991,7 +1088,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog('#dfe6e4', 60, 165);
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 400);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 900);
   camera.position.set(34, 38, 40);
 
   const controls = new OrbitControls(camera, canvas);
@@ -1129,12 +1226,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     const batu = tabur(geoBatu, new THREE.MeshStandardMaterial({ color: '#bdb5a5', roughness: 0.95, flatShading: true }), 45,
       (x, z) => !diJalan(x, z, 0.8) && !diBangunan(x, z, 1) && !pohonPos.some(([px, pz]) => (px - x) ** 2 + (pz - z) ** 2 < 2), () => 0.6 + r() * 1.3);
     batu.castShadow = true;
-    for (let i = 0; i < 34; i++) {   // bukit low-poly mengelilingi kota (kabut membuatnya samar)
-      const a = (i / 34) * Math.PI * 2 + r() * 0.1, rr = 1 + r() * 0.15;
-      const bk = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), mat(['~#a3ad74', '~#98a56c', '~#b0b585'][i % 3]));
-      bk.scale.set(16 + r() * 14, 3 + r() * 5, 14 + r() * 10); bk.position.set(-5 + Math.cos(a) * rr * 185, -1.2, -25 + Math.sin(a) * rr * 120); bk.rotation.y = r() * 3;
-      statik.add(bk);
-    }
+    bangunHutan(statik, r, RINGAN);   // hutan larangan + pegunungan di batas luar (ganti bukit lama)
 
     // awan
     awanG.clear();
@@ -1436,6 +1528,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     hemi.intensity = (e0 + (e1 - e0) * k) * (1 - hujan * 0.25);
     sun.intensity = (s0 + (s1 - s0) * k) * (1 - hujan * 0.7);
     if (hujan) { cA.lerp(cB.set('#8f9ba4'), hujan * 0.3); scene.fog.color.copy(cA); scene.background = langitGradasi(cA, malam); }
+    warnaGunung(scene.fog.color, malam);
     scene.fog.near = 60 - hujan * 12; scene.fog.far = 165 - hujan * 30;
     const ang = ((h - 6) / 12) * Math.PI;
     sunOff.set(Math.cos(ang) * 40, Math.max(12, Math.sin(ang) * 55), 22);
