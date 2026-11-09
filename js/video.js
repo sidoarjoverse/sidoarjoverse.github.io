@@ -142,6 +142,17 @@ const hantu = new THREE.Group(); hantu.visible = false; scene.add(hantu);
   const sinar = new THREE.PointLight('#cfe3ff', 3, 7, 1.6); sinar.position.set(0, 1.6, 0.6); hantu.add(sinar);
 }
 const HANTU0 = NASKAH.hantu || { x: -17.7, z: 13.6 };
+// cahaya senter misterius (naskah baris "cahaya": {dari: [x, z], ke: [x, z], mulai: 0–1, lama: 0–1})
+const cahaya = new THREE.Group(); cahaya.visible = false; scene.add(cahaya);
+{ const b = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 8), new THREE.MeshBasicMaterial({ color: '#fff6c8' })); cahaya.add(b);
+  const l = new THREE.PointLight('#ffe9a8', 60, 18, 1.4); cahaya.add(l);
+  const g = new THREE.Mesh(new THREE.SphereGeometry(0.75, 16, 12), new THREE.MeshBasicMaterial({ color: '#fff1b0', transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending })); cahaya.add(g); }
+function aturCahaya(t, s) {
+  const h = s.cahaya; cahaya.visible = !!h; if (!h) return;
+  const u = (t - s.start) / s.dur, m = h.mulai ?? 0, k = Math.min(1, Math.max(0, (u - m) / (h.lama ?? (1 - m))));
+  cahaya.position.set(h.dari[0] + (h.ke[0] - h.dari[0]) * k, (h.y ?? 1.9) + Math.sin(t * 7) * 0.08, h.dari[1] + (h.ke[1] - h.dari[1]) * k);
+  cahaya.children[1].intensity = 60 * (0.75 + 0.25 * Math.sin(t * 23) * Math.sin(t * 7.3));
+}
 function aturHantu(t, s) {
   const h = s.hantu; if (!h) { hantu.visible = false; return; }
   const u = (t - s.start) / s.dur; if (u < (h.dari || 0)) { hantu.visible = false; return; }
@@ -244,7 +255,7 @@ function kamBebas(k) {
   const [bx, bz, R, h, a0, a1] = k.putar, L = V(...(k.lihat || [bx, 1.4, bz]));
   return { a: { pos: V(bx, h, bz + R), look: L }, b: { pos: V(bx, h, bz + R), look: L.clone() }, e: ease, putar: { bx, bz, R, h, a0, a1 } };
 }
-const SHOT = []; { let prev = null; for (const s of SEG) { const b = s.kam ? kamBebas(s.kam) : bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
+const SHOT = []; { let prev = null; for (const s of SEG) { const b = s.kam ? Object.assign(kamBebas(s.kam), { cctv: /^cctv/.test(String(s.kamera)) }) : bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
 function kamera(t) {
   const i = segPada(t), sh = SHOT[i];
   const d = Math.max(0.3, Math.min(selesai(i) - mulai(i), sh.e === easeOut ? 1.6 : 99));
@@ -746,7 +757,7 @@ window.video = {
       const u = t - (s.start + s.dur * s.getar);
       if (u > 0 && u < 1.1) { const a = 0.35 * (1 - u / 1.1); camera.position.x += Math.sin(t * 91) * a; camera.position.y += Math.sin(t * 73) * a * 0.7; }
     }
-    aturHantu(t, s);
+    aturHantu(t, s); aturCahaya(t, s);
     { const jm = NASKAH.jam ?? 9.3, gelap = (jm > 18.5 || jm < 5.5) && s.darjo !== 'pojok'; lampuDarjo.intensity = gelap && !s.footage ? 16 : 0; }
     senter.intensity = s.footage ? 40 : 0;
     if (!s.footage) { const a = darjo.userData.anim; a.legs[0].rotation.x = a.legs[1].rotation.x = 0; }
@@ -803,7 +814,7 @@ window.video = {
     { const u = (t - s.start) / s.dur, kh = s.hujan != null ? Math.min(1, Math.max(0, (u - s.hujan) / 0.08)) * (s.hujanKuat ?? 1) : 0; if (Math.abs(world.hujan() - kh) > 0.01) world.setHujan(kh); }
     world.setLampuMati(!!s.lampuMati || (s.kedip && (Math.sin(t * 29) + Math.sin(t * 13.7) > 0.4 || (t * 7) % 3 < 0.5)));
     const nIsi = aturPenghuni(t); window._nIsi = nIsi;
-    if (NASKAH.tanpaPapan) scene.traverse(o => { if (o.userData && o.userData.papanRumah) o.userData.papanRumah.visible = false; });
+    if (NASKAH.tanpaPapan && !s.papanRumah) scene.traverse(o => { if (o.userData && o.userData.papanRumah) o.userData.papanRumah.visible = false; });
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     if (diDalam) {
       if (DALAM.ch) { DALAM.ch.position.y = Math.abs(Math.sin(t * 2.2)) * 0.02; if (DALAM.tangan) DALAM.tangan.rotation.z = t % 5 < 1.8 ? 2.4 + Math.sin(t * 12) * 0.35 : 0; }
@@ -811,7 +822,7 @@ window.video = {
     }
     c.setTransform(1, 0, 0, 1, 0, 0);
     const cctv = SHOT[i].cctv;
-    if (cctv) c.filter = 'grayscale(0.75) contrast(1.25) brightness(1.7) sepia(0.25) hue-rotate(60deg)';
+    if (cctv) c.filter = `grayscale(0.75) contrast(1.25) brightness(${NASKAH.cctvTerang || 1.7}) sepia(0.25) hue-rotate(60deg)`;
     c.drawImage(gl, 0, 0, out.width, out.height);
     c.filter = 'none';
     if (cctv) {                       // tampilan rekaman kamera pengawas
@@ -830,6 +841,7 @@ window.video = {
         teks(lb, x1 - lebar / 2, y1 - 24, { size: 20, warna, bobot: 800, align: 'left', garis: 5, warnaGaris: 'rgba(0,0,0,.7)' });
       };
       if (s.footage) kotak(darjo, 2.4, 'CAK DARJO', '#ffd166');
+      if (s.cahaya && cahaya.visible) kotak(cahaya, 0.8, '??? 🔦', '#ff4d4d');
       if (hantu.visible) kotak(hantu, 2.6, '??? ' + (Math.floor(t * 3) % 2 ? '⚠️' : ''), '#ff4d4d');
       teks(`00:00:${String(dtk % 60).padStart(2, '0')}  ${NASKAH.cctvTanggal || '13/11/2026'}`, W - 40, H - 150, { size: 24, warna: '#fff', bobot: 700, align: 'right', garis: 5, warnaGaris: 'rgba(0,0,0,.6)' });
       c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 3;
