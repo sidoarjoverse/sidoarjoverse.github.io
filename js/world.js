@@ -361,7 +361,7 @@ function bangunKawasan(statik, kota, footprints, r) {
 
   // pepohonan di padang luas (hindari jalan, kavling, lahan)
   const ph = new VB(); const pos = [];
-  const kenaKavling = (x, z) => KAVLING_PERUMAHAN.some(K => Math.abs(x - K.x) < KAV_W / 2 + 1.5 && Math.abs(z - K.z) < KAV_D / 2 + 3)
+  const kenaKavling = (x, z) => KAVLING_PERUMAHAN.some(K => (Math.abs(x - K.x) < KAV_W / 2 + 1.5 && Math.abs(z - K.z) < KAV_D / 2 + 3) || (Math.abs(x - K.x) < 9 && z > K.z && z < K.z + KAV_D / 2 + 22))   // depan gapura dibiarkan lapang
     || LAHAN_KOTA.some(L => Math.abs(x - L.x) < L.w / 2 + 1 && Math.abs(z - L.z) < L.d / 2 + 1);
   for (let i = 0, n = 0; i < 2500 && n < 260; i++) {
     const x = x0 + 3 + r() * (x1 - x0 - 6), z = z0 + 3 + r() * (z1 - z0 - 6);

@@ -238,7 +238,13 @@ function bidikan(jenis, sebelum) {
     default: return { a: { pos: V(0, 2.2, 5.6), look: LIHAT_D.clone() }, b: { pos: V(0, 2.18, 4.9), look: LIHAT_D.clone() }, e: ease }; // closeup
   }
 }
-const SHOT = []; { let prev = null; for (const s of SEG) { const b = bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
+// kamera bebas dari naskah: "kam": [[posA], [lihatA], [posB], [lihatB]] atau {"putar": [x, z, R, tinggi, sudut0, sudut1], "lihat": [x, y, z]}
+function kamBebas(k) {
+  if (Array.isArray(k)) return { a: { pos: V(...k[0]), look: V(...k[1]) }, b: { pos: V(...k[2]), look: V(...k[3]) }, e: ease };
+  const [bx, bz, R, h, a0, a1] = k.putar, L = V(...(k.lihat || [bx, 1.4, bz]));
+  return { a: { pos: V(bx, h, bz + R), look: L }, b: { pos: V(bx, h, bz + R), look: L.clone() }, e: ease, putar: { bx, bz, R, h, a0, a1 } };
+}
+const SHOT = []; { let prev = null; for (const s of SEG) { const b = s.kam ? kamBebas(s.kam) : bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
 function kamera(t) {
   const i = segPada(t), sh = SHOT[i];
   const d = Math.max(0.3, Math.min(selesai(i) - mulai(i), sh.e === easeOut ? 1.6 : 99));
@@ -745,8 +751,10 @@ window.video = {
     senter.intensity = s.footage ? 40 : 0;
     if (!s.footage) { const a = darjo.userData.anim; a.legs[0].rotation.x = a.legs[1].rotation.x = 0; }
     const pj = s.darjo === 'pojok';
+    if (s.darjo === 'tidak') { if (darjo.parent) darjo.parent.remove(darjo); }
     const diDalam = DALAM && SHOT[i].dalam;
-    if (pj) { scPojok.add(darjo); darjo.position.set(0, darjo.position.y, 0); darjo.rotation.y = -0.35; }
+    if (s.darjo === 'tidak') { /* tanpa Cak Darjo (shot sinematik murni) */ }
+    else if (pj) { scPojok.add(darjo); darjo.position.set(0, darjo.position.y, 0); darjo.rotation.y = -0.35; }
     else if (s.footage) {          // Cak Darjo ronda di lokasi (adegan rekaman CCTV)
       const f = s.footage, u = (t - mulai(i)) / (selesai(i) - mulai(i));
       scene.add(darjo);
@@ -795,6 +803,7 @@ window.video = {
     { const u = (t - s.start) / s.dur, kh = s.hujan != null ? Math.min(1, Math.max(0, (u - s.hujan) / 0.08)) * (s.hujanKuat ?? 1) : 0; if (Math.abs(world.hujan() - kh) > 0.01) world.setHujan(kh); }
     world.setLampuMati(!!s.lampuMati || (s.kedip && (Math.sin(t * 29) + Math.sin(t * 13.7) > 0.4 || (t * 7) % 3 < 0.5)));
     const nIsi = aturPenghuni(t); window._nIsi = nIsi;
+    if (NASKAH.tanpaPapan) scene.traverse(o => { if (o.userData && o.userData.papanRumah) o.userData.papanRumah.visible = false; });
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     if (diDalam) {
       if (DALAM.ch) { DALAM.ch.position.y = Math.abs(Math.sin(t * 2.2)) * 0.02; if (DALAM.tangan) DALAM.tangan.rotation.z = t % 5 < 1.8 ? 2.4 + Math.sin(t * 12) * 0.35 : 0; }
