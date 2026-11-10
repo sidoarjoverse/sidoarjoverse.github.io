@@ -52,3 +52,6 @@ Contoh satu baris naskah:
 
 ## Aturan video: keterangan episode
 Setiap video WAJIB dibuka dengan keterangan episode. Isi `"episode": N` (dan opsional `"seri": "..."`) di `naskah.json`: video.js menampilkan kartu "EPISODE N" di 2,6 detik pertama + lencana "EPS N" di samping DAY. Baris kedua naskah menyebut "Sidoarjo Vers, episode …". Video peluncuran = Episode 4.
+
+## Aturan video: nama akun di kartu komen
+Nama akun pada kartu komen/protes di video (stiker `protes`, `tumpuk`, `komen`) memakai **username acak yang terlihat normal** (mis. `@dindaayu.07`, `@rizalfahmi_`, `@bagus_wicak`), **jangan** dibuat sesuai isi komentarnya (mis. `@offroad.waru99` untuk komen jalan) karena terlihat dikarang. Jangan pakai username yang sama berulang-ulang antar episode.
