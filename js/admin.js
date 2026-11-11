@@ -1,4 +1,4 @@
-import { KAVLING_PERUMAHAN, tataRumahBlok } from './tipe.js';
+import { KAVLING_PERUMAHAN, NAMA_PERUMAHAN } from './tipe.js';
 import * as D from './data.js';
 import { TIPE_LIST } from './tipe.js';
 
@@ -98,13 +98,14 @@ const SEKSI = {
     </div></div>`).join('')}
     <button class="btn tambah" id="addB">+ Tambah bangunan</button>
     <div class="row"><div class="hd"><b>🏘️ Kompleks perumahan warga (Rumahku)</b></div>
-      <div class="tip">Satu tombol = 1 blok berisi <b>40 rumah</b> di <b>Kawasan Perumahan</b> (padang luas di barat kota) yang bisa <b>ditempati warga</b> (klik rumah → Tempati / Masuk rumah). Blok ditaruh otomatis di kavling kosong, lengkap dengan gapura nama perumahan, jalan paving, dan tembok keliling.
+      <div class="tip">Kawasan Perumahan punya <b>${KAVLING_PERUMAHAN.length} kavling × 40 rumah = ${KAVLING_PERUMAHAN.length * 40} rumah</b>. Satu tombol = 1 blok berisi <b>40 rumah berteras</b> di <b>Kawasan Perumahan</b> (padang luas di barat kota) yang bisa <b>ditempati warga</b> (klik rumah → Tempati / Masuk rumah). Blok ditaruh otomatis di kavling kosong, lengkap dengan gapura nama perumahan, jalan paving, dan tembok keliling.
       Sekarang ada <b>${(kota.bangunan || []).filter(b => b.huni).length}</b> rumah warga. Perlu <code>02-pemilu.sql</code> + <code>03-rumah.sql</code> sudah dijalankan di Supabase.</div>
       ${(kota.perumahan || []).map((p, i) => `<div class="row"><div class="hd"><b>🏘️ Perumahan ${esc(p.nama || '')} · Blok ${esc(p.blok)}</b>
         <span>${(kota.bangunan || []).filter(b => b.kawasan && b.blok === p.blok).length} rumah</span>
         <button class="hapus" data-hapusblok="${i}">Hapus blok</button></div>
         <div class="grid">${inp(`perumahan.${i}.nama`, 'Nama perumahan (tampil di gapura)')}</div></div>`).join('')}
-      <button class="btn oren" id="addKompleks">🏘️ Buat 1 blok perumahan (40 rumah)</button></div>`;
+      <button class="btn oren" id="addKompleks">🏘️ Buat 1 blok perumahan (40 rumah)</button>
+      <button class="btn oren" id="isiSemua">🏙️ Bangun SEMUA kavling sekaligus (${KAVLING_PERUMAHAN.length * 40} rumah)</button></div>`;
   },
   info() {
     const list = kota.info || [];
@@ -278,21 +279,30 @@ function render() {
     if (confirm('Hapus item ini?')) { arr.splice(idx, 1); tandai(); render(); }
   });
   const on = (id, fn) => { const el = $(id); if (el) el.onclick = () => { fn(); tandai(); render(); }; };
-  on('addKompleks', () => {
+  const HURUF = 'BCDEFGHIJKLMNOPQRSTUVWXYZ';   // A tidak dipakai lagi (Blok A lama sudah dikosongkan)
+  const buatBlok = (kav, nama) => {   // 40 baris rumah ringkas: posisi dihitung otomatis di peta dari kavling + nomor
     const bs = kota.bangunan = kota.bangunan || [], pr = kota.perumahan = kota.perumahan || [];
-    const kav = KAVLING_PERUMAHAN.findIndex((_, i) => !pr.some(p => p.kavling === i));
-    if (kav < 0) { alert('Semua kavling perumahan sudah terisi.'); return; }
-    const huruf = 'ABCDEFGHIJKLMNOPQRSTUVWXY', blokAda = new Set(bs.filter(b => b.huni).map(b => b.blok).concat(pr.map(p => p.blok)));
-    const blok = [...huruf].find(h => !blokAda.has(h)) || 'Z';
-    const lama = pr.length ? pr[pr.length - 1].nama : '';
-    const nama = (prompt(`Nama perumahan untuk Blok ${blok}?\n(isi nama yang sama kalau masih satu perumahan dengan blok sebelumnya)`, lama || 'Delta Asri') || '').trim();
-    if (!nama) return;
-    const K = KAVLING_PERUMAHAN[kav];
+    const pakai = new Set(bs.filter(b => b.huni).map(b => b.blok).concat(pr.map(p => p.blok)));
+    const blok = [...HURUF].find(h => !pakai.has(h)); if (!blok) return null;
     pr.push({ kavling: kav, blok, nama });
-    tataRumahBlok().forEach((h, k) => bs.push({
-      id: `rmh-${blok}${k + 1}`, nama: `Rumah Blok ${blok} No. ${k + 1}`, tipe: 'rumah', x: K.x + h.x, z: K.z + h.z, rot: h.rot, status: 'selesai', progres: 100,
-      day: String(kota.day || ''), usulan: '', ket: `Perumahan ${nama}, Blok ${blok}. Ketuk untuk masuk atau menempati.`, tampil: true, huni: true, blok, no: k + 1, kawasan: 'perumahan' }));
-    alert(`Perumahan ${nama} · Blok ${blok} (40 rumah) dibuat. Klik "Simpan & Publikasikan" supaya muncul di peta.`);
+    for (let k = 1; k <= 40; k++) bs.push({ id: `rmh-${blok}${k}`, nama: `Rumah Blok ${blok} No. ${k}`, tipe: 'rumah', status: 'selesai', huni: true, blok, no: k, kawasan: 'perumahan' });
+    return blok;
+  };
+  const kavKosong = () => KAVLING_PERUMAHAN.map((_, i) => i).filter(i => !(kota.perumahan || []).some(p => p.kavling === i));
+  on('addKompleks', () => {
+    const kav = kavKosong()[0];
+    if (kav == null) { alert('Semua kavling perumahan sudah terisi.'); return; }
+    const nama = (prompt('Nama perumahan untuk blok baru ini?', NAMA_PERUMAHAN[Math.floor(kav / 5)] || 'Delta Asri') || '').trim();
+    if (!nama) return;
+    const blok = buatBlok(kav, nama);
+    alert(blok ? `Perumahan ${nama} · Blok ${blok} (40 rumah) dibuat. Klik "Simpan & Publikasikan" supaya muncul di peta.` : 'Huruf blok sudah habis (A–Z).');
+  });
+  on('isiSemua', () => {
+    const ks = kavKosong();
+    if (!ks.length) { alert('Semua kavling perumahan sudah terisi.'); return; }
+    if (!confirm(`Bangun ${ks.length} blok baru (${ks.length * 40} rumah) sekaligus?\nNama perumahan otomatis per baris: ${NAMA_PERUMAHAN.join(', ')}. Nama bisa diganti setelahnya.`)) return;
+    let n = 0; for (const k of ks) { if (buatBlok(k, NAMA_PERUMAHAN[Math.floor(k / 5)] || 'Delta Asri')) n++; }
+    alert(`${n} blok (${n * 40} rumah) dibuat. Klik "Simpan & Publikasikan" supaya muncul di peta.`);
   });
   $('isi').querySelectorAll('[data-hapusblok]').forEach(b => b.onclick = () => {
     const i = +b.dataset.hapusblok, p = kota.perumahan[i];

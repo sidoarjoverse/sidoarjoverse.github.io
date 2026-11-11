@@ -8,13 +8,17 @@ export const TIPE_LIST = [
   { id: 'lapangan', label: 'Lapangan Bola' }, { id: 'kantor', label: 'Gedung / Kantor' },
 ];
 
-// Kawasan Perumahan (barat kota): kavling 22 × 36, pintu masuk di sisi +z, 40 rumah per blok
-export const KAV_W = 22, KAV_D = 36;
+// Kawasan Perumahan (barat kota): 25 kavling (5 × 5), 1 kavling = 1 blok = 40 rumah → 1000 rumah.
+// Kavling 37 × 54 m, pintu masuk (gapura) di sisi +z menghadap jalan. Rumah berteras, jarak antar rumah 4,6 m.
+export const KAV_W = 37, KAV_D = 54;
+export const KAV_KOLOM = [-62, -106, -150, -194, -238], KAV_BARIS = [-30, -92, -154, -216, -278];
 export const KAVLING_PERUMAHAN = [];
-for (const cz of [-20, -60]) for (const cx of [-48, -76, -104, -132]) KAVLING_PERUMAHAN.push({ x: cx, z: cz });
-// tata letak 40 rumah di dalam kavling (koordinat lokal): 4 baris × 10 rumah, 2 jalan paving
+for (const cz of KAV_BARIS) for (const cx of KAV_KOLOM) KAVLING_PERUMAHAN.push({ x: cx, z: cz });
+// nama bawaan: tiap 5 kavling (1 baris) = 1 perumahan
+export const NAMA_PERUMAHAN = ['Safira Garden', 'Delta Asri', 'Griya Bandeng Permai', 'Taman Kenari', 'Puri Tambak Sari'];
+// tata letak 40 rumah di dalam kavling (koordinat lokal): 4 deret × 10 rumah menghadap 2 jalan paving (x = ±10)
 export function tataRumahBlok() {
-  const kolom = [[-9.1, 270], [-2.1, 90], [2.1, 270], [9.1, 90]], hasil = [];
-  kolom.forEach(([x, rot]) => { for (let i = 0; i < 10; i++) hasil.push({ x, z: 12.4 - i * 3.2, rot }); });
+  const kolom = [[-15.3, 270], [-4.7, 90], [4.7, 270], [15.3, 90]], hasil = [];
+  kolom.forEach(([x, rot]) => { for (let i = 0; i < 10; i++) hasil.push({ x, z: 18.5 - i * 4.6, rot }); });
   return hasil;
 }
