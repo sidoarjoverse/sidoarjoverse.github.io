@@ -509,7 +509,7 @@ function stepBangjo(t) {
 }
 
 // rumah warga perumahan: berteras, tiang, kanopi, lampu teras, pagar tanaman. (x, z) = pusat badan rumah, rot = derajat (sama dengan holder: depan menghadap +z diputar -rot)
-function rumahTeras(vb, x, z, rot, c, r) {
+function rumahTeras(vb, x, z, rot, c, r, vbMobil = vb) {
   const th = -rot * Math.PI / 180, cs = Math.round(Math.cos(th)), sn = Math.round(Math.sin(th)), putar = Math.abs(sn) === 1;
   const B = (lx, y, lz, w, h, d, col, bola) => {
     const wx = x + lx * cs + lz * sn, wz = z - lx * sn + lz * cs;
@@ -537,15 +537,38 @@ function rumahTeras(vb, x, z, rot, c, r) {
   B(1.35, 0.15, 1.95, 0.12, 1.9, 0.12, '#ece7de');                           // tiang teras
   B(0.75, 0.15, 2.0, 0.9, 0.05, 1.3, '#cfc8b8');                             // jalan setapak
   B(-0.6, 0, 2.2, 1.7, 0.17, 1.85, '#b3ada3');                               // carport
-  if (r() < 0.65) {                                                          // mobil
+  {                                                                          // mobil (gratis untuk tiap rumah)
     const mb = ['#c0392b', '#2c3e50', '#ecf0f1', '#7f8c8d', '#2f6db5', '#1b1b1b'][Math.floor(r() * 6)];
-    B(-0.6, 0.3, 2.2, 0.95, 0.38, 1.75, mb); B(-0.6, 0.68, 2.12, 0.86, 0.32, 1.0, '#9fb3c1');
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) B(-0.6 + sx * 0.46, 0.17, 2.2 + sz * 0.55, 0.1, 0.26, 0.3, '#1d1f22');
+    const M = (lx, y, lz, w, h, d, col) => { const wx = x + lx * cs + lz * sn, wz = z - lx * sn + lz * cs; vbMobil.box(wx, y, wz, putar ? d : w, h, putar ? w : d, col); };
+    M(-0.6, 0.3, 2.2, 0.95, 0.38, 1.75, mb); M(-0.6, 0.68, 2.12, 0.86, 0.32, 1.0, '#9fb3c1');
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) M(-0.6 + sx * 0.46, 0.17, 2.2 + sz * 0.55, 0.1, 0.26, 0.3, '#1d1f22');
   }
   B(1.5, 0, 3.05, 1.4, 0.55, 0.08, GELAP); B(2.2, 0, 3.05, 0.2, 0.75, 0.2, '#ece7de'); B(0.75, 0, 3.05, 0.2, 0.75, 0.2, '#ece7de');   // pagar minimalis
   B(1.95, 0.15, 2.85, 0.07, 0.55, 0.07, GELAP); B(1.95, 0.7, 2.85, 0.14, 0.12, 0.14, 'win');   // lampu taman
   B(1.75, 0.15, 2.35, 0.5, 0.42, 0.5, '#5f8a3a'); B(-1.1, 0.15, -1.75, 0.4, 0.9, 0.4, '#4f7a35');   // tanaman
   B(2.3, 0, 0.6, 0.3, 0.55, 4.0, '~#5f8a3a');                                // pagar tanaman pembatas
+}
+// model rumah lama (1 lantai berteras), dipakai video "sebelum–sesudah" (kota.modelRumah = "lama")
+function rumahTerasLama(vb, x, z, rot, c, r) {
+  const th = -rot * Math.PI / 180, cs = Math.round(Math.cos(th)), sn = Math.round(Math.sin(th)), putar = Math.abs(sn) === 1;
+  const B = (lx, y, lz, w, h, d, col, bola) => {
+    const wx = x + lx * cs + lz * sn, wz = z - lx * sn + lz * cs;
+    vb[bola ? 'bola' : 'box'](wx, y, wz, putar ? d : w, h, putar ? w : d, col);
+  };
+  const atap = ['#b5523b', '#8e3b2e', '#9c4a2f', '#6f4a3a', '#3f5866'][Math.floor(r() * 5)];
+  B(0, 0, 0.6, 3.4, 0.18, 4.4, '#bdb5a6');                     // pondasi + lantai teras
+  B(0, 0.18, 0, 3.0, 2.0, 2.6, c);                            // badan rumah
+  B(0, 2.18, 0, 3.5, 0.28, 3.1, atap); B(0, 2.46, 0, 2.9, 0.28, 2.3, atap); B(0, 2.74, 0, 2.1, 0.28, 1.4, atap); B(0, 3.02, 0, 1.1, 0.2, 0.6, atap);
+  B(0, 0.18, 2.0, 3.0, 0.06, 1.4, '#e3d5bb');                 // lantai teras (keramik)
+  for (const s of [-1, 1]) B(s * 1.38, 0.24, 2.58, 0.14, 1.86, 0.14, '#f4efe6');   // tiang teras
+  B(0, 2.08, 2.05, 3.3, 0.12, 1.6, atap);                     // kanopi teras
+  B(-0.55, 0.24, 1.31, 0.62, 1.28, 0.05, '#6d4527');          // pintu
+  B(0.7, 0.95, 1.31, 0.8, 0.62, 0.05, 'win');                 // jendela depan
+  for (const s of [-1, 1]) B(s * 1.51, 0.95, 0, 0.05, 0.6, 0.8, 'win');
+  B(0, 1.9, 1.33, 0.18, 0.1, 0.06, 'win');                    // lampu teras
+  B(0.95, 0.24, 2.35, 0.32, 0.3, 0.32, '#a0522d'); B(0.95, 0.5, 2.35, 0.5, 0.45, 0.5, '~#6f9a45', true);   // pot bunga
+  B(2.3, 0, 0.7, 0.32, 0.55, 3.9, '~#5f8a3a');                // pagar tanaman pembatas dengan tetangga
+  B(-0.55, 0, 3.05, 0.8, 0.06, 0.8, '#cfc8b8');               // jalan setapak ke teras
 }
 export const TIPE = {
   gapura: { label: 'Gapura', w: 8, d: 2, build(vb, b, ex) {
@@ -1356,10 +1379,11 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     }
     const geoKena = new THREE.BoxGeometry(3.4, 4.0, 3.4).translate(0, 2.0, 0), matKena = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false });
     for (const [blok, rs] of perBlok) {
-      const vb = new VB(), kena = new THREE.InstancedMesh(geoKena, matKena, rs.length), m4 = new THREE.Matrix4(), daftar = [];
+      const vb = new VB(), vbMobil = new VB(), kena = new THREE.InstancedMesh(geoKena, matKena, rs.length), m4 = new THREE.Matrix4(), daftar = [];
       rs.forEach((b, k) => {
         const r = rng(b.id);
-        rumahTeras(vb, b.x, b.z, b.rot, PALET_RUMAH[Math.floor(r() * PALET_RUMAH.length)], r);
+        if (kota.modelRumah === 'lama') rumahTerasLama(vb, b.x, b.z, b.rot, PALET_RUMAH[Math.floor(r() * PALET_RUMAH.length)], r);
+        else rumahTeras(vb, b.x, b.z, b.rot, PALET_RUMAH[Math.floor(r() * PALET_RUMAH.length)], r, vbMobil);
         m4.makeTranslation(b.x, 0, b.z); kena.setMatrixAt(k, m4);
         const holder = new THREE.Group(); holder.position.set(b.x, 0, b.z);
         holder.userData.pick = { jenis: 'bangunan', data: b }; holder.userData.kawasan = true;
@@ -1368,7 +1392,8 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
         bangunanPos.set(b.id, new THREE.Vector3(b.x, 0, b.z));
         fps.push({ x: b.x, z: b.z, w: 3.1, d: 3.1, b });
       });
-      bangunanG.add(vb.build());
+      const gr = vb.build(); gr.userData.barisKawasan = blok; bangunanG.add(gr);   // ditandai: video bisa "membangun" per baris
+      if (vbMobil.parts.size) { const gm = vbMobil.build(); gm.userData.mobilKawasan = blok; bangunanG.add(gm); }
       kena.userData.pickList = daftar; kena.instanceMatrix.needsUpdate = true; kena.computeBoundingSphere(); bangunanG.add(kena);
     }
     for (const b of kota.bangunan || []) {

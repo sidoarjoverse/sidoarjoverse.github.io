@@ -2,7 +2,7 @@
 // Semua adegan dibaca dari naskah.json (kamera, pose, stiker, efek suara per baris).
 // Pakai: video.html?dir=video/<nama>&skala=1.5
 import * as THREE from 'three';
-import { createWorld, makeCakDarjo, makeAyam, buatAkuarium, makeCharUmum } from './world.js';
+import { createWorld, makeCakDarjo, makeAyam, buatAkuarium, makeCharUmum, rng } from './world.js';
 import { adeganRumah } from './rumah.js';
 
 const W = 720, H = 1280;
@@ -49,7 +49,7 @@ renderer.setPixelRatio(SKALA);
 renderer.setSize(W, H, false);
 camera.fov = 40; camera.aspect = W / H; camera.updateProjectionMatrix();
 
-const darjo = makeCakDarjo();
+const darjo = makeCakDarjo(NASKAH.darjoOpt || {});   // mis. {"helm": "#ffd166"} → Cak Darjo jadi mandor
 const senter = new THREE.SpotLight('#fff3d0', 0, 16, 0.32, 0.5, 1.2); senter.position.set(0.35, 1.25, 0.3); darjo.add(senter); darjo.add(senter.target); senter.target.position.set(0.2, 0.2, 6);
 const lampuDarjo = new THREE.PointLight('#ffe7c2', 0, 9, 1.4); lampuDarjo.position.set(0.9, 2.7, 3.4); scene.add(lampuDarjo);   // lampu muka Cak Darjo saat malam
 darjo.position.set(0, 0, 0.6);
@@ -133,6 +133,63 @@ if (kamu) { pasang(kamu, TITIK_W.x, TITIK_W.z, 0.35); kamu._s = kamu.g.scale.x; 
 const labelBangunan = [];
 const kumpulLabel = () => { labelBangunan.length = 0; scene.traverse(o => { if (o.isSprite && o.material.blending !== THREE.AdditiveBlending && !world.karakter().some(ch => ch.g === o.parent)) labelBangunan.push(o); }); };
 kumpulLabel();
+
+// ---------- proyek perumahan (video): rumah tumbuh per baris, ganti model lama → baru, mobil gratis muncul
+let grupRumah = [], grupMobil = [], modelKini = kota.modelRumah === 'lama' ? 'lama' : 'baru';
+function kumpulRumah() { grupRumah = []; grupMobil = []; scene.traverse(o => { if (o.userData.barisKawasan != null) grupRumah.push(o); if (o.userData.mobilKawasan != null) grupMobil.push(o); }); }
+kumpulRumah();
+function aturRumah(t, i) {
+  const s = SEG[i], u = (t - mulai(i)) / (selesai(i) - mulai(i));
+  const mdl = s.modelRumah || NASKAH.modelRumah || 'baru';
+  if (mdl !== modelKini) { modelKini = mdl; kota.modelRumah = mdl === 'lama' ? 'lama' : ''; world.setKota(kota); kumpulLabel(); kumpulRumah(); penghuniKini = ''; }
+  if (NASKAH.bangunRumah) {      // naskah baris "naik": [[baris 0–4, mulai 0–1, selesai 0–1], ...]
+    for (const g of grupRumah) {
+      const b = g.userData.barisKawasan; let p = 0;
+      for (let k = 0; k <= i; k++) for (const [bb, a, z] of SEG[k].naik || []) if (bb === b || bb === 'semua') p = k < i ? 1 : Math.max(p, ease((u - a) / Math.max(0.01, z - a)));
+      g.scale.y = Math.max(0.001, p); g.visible = p > 0.003;
+    }
+  }
+  if (NASKAH.mobilNanti) {       // naskah baris "mobil": [mulai, selesai] → mobil muncul (baris demi baris)
+    let pm = 0;
+    for (let k = 0; k <= i; k++) { const m = SEG[k].mobil; if (m) pm = k < i ? 1 : Math.min(1, Math.max(0, (u - m[0]) / Math.max(0.01, (m[1] ?? m[0] + 0.3) - m[0]))); }
+    for (const g of grupMobil) { const q = Math.min(1, Math.max(0, pm * 1.5 - g.userData.mobilKawasan * 0.12)); g.scale.y = Math.max(0.001, q < 1 ? easeOut(q) * (1 + Math.sin(q * Math.PI) * 0.25) : 1); g.visible = q > 0.003; }
+  }
+}
+// kerumunan tukang (ratusan, ringan): naskah "kerumunan": {n, area: [x0, z0, x1, z1]}; baris "kerumunan": true untuk menampilkan
+const KER = (() => {
+  const K = NASKAH.kerumunan; if (!K) return null;
+  const n = K.n || 300, r = rng(11), [x0, z0, x1, z1] = K.area, g = new THREE.Group(); scene.add(g);
+  const bagian = [
+    [new THREE.BoxGeometry(0.44, 0.62, 0.28).translate(0, 0.86, 0), '#f28c28'],    // rompi oranye
+    [new THREE.BoxGeometry(0.38, 0.56, 0.24).translate(0, 0.28, 0), '#3d405b'],    // celana
+    [new THREE.SphereGeometry(0.21, 10, 8).translate(0, 1.38, 0), '#c98d5a'],      // kepala
+    [new THREE.SphereGeometry(0.25, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, 1.44, 0), '#ffd166'],   // helm
+    [new THREE.BoxGeometry(0.1, 0.5, 0.1).translate(0, -0.22, 0), '#c98d5a'],      // lengan palu (diputar)
+  ];
+  const ims = bagian.map(([geo, c]) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }), n); m.castShadow = true; g.add(m); return m; });
+  const orang = [];
+  for (let k = 0; k < n; k++) orang.push({ x: x0 + r() * (x1 - x0), z: z0 + r() * (z1 - z0), ry: r() * 6.28, f: r() * 6.28, v: 5 + r() * 4, s: 0.85 + r() * 0.3 });
+  const o = new THREE.Object3D(), lg = new THREE.Object3D();
+  return { g, update(t) {
+    orang.forEach((p, k) => {
+      const ayun = Math.sin(t * p.v + p.f);
+      o.position.set(p.x, Math.max(0, ayun) * 0.06, p.z); o.rotation.set(0, p.ry, Math.sin(t * 1.3 + p.f) * 0.05); o.scale.setScalar(p.s); o.updateMatrix();
+      for (let j = 0; j < 4; j++) ims[j].setMatrixAt(k, o.matrix);
+      lg.position.set(0.28, 1.15, 0.05); lg.rotation.set(-1.0 - Math.max(0, ayun) * 1.2, 0, 0); lg.updateMatrix();
+      ims[4].setMatrixAt(k, o.matrix.clone().multiply(lg.matrix));
+    });
+    ims.forEach(m => { m.instanceMatrix.needsUpdate = true; m.computeBoundingSphere(); });
+  } };
+})();
+// tukang dekat kamera (detail): naskah "tukangDekat": [[x, z, ry], ...]
+const TUKANG_DEKAT = (NASKAH.tukangDekat || []).map(([x, z, ry], k) => {
+  const c = makeCharUmum({ kulit: ['#c98d5a', '#a8714a', '#e0b08a'][k % 3], baju: ['#f28c28', '#ffd166', '#2a9d8f'][k % 3], celana: '#3d405b', rambut: '#1a1a1a' }, { helm: '#ffd166' });
+  c.scale.setScalar(0.62); c.position.set(x, 0, z); c.rotation.y = ry || 0; scene.add(c); return c;
+});
+function aturKerumunan(t, s) {
+  if (KER) { KER.g.visible = !!s.kerumunan; if (s.kerumunan) KER.update(t); }
+  TUKANG_DEKAT.forEach((c, k) => { c.visible = !!s.kerumunan; const a = c.userData.anim; a.arms[1].rotation.x = -1.2 + Math.abs(Math.sin(t * 7 + k)) * -1.1; a.arms[0].rotation.x = -0.4; });
+}
 // jalan tanah → aspal di tengah kalimat (naskah baris "aspal": fraksi)
 const jalanAwal = !!kota.jalan;
 function aturJalan(t) {
@@ -557,6 +614,10 @@ function gambarStiker(st, s, i, t, slot) {
         c.restore();
       });
     }
+    case 'angka': {           // penghitung bebas: {pre, post, dari, ke, lama}
+      const u = Math.min(1, Math.max(0, (t - t0 - 0.2) / (st.lama || 2))), v = Math.round((st.dari || 0) + ((st.ke || 0) - (st.dari || 0)) * ease(u));
+      return pil((st.pre || '') + v.toLocaleString('id-ID') + (st.post || ''), W / 2, st.y || 640, (st.lanjut ? 1 : ps) * (1 + 0.05 * Math.max(0, Math.sin(t * 9)) * (u < 1 ? 1 : 0)), st.warna || 'oren', st.size || 46);
+    }
     case 'kas': {             // penghitung KAS KOTA yang naik dari "dari" ke "ke"
       const u = Math.min(1, Math.max(0, (t - t0 - 0.3) / (st.lama || 1.6))), v = Math.round(((st.dari || 0) + ((st.ke || 0) - (st.dari || 0)) * ease(u)) / 1000) * 1000;
       const lbl = '💰 KAS KOTA: Rp' + v.toLocaleString('id-ID');
@@ -809,7 +870,7 @@ window.video = {
       const u = t - (s.start + s.dur * s.getar);
       if (u > 0 && u < 1.1) { const a = 0.35 * (1 - u / 1.1); camera.position.x += Math.sin(t * 91) * a; camera.position.y += Math.sin(t * 73) * a * 0.7; }
     }
-    aturHantu(t, s); aturCahaya(t, s);
+    aturHantu(t, s); aturCahaya(t, s); aturRumah(t, i); aturKerumunan(t, s);
     { const jm = NASKAH.jam ?? 9.3, gelap = (jm > 18.5 || jm < 5.5) && s.darjo !== 'pojok'; lampuDarjo.intensity = gelap && !s.footage ? 16 : 0; }
     senter.intensity = s.footage ? 40 : 0;
     if (!s.footage) { const a = darjo.userData.anim; a.legs[0].rotation.x = a.legs[1].rotation.x = 0; }

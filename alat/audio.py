@@ -28,7 +28,14 @@ def petir():
 def seram():
     x = t(2.4); f = 110 + 40 * np.sin(2 * np.pi * 0.7 * x); env = np.sin(np.pi * x / 2.4) ** 2
     return 0.35 * env * (np.sin(2 * np.pi * np.cumsum(f) / SR) + 0.5 * np.sin(2 * np.pi * np.cumsum(f * 1.5) / SR))
-SFX = {'petir': petir(), 'seram': seram(), 'pop': pop(), 'whoosh': whoosh(), 'krik': krik(), 'tada': tada(), 'stempel': stempel()}
+def palu():   # ketukan palu & gergaji proyek, ramai
+    out = np.zeros(int(2.4 * SR))
+    for k in range(14):
+        x = t(0.09); i = int((k * 0.17 + rng.random() * 0.05) * SR); f = 1400 + rng.random() * 900
+        h = 0.45 * np.sin(2 * np.pi * f * x) * np.exp(-x * 60) + 0.25 * rng.standard_normal(len(x)) * np.exp(-x * 80)
+        out[i:i + len(h)] += h
+    return out
+SFX = {'palu': palu(), 'petir': petir(), 'seram': seram(), 'pop': pop(), 'whoosh': whoosh(), 'krik': krik(), 'tada': tada(), 'stempel': stempel()}
 mix = baca('vo_track.wav').copy()
 for tt, j in json.load(open('sfx.json')):
     s = SFX.get(j); i = int(tt * SR)
