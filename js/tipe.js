@@ -14,8 +14,12 @@ export const KAV_W = 37, KAV_D = 54;
 export const KAV_KOLOM = [-62, -106, -150, -194, -238], KAV_BARIS = [-30, -92, -154, -216, -278];
 export const KAVLING_PERUMAHAN = [];
 for (const cz of KAV_BARIS) for (const cx of KAV_KOLOM) KAVLING_PERUMAHAN.push({ x: cx, z: cz });
-// nama bawaan: tiap 5 kavling (1 baris) = 1 perumahan
-export const NAMA_PERUMAHAN = ['Safira Garden', 'Delta Asri', 'Griya Bandeng Permai', 'Taman Kenari', 'Puri Tambak Sari'];
+// nama bawaan: 1 kavling (40 rumah) = 1 perumahan, nama diambil dari perumahan-perumahan di Sidoarjo
+export const NAMA_PERUMAHAN = ['Safira Garden', 'Pondok Jati', 'Taman Pinang Indah', 'Pondok Mutiara', 'Puri Surya Jaya',
+  'Gading Fajar', 'Deltasari Indah', 'Pondok Tjandra Indah', 'Sidokare Indah', 'Magersari Permai',
+  'Kahuripan Nirwana', 'Bumi Citra Fajar', 'Griya Candramas', 'Wisma Tropodo', 'Citra Harmoni',
+  'Graha Kota', 'Mutiara Citra Graha', 'Puri Indah', 'Pucang Indah', 'Taman Anggun Sejahtera',
+  'Candiloka', 'Pondok Wage Indah', 'Bluru Permai', 'Juanda Harapan Permai', 'Taman Jenggala'];
 // tata letak 40 rumah di dalam kavling (koordinat lokal): 4 deret × 10 rumah menghadap 2 jalan paving (x = ±10)
 export function tataRumahBlok() {
   const kolom = [[-15.3, 270], [-4.7, 90], [4.7, 270], [15.3, 90]], hasil = [];

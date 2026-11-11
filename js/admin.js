@@ -292,7 +292,7 @@ function render() {
   on('addKompleks', () => {
     const kav = kavKosong()[0];
     if (kav == null) { alert('Semua kavling perumahan sudah terisi.'); return; }
-    const nama = (prompt('Nama perumahan untuk blok baru ini?', NAMA_PERUMAHAN[Math.floor(kav / 5)] || 'Delta Asri') || '').trim();
+    const nama = (prompt('Nama perumahan untuk blok baru ini?', NAMA_PERUMAHAN[kav] || 'Delta Asri') || '').trim();
     if (!nama) return;
     const blok = buatBlok(kav, nama);
     alert(blok ? `Perumahan ${nama} · Blok ${blok} (40 rumah) dibuat. Klik "Simpan & Publikasikan" supaya muncul di peta.` : 'Huruf blok sudah habis (A–Z).');
@@ -300,8 +300,8 @@ function render() {
   on('isiSemua', () => {
     const ks = kavKosong();
     if (!ks.length) { alert('Semua kavling perumahan sudah terisi.'); return; }
-    if (!confirm(`Bangun ${ks.length} blok baru (${ks.length * 40} rumah) sekaligus?\nNama perumahan otomatis per baris: ${NAMA_PERUMAHAN.join(', ')}. Nama bisa diganti setelahnya.`)) return;
-    let n = 0; for (const k of ks) { if (buatBlok(k, NAMA_PERUMAHAN[Math.floor(k / 5)] || 'Delta Asri')) n++; }
+    if (!confirm(`Bangun ${ks.length} blok baru (${ks.length * 40} rumah) sekaligus?\nSetiap blok = 1 perumahan (40 rumah), namanya otomatis dari perumahan-perumahan di Sidoarjo. Nama bisa diganti setelahnya.`)) return;
+    let n = 0; for (const k of ks) { if (buatBlok(k, NAMA_PERUMAHAN[k] || 'Delta Asri')) n++; }
     alert(`${n} blok (${n * 40} rumah) dibuat. Klik "Simpan & Publikasikan" supaya muncul di peta.`);
   });
   $('isi').querySelectorAll('[data-hapusblok]').forEach(b => b.onclick = () => {
