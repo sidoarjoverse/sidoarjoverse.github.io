@@ -43,6 +43,7 @@ world.setKota(kota);
 world.setWarga(NASKAH.warga || [], NASKAH.kamu || '');
 world.maskot().g.visible = false;
 world.setJam(NASKAH.jam ?? 9.3);
+if (NASKAH.kabut) world.setKabut(NASKAH.kabut);
 const { scene, camera, renderer } = world;
 renderer.setPixelRatio(SKALA);
 renderer.setSize(W, H, false);

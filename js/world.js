@@ -1606,6 +1606,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     x.fillStyle = gr; x.fillRect(0, 0, 4, 256); texLangit.needsUpdate = true; return texLangit;
   }
   let jamTetap = null; // dipakai mode video: jam langit tetap
+  let kabutSkala = 1;   // mode video: kabut bisa dibuat lebih jauh untuk shot udara
   function updateLangit() {
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
     const h = jamTetap ?? (now.getHours() + now.getMinutes() / 60);
@@ -1619,7 +1620,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     sun.intensity = (s0 + (s1 - s0) * k) * (1 - hujan * 0.7);
     if (hujan) { cA.lerp(cB.set('#8f9ba4'), hujan * 0.3); scene.fog.color.copy(cA); scene.background = langitGradasi(cA, malam); }
     warnaGunung(scene.fog.color, malam);
-    scene.fog.near = 60 - hujan * 12; scene.fog.far = 165 - hujan * 30;
+    scene.fog.near = (60 - hujan * 12) * kabutSkala; scene.fog.far = (165 - hujan * 30) * kabutSkala;
     const ang = ((h - 6) / 12) * Math.PI;
     sunOff.set(Math.cos(ang) * 40, Math.max(12, Math.sin(ang) * 55), 22);
     sun.position.copy(sunOff).add(sun.target.position);
@@ -1877,6 +1878,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     // ----- untuk mode video (manual)
     frame(dt, t) { langkah(dt, t, true); },
     setJam(h) { jamTetap = h; updateLangit(); },
+    setKabut(k) { kabutSkala = k || 1; updateLangit(); },
     scene, camera, renderer, controls,
     posisiPemain: () => pemain ? [pemain.g.position.x, pemain.g.position.z] : null,
     bisaDi,
