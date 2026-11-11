@@ -515,20 +515,37 @@ function rumahTeras(vb, x, z, rot, c, r) {
     const wx = x + lx * cs + lz * sn, wz = z - lx * sn + lz * cs;
     vb[bola ? 'bola' : 'box'](wx, y, wz, putar ? d : w, h, putar ? w : d, col);
   };
-  const atap = ['#b5523b', '#8e3b2e', '#9c4a2f', '#6f4a3a', '#3f5866'][Math.floor(r() * 5)];
-  B(0, 0, 0.6, 3.4, 0.18, 4.4, '#bdb5a6');                     // pondasi + lantai teras
-  B(0, 0.18, 0, 3.0, 2.0, 2.6, c);                            // badan rumah
-  B(0, 2.18, 0, 3.5, 0.28, 3.1, atap); B(0, 2.46, 0, 2.9, 0.28, 2.3, atap); B(0, 2.74, 0, 2.1, 0.28, 1.4, atap); B(0, 3.02, 0, 1.1, 0.2, 0.6, atap);
-  B(0, 0.18, 2.0, 3.0, 0.06, 1.4, '#e3d5bb');                 // lantai teras (keramik)
-  for (const s of [-1, 1]) B(s * 1.38, 0.24, 2.58, 0.14, 1.86, 0.14, '#f4efe6');   // tiang teras
-  B(0, 2.08, 2.05, 3.3, 0.12, 1.6, atap);                     // kanopi teras
-  B(-0.55, 0.24, 1.31, 0.62, 1.28, 0.05, '#6d4527');          // pintu
-  B(0.7, 0.95, 1.31, 0.8, 0.62, 0.05, 'win');                 // jendela depan
-  for (const s of [-1, 1]) B(s * 1.51, 0.95, 0, 0.05, 0.6, 0.8, 'win');
-  B(0, 1.9, 1.33, 0.18, 0.1, 0.06, 'win');                    // lampu teras
-  B(0.95, 0.24, 2.35, 0.32, 0.3, 0.32, '#a0522d'); B(0.95, 0.5, 2.35, 0.5, 0.45, 0.5, '~#6f9a45', true);   // pot bunga
-  B(2.3, 0, 0.7, 0.32, 0.55, 3.9, '~#5f8a3a');                // pagar tanaman pembatas dengan tetangga
-  B(-0.55, 0, 3.05, 0.8, 0.06, 0.8, '#cfc8b8');               // jalan setapak ke teras
+  // rumah modern 2 lantai: lantai atas mundur + balkon, atap datar, aksen batu & kayu, carport + mobil, pagar minimalis, lampu taman
+  const tembok = ['#f4f1ea', '#e8e2d6', '#efe6d4', '#dfe5e8', '#e9dccb', '#f6efe3'][Math.floor(r() * 6)];
+  const atas = r() < 0.5 ? '#f7f5f0' : ['#4a4f55', '#5b4636', '#3f5866'][Math.floor(r() * 3)];
+  const GELAP = '#2b2f33', KAYU = '#8a5a3a', BATU = '#8c8578';
+  B(0, 0, 0.45, 3.6, 0.15, 4.4, '#d9d2c3');                                   // pondasi halaman
+  B(0, 0.15, 0, 3.0, 1.9, 2.6, tembok);                                      // lantai 1
+  B(0, 0.15, 1.31, 3.0, 0.42, 0.05, BATU);                                   // aksen batu alam
+  B(0.75, 0.15, 1.32, 0.72, 1.5, 0.05, '#5a3a22');                           // pintu kayu
+  B(-0.6, 0.62, 1.32, 1.25, 1.0, 0.05, 'win');                               // jendela besar lantai 1
+  for (const s of [-1, 1]) B(s * 1.51, 0.75, -0.2, 0.05, 0.8, 1.0, 'win');
+  B(0, 2.05, 0.35, 3.3, 0.12, 3.3, '#ece7de');                               // plat lantai 2 + kanopi teras
+  B(0.15, 2.17, -0.25, 2.6, 1.6, 2.1, atas);                                 // lantai 2 (mundur)
+  B(-0.75, 2.25, 0.81, 0.9, 1.35, 0.05, KAYU);                               // panel kayu
+  for (let k = -1; k <= 1; k++) B(-0.75 + k * 0.28, 2.25, 0.84, 0.06, 1.35, 0.03, '#6b4428');
+  B(0.6, 2.4, 0.81, 1.15, 1.0, 0.05, 'win');                                 // jendela kaca lantai 2
+  B(0.15, 3.77, -0.2, 3.1, 0.14, 2.65, '#3b3f45');                           // atap datar
+  B(0.15, 3.91, -0.2, 2.6, 0.1, 2.2, '#4a4f55');
+  B(0.2, 2.17, 1.95, 2.9, 0.08, 0.05, GELAP); B(0.2, 2.6, 1.95, 2.9, 0.06, 0.05, GELAP);   // pagar balkon
+  for (let k = -3; k <= 3; k++) B(0.2 + k * 0.45, 2.17, 1.95, 0.04, 0.45, 0.04, GELAP);
+  B(1.35, 0.15, 1.95, 0.12, 1.9, 0.12, '#ece7de');                           // tiang teras
+  B(0.75, 0.15, 2.0, 0.9, 0.05, 1.3, '#cfc8b8');                             // jalan setapak
+  B(-0.6, 0, 2.2, 1.7, 0.17, 1.85, '#b3ada3');                               // carport
+  if (r() < 0.65) {                                                          // mobil
+    const mb = ['#c0392b', '#2c3e50', '#ecf0f1', '#7f8c8d', '#2f6db5', '#1b1b1b'][Math.floor(r() * 6)];
+    B(-0.6, 0.3, 2.2, 0.95, 0.38, 1.75, mb); B(-0.6, 0.68, 2.12, 0.86, 0.32, 1.0, '#9fb3c1');
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) B(-0.6 + sx * 0.46, 0.17, 2.2 + sz * 0.55, 0.1, 0.26, 0.3, '#1d1f22');
+  }
+  B(1.5, 0, 3.05, 1.4, 0.55, 0.08, GELAP); B(2.2, 0, 3.05, 0.2, 0.75, 0.2, '#ece7de'); B(0.75, 0, 3.05, 0.2, 0.75, 0.2, '#ece7de');   // pagar minimalis
+  B(1.95, 0.15, 2.85, 0.07, 0.55, 0.07, GELAP); B(1.95, 0.7, 2.85, 0.14, 0.12, 0.14, 'win');   // lampu taman
+  B(1.75, 0.15, 2.35, 0.5, 0.42, 0.5, '#5f8a3a'); B(-1.1, 0.15, -1.75, 0.4, 0.9, 0.4, '#4f7a35');   // tanaman
+  B(2.3, 0, 0.6, 0.3, 0.55, 4.0, '~#5f8a3a');                                // pagar tanaman pembatas
 }
 export const TIPE = {
   gapura: { label: 'Gapura', w: 8, d: 2, build(vb, b, ex) {
@@ -1298,7 +1315,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     const sp = p ? textSprite((saya ? '⭐ Rumahku · ' : '🏠 ') + p.nama, saya ? { bg: 'rgba(15,76,92,.96)', fg: '#ffd166', size: 0.9 } : { bg: 'rgba(255,255,255,.95)', fg: '#16324f', size: 0.8, border: '#2a9d8f' })
       : textSprite(h.userData.kawasan ? '🔑 Kosong' : '🔑 Kosong · ketuk untuk menempati', { bg: 'rgba(255,248,236,.95)', fg: '#8a5a00', size: 0.7, border: '#f2a33a' });
     h.userData.jarakPapan = p ? 60 : h.userData.kawasan ? 24 : 1e4;
-    sp.position.set(0, h.userData.kawasan ? 3.9 : 3.55, 0); h.add(sp); h.userData.papanRumah = sp; h.userData.papanKunci = kunci;
+    sp.position.set(0, h.userData.kawasan ? 4.7 : 3.55, 0); h.add(sp); h.userData.papanRumah = sp; h.userData.papanKunci = kunci;
     return sp;
   }
   function pasangPapanRumah() {
@@ -1337,7 +1354,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
       if (!perBlok.has(baris)) perBlok.set(baris, []);
       perBlok.get(baris).push(b);
     }
-    const geoKena = new THREE.BoxGeometry(3.4, 3.2, 3.4).translate(0, 1.6, 0), matKena = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false });
+    const geoKena = new THREE.BoxGeometry(3.4, 4.0, 3.4).translate(0, 2.0, 0), matKena = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false });
     for (const [blok, rs] of perBlok) {
       const vb = new VB(), kena = new THREE.InstancedMesh(geoKena, matKena, rs.length), m4 = new THREE.Matrix4(), daftar = [];
       rs.forEach((b, k) => {
