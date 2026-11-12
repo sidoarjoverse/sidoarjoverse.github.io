@@ -699,6 +699,13 @@ function gambarStiker(st, s, i, t, slot) {
       if (st.sub) denganSkala(W / 2, 450, popS(t, t0 + 1.0, 0.3), () => pil(st.sub, W / 2, 450, 1, 'putih', 30, 22));
       return;
     }
+    case 'kenalan':           // template perkenalan: "iki SidoarjoVerse, kota impian sing dibangun teko komen kalian"
+      return kartu(W / 2, st.y || 250, 620, 150, ps, (x, yy) => {
+        c.fillStyle = TEAL; rr(x, yy, 620, 52, [24, 24, 0, 0]); c.fill();
+        teks('🏙️ KENALAN SIK, REK!', x + 310, yy + 28, { size: 26, warna: KUNING });
+        teks(st.judul || 'SidoarjoVerse', x + 310, yy + 82, { size: 36, warna: '#16324f', bobot: 900 });
+        teks(st.sub || 'kota impian sing dibangun teko komen kalian 💬', x + 310, yy + 124, { size: 22, warna: '#5b7083', bobot: 700 });
+      }, { bg: KREM });
     case 'follow':
       return kartu(W / 2, 282, 600, 104, ps, (x, yy) => {
         c.fillStyle = TEAL; c.beginPath(); c.arc(x + 58, yy + 52, 34, 0, Math.PI * 2); c.fill();

@@ -55,3 +55,8 @@ Setiap video WAJIB dibuka dengan keterangan episode. Isi `"episode": N` (dan ops
 
 ## Aturan video: nama akun di kartu komen
 Nama akun pada kartu komen/protes di video (stiker `protes`, `tumpuk`, `komen`) memakai **username acak yang terlihat normal** (mis. `@dindaayu.07`, `@rizalfahmi_`, `@bagus_wicak`), **jangan** dibuat sesuai isi komentarnya (mis. `@offroad.waru99` untuk komen jalan) karena terlihat dikarang. Jangan pakai username yang sama berulang-ulang antar episode.
+
+## Aturan video: kalimat perkenalan (template tiap video)
+Setiap video (episode maupun spesial) memuat kalimat perkenalan setelah hook / setelah menyebut episode, supaya penonton baru langsung paham:
+> "Gawe sampeyan sing durung ngerti: iki Sidoarjo Vers, kota impian sing dibangun teko komen-komen kalian!"
+Di naskah, baris itu diberi stiker `{"jenis": "kenalan"}` (kartu "🏙️ KENALAN SIK, REK! · SidoarjoVerse · kota impian sing dibangun teko komen kalian").
