@@ -147,6 +147,7 @@ function aturRumah(t, i) {
       const b = g.userData.barisKawasan; let p = 0;
       for (let k = 0; k <= i; k++) for (const [bb, a, z] of SEG[k].naik || []) if (bb === b || bb === 'semua') p = k < i ? 1 : Math.max(p, ease((u - a) / Math.max(0.01, z - a)));
       g.scale.y = Math.max(0.001, p); g.visible = p > 0.003;
+      if (!NASKAH.mobilNanti) for (const m of grupMobil) if (m.userData.mobilKawasan === b) { m.scale.y = g.scale.y; m.visible = g.visible; }   // kendaraan ikut rumahnya
     }
   }
   if (NASKAH.mobilNanti) {       // naskah baris "mobil": [mulai, selesai] → mobil muncul (baris demi baris)
@@ -186,7 +187,54 @@ const TUKANG_DEKAT = (NASKAH.tukangDekat || []).map(([x, z, ry], k) => {
   const c = makeCharUmum({ kulit: ['#c98d5a', '#a8714a', '#e0b08a'][k % 3], baju: ['#f28c28', '#ffd166', '#2a9d8f'][k % 3], celana: '#3d405b', rambut: '#1a1a1a' }, { helm: '#ffd166' });
   c.scale.setScalar(0.62); c.position.set(x, 0, z); c.rotation.y = ry || 0; scene.add(c); return c;
 });
+// warga tidur di jalan / rumput (naskah "gelandangan": {n, area}; baris "gelandangan": true)
+const GEL = (() => {
+  const K = NASKAH.gelandangan; if (!K) return null;
+  const n = K.n || 400, r = rng(23), [x0, z0, x1, z1] = K.area, g = new THREE.Group(); scene.add(g);
+  const part = [
+    [new THREE.BoxGeometry(0.5, 0.26, 1.15).translate(0, 0.13, 0.05), null],       // sarung / selimut (warna per orang)
+    [new THREE.SphereGeometry(0.2, 10, 8).translate(0, 0.2, -0.68), '#c98d5a'],     // kepala
+    [new THREE.BoxGeometry(0.42, 0.08, 0.3).translate(0, 0.04, -0.72), '#e9e2d0'],  // bantal kardus
+  ];
+  const SARUNG = ['#2a6f97', '#8d5a97', '#b5523b', '#3d6b3f', '#c9a227', '#5b4636', '#7f8c8d'];
+  const ims = part.map(([geo, c]) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: c || '#ffffff', roughness: 0.9 }), n); m.castShadow = true; g.add(m); return m; });
+  const o = new THREE.Object3D(), cl = new THREE.Color(), daftar = [];
+  for (let k = 0; k < n; k++) {
+    o.position.set(x0 + r() * (x1 - x0), 0, z0 + r() * (z1 - z0)); o.rotation.set(0, r() * 6.28, 0); o.scale.setScalar(0.9 + r() * 0.25); o.updateMatrix();
+    ims.forEach(m => m.setMatrixAt(k, o.matrix)); ims[0].setColorAt(k, cl.set(SARUNG[Math.floor(r() * SARUNG.length)]));
+    daftar.push(o.matrix.clone());
+  }
+  ims.forEach(m => { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; m.computeBoundingSphere(); });
+  return { g, ims, daftar };
+})();
+// monumen raksasa berisi nama warga (naskah "monumen": {x, z, nama: [...]}; baris "monumen": true)
+const MON = (() => {
+  const K = NASKAH.monumen; if (!K) return null;
+  const g = new THREE.Group(); g.position.set(K.x, 0, K.z); scene.add(g);
+  const emas = new THREE.MeshStandardMaterial({ color: '#d4af37', metalness: 0.6, roughness: 0.35, emissive: '#5a4300', emissiveIntensity: 0.25 });
+  const batu = new THREE.MeshStandardMaterial({ color: '#efe6d2', roughness: 0.7 });
+  const kotak = (w, h, d, y, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.y = y + h / 2; b.castShadow = true; g.add(b); return b; };
+  kotak(16, 0.6, 16, 0, batu); kotak(12.5, 0.6, 12.5, 0.6, batu); kotak(9, 0.6, 9, 1.2, batu);
+  kotak(5.2, 12, 5.2, 1.8, batu); kotak(4.2, 8, 4.2, 13.8, batu); kotak(3, 5, 3, 21.8, batu);
+  const puncak = new THREE.Mesh(new THREE.ConeGeometry(2.1, 5, 4), emas); puncak.position.y = 29.3; puncak.rotation.y = Math.PI / 4; g.add(puncak);
+  const bintang = new THREE.Mesh(new THREE.IcosahedronGeometry(0.9, 0), emas); bintang.position.y = 32.6; g.add(bintang);
+  // prasasti nama warga di 4 sisi
+  const nama = K.nama || [];
+  for (let sisi = 0; sisi < 4; sisi++) {
+    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 1180; const c2 = cv.getContext('2d');
+    c2.fillStyle = '#20304a'; c2.fillRect(0, 0, 512, 1180); c2.strokeStyle = '#d4af37'; c2.lineWidth = 14; c2.strokeRect(10, 10, 492, 1160);
+    c2.fillStyle = '#ffd166'; c2.font = '900 38px sans-serif'; c2.textAlign = 'center'; c2.fillText('WARGA SIDOARJOVERSE', 256, 70);
+    c2.font = '700 25px sans-serif'; c2.fillStyle = '#f4ecd8';
+    for (let k = 0; k < 66; k++) { const nm = nama[(k * 4 + sisi) % Math.max(1, nama.length)] || ''; c2.fillText(nm, 128 + (k % 2) * 256, 120 + Math.floor(k / 2) * 32); }
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 10.6), new THREE.MeshStandardMaterial({ map: tx, roughness: 0.6, emissive: '#ffffff', emissiveMap: tx, emissiveIntensity: 0.25 }));
+    const a = sisi * Math.PI / 2; pl.position.set(Math.sin(a) * 2.62, 7.8, Math.cos(a) * 2.62); pl.rotation.y = a; g.add(pl);
+  }
+  g.visible = false; return g;
+})();
 function aturKerumunan(t, s) {
+  if (GEL) GEL.g.visible = !!s.gelandangan;
+  if (MON) { MON.visible = !!s.monumen; if (s.monumen) { const u = Math.min(1, (t - mulai(segPada(t))) / 1.2); MON.scale.y = s.monumenNaik ? Math.max(0.01, easeOut(u)) : 1; MON.children.at(-6) && 0; } }
   if (KER) { KER.g.visible = !!s.kerumunan; if (s.kerumunan) KER.update(t); }
   TUKANG_DEKAT.forEach((c, k) => { c.visible = !!s.kerumunan; const a = c.userData.anim; a.arms[1].rotation.x = -1.2 + Math.abs(Math.sin(t * 7 + k)) * -1.1; a.arms[0].rotation.x = -0.4; });
 }
@@ -356,14 +404,15 @@ function animDarjo(t, f) {
   if (pakaiAkua) {     // dua tangan memegang akuarium; bandeng & udang "gelut"
     tangan.rotation.set(-0.8, 0, -0.42); if (tanganKiri) tanganKiri.rotation.set(-0.8, 0, 0.42);
     akua.tick(t * 4.5);
-  } else if (s.pose === 'hp') {             // tangan kiri memegang HP, kepala menunduk melihat layar
+  } else if (s.pose === 'hp' || s.pose === 'geleng') {   // tangan kiri memegang HP, kepala menunduk (geleng: sambil geleng-geleng)
     if (tanganKiri) tanganKiri.rotation.set(-1.25, 0, 0.55);
     head.rotation.x = 0.22 + (bicara ? -amp * 0.06 : 0);
+    if (s.pose === 'geleng') head.rotation.y = Math.sin(t * 9) * 0.32;
   } else if (s.pose === 'angkat-papan') {   // dua tangan ke atas memegang papan
     tangan.rotation.set(0, 0, 2.75); if (tanganKiri) tanganKiri.rotation.set(0, 0, -2.75);
   } else if (tanganKiri) tanganKiri.rotation.copy(kiriAwal);
   papanAngkat.visible = s.pose === 'angkat-papan';
-  hp.visible = s.pose === 'hp';
+  hp.visible = s.pose === 'hp' || s.pose === 'geleng';
   if (tongkat) tongkat.visible = !pakaiAkua && !papanAngkat.visible;
   if (papanAngkat.visible) papanAngkat.position.y = Math.sin(t * 3) * 0.03;
   if (tukang) { const a = tukang.userData.anim; a.arms[1].rotation.x = -1.2 + Math.abs(Math.sin(t * 7)) * -1.1; a.arms[0].rotation.x = -0.4; }
