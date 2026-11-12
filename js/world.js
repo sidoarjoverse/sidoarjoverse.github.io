@@ -4,7 +4,7 @@ import { OrbitControls } from '../vendor/OrbitControls.js';
 import { mergeGeometries } from '../vendor/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from '../vendor/RoundedBoxGeometry.js';
 import { lookFor } from './avatar.js';
-import { KAV_W, KAV_D, KAV_KOLOM, KAV_BARIS, KAVLING_PERUMAHAN, tataRumahBlok } from './tipe.js';
+import { KAV_W, KAV_D, KAV_KOLOM, KAV_BARIS, KAVLING_PERUMAHAN, tataRumahBlok, kendaraanRumah } from './tipe.js';
 
 // ---------------------------------------------------------------- material & builder
 const UNIT = new THREE.BoxGeometry(1, 1, 1);
@@ -509,7 +509,7 @@ function stepBangjo(t) {
 }
 
 // rumah warga perumahan: berteras, tiang, kanopi, lampu teras, pagar tanaman. (x, z) = pusat badan rumah, rot = derajat (sama dengan holder: depan menghadap +z diputar -rot)
-function rumahTeras(vb, x, z, rot, c, r, vbMobil = vb) {
+function rumahTeras(vb, x, z, rot, c, r, vbMobil = vb, jenis = 'mobil') {
   const th = -rot * Math.PI / 180, cs = Math.round(Math.cos(th)), sn = Math.round(Math.sin(th)), putar = Math.abs(sn) === 1;
   const B = (lx, y, lz, w, h, d, col, bola) => {
     const wx = x + lx * cs + lz * sn, wz = z - lx * sn + lz * cs;
@@ -537,11 +537,37 @@ function rumahTeras(vb, x, z, rot, c, r, vbMobil = vb) {
   B(1.35, 0.15, 1.95, 0.12, 1.9, 0.12, '#ece7de');                           // tiang teras
   B(0.75, 0.15, 2.0, 0.9, 0.05, 1.3, '#cfc8b8');                             // jalan setapak
   B(-0.6, 0, 2.2, 1.7, 0.17, 1.85, '#b3ada3');                               // carport
-  {                                                                          // mobil (gratis untuk tiap rumah)
-    const mb = ['#c0392b', '#2c3e50', '#ecf0f1', '#7f8c8d', '#2f6db5', '#1b1b1b'][Math.floor(r() * 6)];
+  {                                                                          // kendaraan sepaket rumah: mobil / motor / pikap / becak / gerobak / sepeda
     const M = (lx, y, lz, w, h, d, col) => { const wx = x + lx * cs + lz * sn, wz = z - lx * sn + lz * cs; vbMobil.box(wx, y, wz, putar ? d : w, h, putar ? w : d, col); };
-    M(-0.6, 0.3, 2.2, 0.95, 0.38, 1.75, mb); M(-0.6, 0.68, 2.12, 0.86, 0.32, 1.0, '#9fb3c1');
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) M(-0.6 + sx * 0.46, 0.17, 2.2 + sz * 0.55, 0.1, 0.26, 0.3, '#1d1f22');
+    const warna = ['#c0392b', '#2c3e50', '#ecf0f1', '#7f8c8d', '#2f6db5', '#1b1b1b', '#e67e22', '#27ae60'][Math.floor(r() * 8)];
+    const X = -0.6, Z = 2.2, Y = 0.17, RODA = '#1d1f22', KACA = '#9fb3c1';
+    const roda = (lx, lz, tebal = 0.1, besar = 0.26) => M(lx, Y, lz, tebal, besar, besar + 0.04, RODA);
+    if (jenis === 'mobil' || jenis === 'pikap' || jenis === 'pickup') {
+      M(X, Y + 0.13, Z, 0.95, 0.38, 1.75, warna);
+      if (jenis === 'mobil') M(X, Y + 0.51, Z - 0.08, 0.86, 0.32, 1.0, KACA);
+      else { M(X, Y + 0.51, Z + 0.45, 0.86, 0.34, 0.7, KACA); M(X - 0.44, Y + 0.51, Z - 0.42, 0.06, 0.2, 0.9, warna); M(X + 0.44, Y + 0.51, Z - 0.42, 0.06, 0.2, 0.9, warna); M(X, Y + 0.51, Z - 0.86, 0.9, 0.2, 0.05, warna); }
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) roda(X + sx * 0.46, Z + sz * 0.55);
+    } else if (jenis === 'motor') {
+      roda(X, Z + 0.45, 0.08, 0.3); roda(X, Z - 0.45, 0.08, 0.3);
+      M(X, Y + 0.18, Z, 0.2, 0.22, 0.85, warna); M(X, Y + 0.4, Z - 0.12, 0.22, 0.09, 0.45, '#1b1b1b');
+      M(X, Y + 0.3, Z + 0.42, 0.16, 0.38, 0.1, warna); M(X, Y + 0.66, Z + 0.4, 0.52, 0.05, 0.05, '#2b2f33');
+    } else if (jenis === 'sepeda') {
+      roda(X, Z + 0.4, 0.05, 0.36); roda(X, Z - 0.4, 0.05, 0.36);
+      M(X, Y + 0.3, Z, 0.05, 0.05, 0.8, warna); M(X, Y + 0.18, Z - 0.1, 0.05, 0.32, 0.05, warna);
+      M(X, Y + 0.5, Z - 0.12, 0.14, 0.05, 0.2, '#1b1b1b'); M(X, Y + 0.56, Z + 0.36, 0.42, 0.04, 0.04, '#2b2f33'); M(X, Y + 0.3, Z + 0.36, 0.04, 0.28, 0.04, warna);
+    } else if (jenis === 'becak') {
+      roda(X - 0.38, Z + 0.4, 0.06, 0.34); roda(X + 0.38, Z + 0.4, 0.06, 0.34); roda(X, Z - 0.55, 0.06, 0.34);
+      M(X, Y + 0.25, Z + 0.35, 0.78, 0.3, 0.55, warna);             // kursi penumpang di depan
+      M(X, Y + 0.55, Z + 0.15, 0.78, 0.35, 0.12, warna);
+      M(X, Y + 0.9, Z + 0.3, 0.84, 0.06, 0.6, '#f2c94c');           // tenda
+      M(X - 0.4, Y + 0.55, Z + 0.3, 0.04, 0.36, 0.5, '#f2c94c'); M(X + 0.4, Y + 0.55, Z + 0.3, 0.04, 0.36, 0.5, '#f2c94c');
+      M(X, Y + 0.3, Z - 0.3, 0.06, 0.06, 0.6, '#2b2f33'); M(X, Y + 0.55, Z - 0.55, 0.22, 0.06, 0.24, '#1b1b1b');   // rangka & sadel pengayuh
+    } else {                                                                 // gerobak kayu
+      roda(X - 0.42, Z, 0.06, 0.4); roda(X + 0.42, Z, 0.06, 0.4);
+      M(X, Y + 0.32, Z, 0.78, 0.36, 1.1, '#8a5a3a'); M(X, Y + 0.68, Z, 0.82, 0.04, 1.14, '#6b4428');
+      M(X - 0.3, Y + 0.45, Z - 0.85, 0.05, 0.05, 0.7, '#6b4428'); M(X + 0.3, Y + 0.45, Z - 0.85, 0.05, 0.05, 0.7, '#6b4428');
+      M(X, Y + 0.72, Z + 0.15, 0.5, 0.18, 0.4, ['#e67e22', '#27ae60', '#f2c94c'][Math.floor(r() * 3)]);   // muatan
+    }
   }
   B(1.5, 0, 3.05, 1.4, 0.55, 0.08, GELAP); B(2.2, 0, 3.05, 0.2, 0.75, 0.2, '#ece7de'); B(0.75, 0, 3.05, 0.2, 0.75, 0.2, '#ece7de');   // pagar minimalis
   B(1.95, 0.15, 2.85, 0.07, 0.55, 0.07, GELAP); B(1.95, 0.7, 2.85, 0.14, 0.12, 0.14, 'win');   // lampu taman
@@ -1383,7 +1409,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
       rs.forEach((b, k) => {
         const r = rng(b.id);
         if (kota.modelRumah === 'lama') rumahTerasLama(vb, b.x, b.z, b.rot, PALET_RUMAH[Math.floor(r() * PALET_RUMAH.length)], r);
-        else rumahTeras(vb, b.x, b.z, b.rot, PALET_RUMAH[Math.floor(r() * PALET_RUMAH.length)], r, vbMobil);
+        else rumahTeras(vb, b.x, b.z, b.rot, PALET_RUMAH[Math.floor(r() * PALET_RUMAH.length)], r, vbMobil, kendaraanRumah(b.id));
         m4.makeTranslation(b.x, 0, b.z); kena.setMatrixAt(k, m4);
         const holder = new THREE.Group(); holder.position.set(b.x, 0, b.z);
         holder.userData.pick = { jenis: 'bangunan', data: b }; holder.userData.kawasan = true;

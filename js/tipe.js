@@ -26,3 +26,15 @@ export function tataRumahBlok() {
   kolom.forEach(([x, rot]) => { for (let i = 0; i < 10; i++) hasil.push({ x, z: 18.5 - i * 4.6, rot }); });
   return hasil;
 }
+
+// kendaraan sepaket dengan rumah perumahan (tetap per rumah, dihitung dari id rumah)
+export const KENDARAAN = {
+  mobil: { label: '🚗 Mobil', bobot: 28 }, motor: { label: '🛵 Motor', bobot: 26 }, pickup: { label: '🛻 Pikap', bobot: 10 },
+  becak: { label: '🛺 Becak', bobot: 12 }, gerobak: { label: '🛒 Gerobak', bobot: 12 }, sepeda: { label: '🚲 Sepeda', bobot: 12 },
+};
+export function kendaraanRumah(id) {
+  let h = 2166136261; for (const ch of String(id)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+  const tot = Object.values(KENDARAAN).reduce((a, k) => a + k.bobot, 0); let x = ((h >>> 0) % 1000) / 1000 * tot;
+  for (const [j, k] of Object.entries(KENDARAAN)) { if ((x -= k.bobot) < 0) return j; }
+  return 'mobil';
+}

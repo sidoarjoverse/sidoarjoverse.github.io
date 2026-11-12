@@ -1,6 +1,7 @@
 import { createWorld, potretWarga } from './world.js';
 import * as D from './data.js';
 import { CONFIG } from './config.js';
+import { KENDARAAN, kendaraanRumah } from './tipe.js';
 import { lookFor, drawPortrait } from './avatar.js';
 import { mulaiRamai, KALIMAT, EMOTE, teksChat } from './ramai.js';
 import { bukaRumah, tutupRumah } from './rumah.js';
@@ -88,6 +89,7 @@ function kartuRumah(b) {
   if (!p && penghuniMap) tombol += saya ? `<button class="btn oren" id="btnTempati">🔑 ${rumahku ? 'Pindah ke rumah ini' : 'Tempati rumah ini'}</button>` : '<button class="btn oren" id="btnBikinKtp">🪪 Bikin KTP dulu</button>';
   return `<div class="lab" style="color:var(--teal2);font-weight:800;font-size:12px">🏘️ RUMAH WARGA</div><h3>${esc(b.nama)}</h3>
     ${p ? `<div class="meta">${mine ? '⭐ Rumahmu' : `Penghuni: <b>${esc(p.nama)}</b>`} · ${esc(p.pekerjaan)} · Kec. ${esc(p.kecamatan)}</div>` : `<div class="meta">${penghuniMap ? 'Kosong, siap ditempati 🔑' : 'Segera bisa ditempati warga'}</div>`}
+    ${b.kawasan ? `<div class="meta">Paket rumah: 2 lantai + ${KENDARAAN[kendaraanRumah(b.id)].label}</div>` : ''}
     <div class="ktp-acts" style="justify-content:flex-start">${tombol}</div><p class="err" id="rumahErr"></p>`;
 }
 async function tempati(b, tombol) {
