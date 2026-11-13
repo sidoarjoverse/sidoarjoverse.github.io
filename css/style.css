@@ -233,9 +233,9 @@ body.bermain .online { top: 58px; }
 .peta-mini { position: absolute; right: 12px; top: 176px; width: 112px; height: 112px; border-radius: 50%; border: 3px solid var(--teal); box-shadow: 0 3px 0 var(--teal), 0 6px 16px rgba(0,0,0,.25); cursor: pointer; background: #5f7a3a; z-index: 5; }
 .peta-lokasi { position: absolute; right: 12px; top: 296px; max-width: 170px; padding: 5px 9px; border-radius: 10px; background: rgba(255,248,236,.94); border: 2px solid var(--teal); font-size: 11px; font-weight: 800; color: var(--teal); text-align: center; z-index: 5; pointer-events: none; }
 body.bermain .peta-lokasi { top: 296px; }
-.peta-penuh { position: fixed; inset: 0; z-index: 60; background: rgba(10,30,45,.92); display: flex; flex-direction: column; }
+.peta-penuh { position: fixed; inset: 0; z-index: 60; background: #0f2a3a; display: flex; flex-direction: column; }
 .peta-penuh[hidden] { display: none; }
-.peta-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: #fff; flex-wrap: wrap; }
+.peta-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: #fff; flex-wrap: wrap; background: #0f2a3a; }
 .peta-bar b { font-size: 16px; margin-right: auto; }
 .peta-skala { font-size: 11px; opacity: .8; }
 .peta-btn, .peta-tutup { border: 2px solid #ffd166; background: #fff8ec; color: var(--teal); border-radius: 10px; padding: 6px 10px; font-weight: 800; font-size: 13px; }
