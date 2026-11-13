@@ -385,7 +385,8 @@ function kamera(t) {
   const cam = sh.dalam && DALAM ? DALAM.cam : camera;
   cam.position.copy(sh.a.pos).lerp(sh.b.pos, k);
   if (sh.putar) { const o = sh.putar, a = o.a0 + (o.a1 - o.a0) * k; cam.position.set(o.bx + Math.sin(a) * o.R, o.h - 1.5 * k, o.bz + Math.cos(a) * o.R); }
-  cam.lookAt(sh.a.look.clone().lerp(sh.b.look, k));
+  const L = sh.a.look.clone().lerp(sh.b.look, k); cam.lookAt(L);
+  if (NASKAH.kabutIkut && !sh.dalam) world.ikutKamera(L.x, L.z);
 }
 
 // ------------------------------------------------------------ Cak Darjo

@@ -2260,6 +2260,12 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     frame(dt, t) { langkah(dt, t, true); },
     setJam(h) { jamTetap = h; updateLangit(); },
     setKabut(k) { kabutSkala = k || 1; updateLangit(); },
+    // mode video: matahari, bayangan & kabut ikut titik yang sedang dibidik kamera (shot udara jauh dari alun-alun)
+    ikutKamera(tx, tz) {
+      sun.target.position.set(tx, 0, tz); sun.position.x = tx + sunOff.x; sun.position.z = tz + sunOff.z; sun.target.updateMatrixWorld();
+      const jk = Math.max(1, Math.hypot(camera.position.x - tx, camera.position.y, camera.position.z - tz) / 55) * kabutSkala;
+      scene.fog.near = (60 - hujan * 12) * jk; scene.fog.far = (165 - hujan * 30) * jk;
+    },
     scene, camera, renderer, controls,
     posisiPemain: () => pemain ? [pemain.g.position.x, pemain.g.position.z] : null,
     bisaDi,
