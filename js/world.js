@@ -895,6 +895,11 @@ function makeChar(look, opt = {}) {
     }
     for (const y of [1.5, 1.32, 1.14, 0.97]) mesh(GEO.bolaKecil, '#f4ecd8', 0.028, 0.028, 0.015, -0.135, y, 0.217);   // kancing
   }
+  if (opt.rompi) {   // rompi proyek: warna terang + 2 garis reflektif, bagian depan terbuka
+    for (const sx of [-1, 1]) mesh(GEO.badan, opt.rompi, 0.27, 0.66, 0.41, sx * 0.175, 1.33, 0);
+    mesh(GEO.badan, opt.rompi, 0.62, 0.66, 0.2, 0, 1.33, -0.105);
+    for (const y of [1.18, 1.42]) for (const sx of [-1, 1]) mesh(GEO.badan, '#e8eef2', 0.275, 0.055, 0.415, sx * 0.175, y, 0);
+  }
   if (opt.selempang) { // selempang diagonal menempel di badan
     const t = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.04, 8, 48), M(opt.selempang));
     t.rotation.order = 'ZYX'; t.rotation.set(0, Math.PI / 2, 0.9); t.scale.set(0.5, 1.0, 0.93); t.position.set(0, 1.32, 0); g.add(t);
@@ -949,7 +954,9 @@ function makeChar(look, opt = {}) {
   if (opt.helm) {   // helm proyek (tukang)
     const hm = new THREE.Mesh(new THREE.SphereGeometry(0.5, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2), M(opt.helm));
     hm.scale.set(RX * 2.15, RY * 1.9, RZ * 2.15); hm.position.y = 0.06; hm.castShadow = true; head.add(hm);
-    mesh(GEO.tabung, opt.helm, RX * 2.35, 0.03, RZ * 2.5, 0, 0.07, 0.04, head);
+    mesh(GEO.tabung, opt.helm, RX * 2.45, 0.03, RZ * 2.45, 0, 0.07, 0.0, head);              // pinggiran helm
+    mesh(GEO.tabung, opt.helm, RX * 1.5, 0.028, RZ * 1.2, 0, 0.075, RZ * 1.05, head);        // lidah depan helm
+    mesh(GEO.badan, opt.helm, 0.05, 0.06, RZ * 1.9, 0, RY * 0.93 + 0.06, 0, head);           // rusuk tengah helm
   }
   if (opt.peci) {
     const pc = mesh(GEO.tabung, '#151515', 0.6, 0.2, 0.52, 0, 0.42, -0.03, head); pc.rotation.x = -0.12;

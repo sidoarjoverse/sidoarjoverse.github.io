@@ -161,11 +161,15 @@ const KER = (() => {
   const K = NASKAH.kerumunan; if (!K) return null;
   const n = K.n || 300, r = rng(11), [x0, z0, x1, z1] = K.area, g = new THREE.Group(); scene.add(g);
   const bagian = [
-    [new THREE.BoxGeometry(0.44, 0.62, 0.28).translate(0, 0.86, 0), '#f28c28'],    // rompi oranye
-    [new THREE.BoxGeometry(0.38, 0.56, 0.24).translate(0, 0.28, 0), '#3d405b'],    // celana
-    [new THREE.SphereGeometry(0.21, 10, 8).translate(0, 1.38, 0), '#c98d5a'],      // kepala
-    [new THREE.SphereGeometry(0.25, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, 1.44, 0), '#ffd166'],   // helm
-    [new THREE.BoxGeometry(0.1, 0.5, 0.1).translate(0, -0.22, 0), '#c98d5a'],      // lengan palu (diputar)
+    [new THREE.BoxGeometry(0.4, 0.6, 0.25).translate(0, 0.86, 0), '#3a5a8c'],     // baju kerja
+    [new THREE.BoxGeometry(0.46, 0.5, 0.29).translate(0, 0.9, 0), '#ff7a00'],     // rompi oranye
+    [new THREE.BoxGeometry(0.47, 0.05, 0.3).translate(0, 0.8, 0), '#e8eef2'],     // garis reflektif bawah
+    [new THREE.BoxGeometry(0.47, 0.05, 0.3).translate(0, 1.0, 0), '#e8eef2'],     // garis reflektif atas
+    [new THREE.BoxGeometry(0.38, 0.56, 0.24).translate(0, 0.28, 0), '#3d405b'],   // celana
+    [new THREE.SphereGeometry(0.2, 10, 8).translate(0, 1.36, 0), '#c98d5a'],      // kepala
+    [new THREE.SphereGeometry(0.235, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, 1.42, 0), '#ffd000'],   // helm proyek
+    [new THREE.CylinderGeometry(0.29, 0.29, 0.03, 14).translate(0, 1.43, 0.03), '#ffd000'],                      // pinggiran helm
+    [new THREE.BoxGeometry(0.1, 0.5, 0.1).translate(0, -0.22, 0), '#3a5a8c'],     // lengan palu (diputar)
   ];
   const ims = bagian.map(([geo, c]) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }), n); m.castShadow = true; g.add(m); return m; });
   const orang = [];
@@ -175,16 +179,16 @@ const KER = (() => {
     orang.forEach((p, k) => {
       const ayun = Math.sin(t * p.v + p.f);
       o.position.set(p.x, Math.max(0, ayun) * 0.06, p.z); o.rotation.set(0, p.ry, Math.sin(t * 1.3 + p.f) * 0.05); o.scale.setScalar(p.s); o.updateMatrix();
-      for (let j = 0; j < 4; j++) ims[j].setMatrixAt(k, o.matrix);
+      for (let j = 0; j < ims.length - 1; j++) ims[j].setMatrixAt(k, o.matrix);
       lg.position.set(0.28, 1.15, 0.05); lg.rotation.set(-1.0 - Math.max(0, ayun) * 1.2, 0, 0); lg.updateMatrix();
-      ims[4].setMatrixAt(k, o.matrix.clone().multiply(lg.matrix));
+      ims[ims.length - 1].setMatrixAt(k, o.matrix.clone().multiply(lg.matrix));
     });
     ims.forEach(m => { m.instanceMatrix.needsUpdate = true; m.computeBoundingSphere(); });
   } };
 })();
 // tukang dekat kamera (detail): naskah "tukangDekat": [[x, z, ry], ...]
 const TUKANG_DEKAT = (NASKAH.tukangDekat || []).map(([x, z, ry], k) => {
-  const c = makeCharUmum({ kulit: ['#c98d5a', '#a8714a', '#e0b08a'][k % 3], baju: ['#f28c28', '#ffd166', '#2a9d8f'][k % 3], celana: '#3d405b', rambut: '#1a1a1a' }, { helm: '#ffd166' });
+  const c = makeCharUmum({ kulit: ['#c98d5a', '#a8714a', '#e0b08a'][k % 3], baju: ['#3a5a8c', '#5b6770', '#2f4f4f'][k % 3], celana: '#3d405b', rambut: '#1a1a1a' }, { helm: '#ffd000', rompi: ['#ff7a00', '#c6ff00', '#ff7a00'][k % 3] });
   c.scale.setScalar(0.62); c.position.set(x, 0, z); c.rotation.y = ry || 0; scene.add(c); return c;
 });
 // warga tidur di jalan / rumput (naskah "gelandangan": {n, area}; baris "gelandangan": true)
