@@ -7,70 +7,73 @@ const WARNA = {
 
 export function pasangPeta({ world, saya, rumahSaya }) {
   const D = world.dataPeta();
-  const { daerah: A } = D;
+  const A = { x0: D.bbox.x0 - 30, x1: D.bbox.x1 + 120, z0: D.bbox.z0 - 30, z1: D.bbox.z1 + 30 };
   // ---------- elemen
   const mini = document.createElement('canvas'); mini.className = 'peta-mini'; mini.width = mini.height = 260;
   mini.title = 'Buka peta'; (document.getElementById('view-peta') || document.body).appendChild(mini);
   const ov = document.createElement('div'); ov.className = 'peta-penuh'; ov.hidden = true;
-  ov.innerHTML = `<div class="peta-bar"><b>🗺️ Peta SidoarjoVerse</b><span class="peta-skala"></span>
+  ov.innerHTML = `<div class="peta-bar"><b>🗺️ Peta Sidoarjo</b><span class="peta-skala"></span>
     <button type="button" class="peta-btn" data-a="saya">📍 Aku</button>${rumahSaya ? '<button type="button" class="peta-btn" data-a="rumah">🏠 Rumahku</button>' : ''}
     <button type="button" class="peta-tutup" aria-label="Tutup">✕</button></div>
     <canvas class="peta-kanvas"></canvas>
-    <div class="peta-info">Geser untuk menjelajah · cubit / scroll untuk zoom · ketuk tempat untuk terbang ke sana</div>
+    <div class="peta-info">Geser untuk menjelajah · cubit / scroll untuk zoom · ketuk tempat untuk terbang ke sana · data peta © kontributor OpenStreetMap</div>
     <div class="peta-legenda">
       <span><i style="background:${WARNA.perum}"></i>Perumahan</span><span><i style="background:${WARNA.sawah}"></i>Sawah</span>
       <span><i style="background:${WARNA.tambak}"></i>Tambak</span><span><i style="background:${WARNA.lahan}"></i>Lahan rencana</span>
-      <span><i style="background:${WARNA.sungai}"></i>Sungai</span><span><i style="background:#e63946;border-radius:50%"></i>Kamu</span></div>`;
+      <span><i style="background:${WARNA.sungai}"></i>Sungai</span><span><i style="background:#f2a33a"></i>Tol</span><span><i style="background:#e63946;border-radius:50%"></i>Kamu</span></div>`;
   document.body.appendChild(ov);
   const kv = ov.querySelector('.peta-kanvas');
 
   // ---------- gambar dasar peta (sekali, ke kanvas offscreen)
-  const S = 0.75, W0 = Math.ceil((A.x1 - A.x0) * S), H0 = Math.ceil((A.z1 - A.z0) * S);   // 0,75 px per satuan
+  const S = 0.6, W0 = Math.ceil((A.x1 - A.x0) * S), H0 = Math.ceil((A.z1 - A.z0) * S);
   const dasar = document.createElement('canvas'); dasar.width = W0; dasar.height = H0;
   const g = dasar.getContext('2d');
   const px = x => (x - A.x0) * S, pz = z => (z - A.z0) * S;
+  const jalur = p => { g.beginPath(); p.forEach(([x, z], i) => i ? g.lineTo(px(x), pz(z)) : g.moveTo(px(x), pz(z))); };
+  g.fillStyle = WARNA.hutan; g.fillRect(0, 0, W0, H0);   // daratan luar kabupaten
+  g.fillStyle = WARNA.laut; g.beginPath(); g.moveTo(W0, 0);   // laut di timur garis pantai
+  for (let z = A.z0; z <= A.z1; z += 6) g.lineTo(px(D.pantai(z) + 2), pz(z));
+  g.lineTo(W0, H0); g.closePath(); g.fill();
+  // kabupaten: sawah, lalu tambak dekat pantai
+  g.save(); jalur(D.batas); g.closePath(); g.clip();
   g.fillStyle = WARNA.sawah; g.fillRect(0, 0, W0, H0);
-  // petak sawah samar
-  g.strokeStyle = 'rgba(120,150,70,.35)'; g.lineWidth = 1;
-  for (let x = A.x0; x < D.pantaiX; x += 24) { g.beginPath(); g.moveTo(px(x), 0); g.lineTo(px(x), H0); g.stroke(); }
-  for (let z = A.z0; z < A.z1; z += 16) { g.beginPath(); g.moveTo(0, pz(z)); g.lineTo(px(D.relX), pz(z)); g.stroke(); }
-  // tambak (timur rel) & pantai & laut
-  g.fillStyle = WARNA.tambak; g.fillRect(px(D.relX + 16), 0, px(D.pantaiX) - px(D.relX + 16), H0);
-  g.strokeStyle = 'rgba(255,255,255,.45)';
-  for (let x = D.relX + 16; x < D.pantaiX; x += 24) { g.beginPath(); g.moveTo(px(x), 0); g.lineTo(px(x), H0); g.stroke(); }
-  for (let z = A.z0; z < A.z1; z += 16) { g.beginPath(); g.moveTo(px(D.relX + 16), pz(z)); g.lineTo(px(D.pantaiX), pz(z)); g.stroke(); }
-  g.fillStyle = WARNA.pasir; g.fillRect(px(D.pantaiX), 0, W0 - px(D.pantaiX), H0);
-  g.fillStyle = WARNA.laut; g.fillRect(px(D.pantaiX + 14), 0, W0, H0);
-  // kota & kawasan perumahan
-  g.fillStyle = WARNA.kota; for (const p of D.kota) g.fillRect(px(p.x0), pz(p.z0), (p.x1 - p.x0) * S, (p.z1 - p.z0) * S);
-  // lahan rencana
+  g.fillStyle = WARNA.tambak; g.beginPath(); for (let z = A.z0; z <= A.z1; z += 6) g.lineTo(px(D.pantai(z) - 200), pz(z)); g.lineTo(W0, H0); g.lineTo(W0, 0); g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(110,140,70,.25)'; g.lineWidth = 1;
+  for (let x = A.x0; x < A.x1; x += 24) { g.beginPath(); g.moveTo(px(x), 0); g.lineTo(px(x), H0); g.stroke(); }
+  for (let z = A.z0; z < A.z1; z += 16) { g.beginPath(); g.moveTo(0, pz(z)); g.lineTo(W0, pz(z)); g.stroke(); }
+  g.restore();
+  g.strokeStyle = '#2f4f2a'; g.lineWidth = 2; g.setLineDash([6, 4]); jalur(D.batas); g.closePath(); g.stroke(); g.setLineDash([]);
+  // bandara & lahan rencana
+  if (D.bandara) { g.fillStyle = WARNA.lahan; jalur(D.bandara.p); g.closePath(); g.fill(); g.strokeStyle = '#b08a5a'; g.setLineDash([3, 2]); g.stroke(); g.setLineDash([]); }
   for (const L of D.lahan) { g.fillStyle = WARNA.lahan; g.fillRect(px(L.x - L.w / 2), pz(L.z - L.d / 2), L.w * S, L.d * S); g.strokeStyle = '#b08a5a'; g.setLineDash([3, 2]); g.strokeRect(px(L.x - L.w / 2), pz(L.z - L.d / 2), L.w * S, L.d * S); g.setLineDash([]); }
-  // koridor rencana rel
-  g.strokeStyle = '#8a6d47'; g.lineWidth = 3; g.setLineDash([6, 4]); g.beginPath(); g.moveTo(px(D.relX), 0); g.lineTo(px(D.relX), H0); g.stroke(); g.setLineDash([]);
+  // kota
+  g.fillStyle = WARNA.kota; for (const p of D.kota) g.fillRect(px(p.x0), pz(p.z0), (p.x1 - p.x0) * S, (p.z1 - p.z0) * S);
   // sungai
-  const sungai = (f, xa, xb, lebar) => { g.strokeStyle = WARNA.sungai; g.lineWidth = Math.max(2, lebar * S); g.lineCap = 'round'; g.beginPath(); for (let x = xa; x <= xb; x += 4) { const z = f.z(x); x === xa ? g.moveTo(px(x), pz(z)) : g.lineTo(px(x), pz(z)); } g.stroke(); };
-  sungai(D.kali, A.x0, D.pantaiX + 20, D.kali.lebar); sungai(D.kanal, A.x0, D.pantaiX + 20, D.kanal.lebar);
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  for (const s of D.sungai) { g.strokeStyle = WARNA.sungai; g.lineWidth = Math.max(1.5, s.lebar * S); jalur(s.p); g.stroke(); }
+  // rel rencana
+  g.strokeStyle = '#8a6d47'; g.lineWidth = 3; g.setLineDash([6, 4]); for (const p of D.rel) { jalur(p); g.stroke(); } g.setLineDash([]);
   // jalan
-  for (const [x1, z1, x2, z2] of D.jalan) { for (const [w, c] of [[5, WARNA.jalanTepi], [3, WARNA.jalan]]) { g.strokeStyle = c; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); g.moveTo(px(x1), pz(z1)); g.lineTo(px(x2), pz(z2)); g.stroke(); } }
-  // jembatan
-  g.fillStyle = '#c0392b'; g.fillRect(px(-5), pz(D.jembatanZ - 30), 10 * S, 60 * S);
+  const LJ = { tol: [7, '#b5651d', '#f2a33a'], raya: [5, '#9a9488', '#ffffff'], kabupaten: [3.5, '#a39d90', '#fbf7ee'], akses: [2.5, '#a39d90', '#fbf7ee'], kota: [3, '#9a9488', '#ffffff'] };
+  for (const urut of ['akses', 'kabupaten', 'kota', 'raya', 'tol']) for (const j of D.jalan) { if (j.k !== urut) continue; const [w, tp, isi] = LJ[j.k]; for (const [ww, c] of [[w + 2, tp], [w, isi]]) { g.strokeStyle = c; g.lineWidth = ww * 0.8; jalur(j.p); g.stroke(); } }
+  for (const J of D.jembatan) { g.fillStyle = J.besar ? '#c0392b' : '#7f8c8d'; g.beginPath(); g.arc(px(J.x), pz(J.z), J.besar ? 4 : 2.5, 0, 7); g.fill(); }
   // perumahan (kavling)
   for (const K of D.kavling) {
-    g.fillStyle = K.nama ? WARNA.perum : 'rgba(255,255,255,.35)'; g.fillRect(px(K.x - K.w / 2), pz(K.z - K.d / 2), K.w * S, K.d * S);
-    g.strokeStyle = K.nama ? '#c9a46b' : 'rgba(0,0,0,.2)'; g.lineWidth = 1; g.strokeRect(px(K.x - K.w / 2), pz(K.z - K.d / 2), K.w * S, K.d * S);
-    if (K.nama) { g.fillStyle = '#d9c3a0'; for (let r = 0; r < 4; r++) g.fillRect(px(K.x - K.w / 2 + 3 + r * 9), pz(K.z - K.d / 2 + 4), 4 * S * 2, (K.d - 10) * S); }
+    g.fillStyle = K.ada ? WARNA.perum : 'rgba(255,255,255,.5)'; g.fillRect(px(K.x - K.w / 2), pz(K.z - K.d / 2), K.w * S, K.d * S);
+    g.strokeStyle = '#c9a46b'; g.lineWidth = 1; g.strokeRect(px(K.x - K.w / 2), pz(K.z - K.d / 2), K.w * S, K.d * S);
+    if (K.ada) { g.fillStyle = '#d9c3a0'; for (let r = 0; r < 4; r++) g.fillRect(px(K.x - K.w / 2 + 3 + r * 9), pz(K.z - K.d / 2 + 4), 4 * S * 2, (K.d - 10) * S); }
   }
 
   // ---------- label (digambar di atas, ukuran tetap saat zoom)
   const label = [
-    ...D.kavling.filter(K => K.nama).map(K => ({ x: K.x, z: K.z, t: K.nama, sub: 'Blok ' + K.blok, min: 0.9 })),
-    ...D.lahan.map(L => ({ x: L.x, z: L.z, t: '🚧 ' + L.nama.replace('LAHAN ', ''), min: L.w > 200 ? 0.15 : 0.7 })),
-    { x: 0, z: 0, t: '🏛️ Pusat Kota', min: 0 }, { x: -150, z: -150, t: '🏘️ Kawasan Perumahan', min: 0, maks: 1.2 },
-    { x: -480, z: -300, t: '🌾 Persawahan', min: 0 }, { x: 400, z: -100, t: '🐟 Tambak', min: 0 }, { x: D.pantaiX + 8, z: -500, t: '🏖️ Pantai', min: 0 },
-    { x: -400, z: D.kali.z(-400) - 30, t: '🌊 Kali Besar', min: 0 }, { x: 0, z: D.jembatanZ + 40, t: '🌉 Jembatan', min: 0.5 },
-    { x: D.relX + 10, z: -650, t: '🚆 Rencana rel', min: 0.4 },
+    ...D.kavling.map(K => ({ x: K.x, z: K.z, t: '🏘️ ' + K.nama, sub: K.blok ? 'Blok ' + K.blok : 'kavling', min: 1.1 })),
+    ...D.kavling.map(K => ({ x: K.x, z: K.z, t: '🏘️', min: 0, maks: 1.1 })),
+    ...D.lahan.map(L => ({ x: L.x, z: L.z, t: '🚧 ' + L.nama.replace('LAHAN ', ''), min: 0.9 })),
+    ...(D.kecamatan || []).map(([n, x, z]) => ({ x, z: z - 14, t: n.toUpperCase(), kec: true, min: 0, maks: 1.6 })),
+    { x: 0, z: 0, t: '🏛️ Alun-alun Sidoarjo', min: 0.25 },
+    ...(D.bandara ? [{ x: D.bandara.p.reduce((a, p) => a + p[0], 0) / D.bandara.p.length, z: D.bandara.p.reduce((a, p) => a + p[1], 0) / D.bandara.p.length, t: '✈️ Lahan Bandara', min: 0.2 }] : []),
+    { x: D.pantai(0) + 60, z: 0, t: '🌊 Selat Madura', min: 0 },
   ];
-
   // ---------- tampilan (pan/zoom)
   let skala = 1, cx = 0, cz = 0, bukaPenuh = false;   // skala = px layar per px dasar
   function gambar(c, w, h, zoom, pusatX, pusatZ, penuh) {
@@ -84,7 +87,7 @@ export function pasangPeta({ world, saya, rumahSaya }) {
       for (const L of label) {
         if (zoom < L.min || (L.maks && zoom > L.maks)) continue;
         const [x, y] = ke(L.x, L.z); if (x < -80 || y < -20 || x > w + 80 || y > h + 20) continue;
-        ctx.font = '800 13px system-ui, sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.strokeText(L.t, x, y); ctx.fillStyle = WARNA.teks; ctx.fillText(L.t, x, y);
+        ctx.font = L.kec ? '900 12px system-ui, sans-serif' : '800 13px system-ui, sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.strokeText(L.t, x, y); ctx.fillStyle = WARNA.teks; ctx.fillText(L.t, x, y);
         if (L.sub) { ctx.font = '700 11px system-ui, sans-serif'; ctx.strokeText(L.sub, x, y + 14); ctx.fillStyle = '#5b7083'; ctx.fillText(L.sub, x, y + 14); }
       }
     }
@@ -105,14 +108,16 @@ export function pasangPeta({ world, saya, rumahSaya }) {
       ctx.font = '900 13px system-ui'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText('U ▲', w / 2, 14);
     }
   }
+  const diPoly = (P, x, z) => { let d = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, zi] = P[i], [xj, zj] = P[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) d = !d; } return d; };
   function namaTempat(x, z) {   // nama area tempat "aku" berada
-    for (const K of D.kavling) if (K.nama && Math.abs(x - K.x) < K.w / 2 && Math.abs(z - K.z) < K.d / 2) return `🏘️ Perumahan ${K.nama} · Blok ${K.blok}`;
+    for (const K of D.kavling) if (Math.abs(x - K.x) < K.w / 2 + 2 && Math.abs(z - K.z) < K.d / 2 + 2) return K.ada ? `🏘️ Perumahan ${K.nama} · Blok ${K.blok}` : `🏗️ Kavling ${K.nama}`;
     for (const L of D.lahan) if (Math.abs(x - L.x) < L.w / 2 && Math.abs(z - L.z) < L.d / 2) return '🚧 ' + L.nama.replace('LAHAN', 'Lahan rencana');
-    if (Math.abs(z - D.kali.z(x)) < D.kali.lebar / 2 + 4) return '🌊 Kali Besar';
-    if (D.kota.some(p => x > p.x0 && x < p.x1 && z > p.z0 && z < p.z1)) return x < -32 ? '🏘️ Kawasan Perumahan' : x > 32 ? '🏙️ Pusat Kota' : '🏛️ Kota Lama';
-    if (x > D.pantaiX) return '🏖️ Pantai';
-    if (x > D.relX + 16) return '🐟 Tambak';
-    return '🌾 Persawahan';
+    if (D.bandara && diPoly(D.bandara.p, x, z)) return '✈️ Lahan rencana bandara';
+    if (D.kota.some(p => x > p.x0 && x < p.x1 && z > p.z0 && z < p.z1)) return x > 32 ? '🏙️ Pusat Kota' : '🏛️ Alun-alun Sidoarjo';
+    if (!diPoly(D.batas, x, z)) return x > D.pantai(z) ? '🌊 Selat Madura' : '🌲 Luar kabupaten';
+    let kec = null, bd = 1e18; for (const [n, kx, kz] of D.kecamatan || []) { const d = (kx - x) ** 2 + (kz - z) ** 2; if (d < bd) { bd = d; kec = n; } }
+    const jenis = x > D.pantai(z) - 200 ? '🐟 Tambak' : '🌾 Sawah';
+    return kec ? `${jenis} · Kec. ${kec}` : jenis;
   }
   const lokasi = document.createElement('div'); lokasi.className = 'peta-lokasi'; (document.getElementById('view-peta') || document.body).appendChild(lokasi);
   function ukurPenuh() {
@@ -124,7 +129,7 @@ export function pasangPeta({ world, saya, rumahSaya }) {
   (function loop() {
     if (!jalan) return;
     const p = world.posisiSaya();
-    gambar(mini, 260, 260, 1.6, p.x, p.z, false);
+    gambar(mini, 260, 260, 1.4, p.x, p.z, false);
     const nm = namaTempat(p.x, p.z); if (nm !== lokTerakhir) { lokTerakhir = nm; lokasi.textContent = '📍 ' + nm; }
     if (bukaPenuh) { const [w, h] = [kv.clientWidth, kv.clientHeight]; gambar(kv, w, h, skala, cx, cz, true); ov.querySelector('.peta-skala').textContent = skalaTeks(); }
     requestAnimationFrame(loop);
@@ -132,7 +137,7 @@ export function pasangPeta({ world, saya, rumahSaya }) {
   function skalaTeks() { const m = 100 / (skala * S) * 2; return m >= 1000 ? `100 px ≈ ${(m / 1000).toFixed(1)} km` : `100 px ≈ ${Math.round(m)} m`; }
   function buka() {
     ov.hidden = false; bukaPenuh = true; const [w, h] = ukurPenuh();
-    skala = Math.min(w / W0, h / H0) * 1.6; const p = world.posisiSaya(); cx = p.x; cz = p.z;
+    skala = Math.min(w / W0, h / H0) * 2.2; const p = world.posisiSaya(); cx = p.x; cz = p.z;
   }
   const tutup = () => { ov.hidden = true; bukaPenuh = false; };
   mini.onclick = buka;
