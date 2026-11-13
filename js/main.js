@@ -5,6 +5,7 @@ import { KENDARAAN, kendaraanRumah } from './tipe.js';
 import { lookFor, drawPortrait } from './avatar.js';
 import { mulaiRamai, KALIMAT, EMOTE, teksChat } from './ramai.js';
 import { bukaRumah, tutupRumah } from './rumah.js';
+import { pasangPeta } from './peta2d.js';
 let penghuniMap = null;
 // ---------- cuaca: hujan ikut cuaca asli Sidoarjo (Open-Meteo, gratis tanpa key); admin bisa paksa cerah/hujan
 const KODE_HUJAN = new Set([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99]);
@@ -574,6 +575,7 @@ async function mulai() {
     world = createWorld($('map'), { onPick, onDekat });
     if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.svWorld = world; // untuk pengujian lokal
     world.setKota(kota);
+    pasangPeta({ world, rumahSaya: () => { const r = saya && penghuniMap && Object.entries(penghuniMap).find(([, x]) => x.kode === saya.kode); return r ? world.posisiBangunan(r[0]) : null; } });
   } catch (e) {
     console.error(e);
     $('loading').innerHTML = 'Browser ini belum mendukung peta 3D (WebGL).<br><small>Menu lain tetap bisa dipakai.</small>';

@@ -228,3 +228,19 @@ body.bermain .online { top: 58px; }
 .rumah-x { border: 0; background: rgba(255,255,255,.18); color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; }
 .rumah-cv { flex: 1; width: 100%; min-height: 0; display: block; touch-action: none; }
 .rumah-aksi { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; justify-content: center; }
+
+/* ---------- peta 2D: peta mini + peta penuh */
+.peta-mini { position: absolute; right: 12px; top: 176px; width: 112px; height: 112px; border-radius: 50%; border: 3px solid var(--teal); box-shadow: 0 3px 0 var(--teal), 0 6px 16px rgba(0,0,0,.25); cursor: pointer; background: #5f7a3a; z-index: 5; }
+.peta-lokasi { position: absolute; right: 12px; top: 296px; max-width: 170px; padding: 5px 9px; border-radius: 10px; background: rgba(255,248,236,.94); border: 2px solid var(--teal); font-size: 11px; font-weight: 800; color: var(--teal); text-align: center; z-index: 5; pointer-events: none; }
+body.bermain .peta-lokasi { top: 296px; }
+.peta-penuh { position: fixed; inset: 0; z-index: 60; background: rgba(10,30,45,.92); display: flex; flex-direction: column; }
+.peta-penuh[hidden] { display: none; }
+.peta-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: #fff; flex-wrap: wrap; }
+.peta-bar b { font-size: 16px; margin-right: auto; }
+.peta-skala { font-size: 11px; opacity: .8; }
+.peta-btn, .peta-tutup { border: 2px solid #ffd166; background: #fff8ec; color: var(--teal); border-radius: 10px; padding: 6px 10px; font-weight: 800; font-size: 13px; }
+.peta-tutup { background: #ffd166; width: 38px; }
+.peta-kanvas { flex: 1; width: 100%; min-height: 0; touch-action: none; cursor: grab; }
+.peta-info { color: #dfe8ea; font-size: 11px; text-align: center; padding: 4px 8px; }
+.peta-legenda { display: flex; flex-wrap: wrap; gap: 6px 12px; justify-content: center; padding: 6px 10px 14px; color: #fff; font-size: 11px; font-weight: 700; }
+.peta-legenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 4px; vertical-align: -2px; border: 1px solid rgba(255,255,255,.6); }

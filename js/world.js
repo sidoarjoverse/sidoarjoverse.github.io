@@ -303,6 +303,18 @@ export const LAHAN_KOTA = [
   { id: 'lahan-gedung-1', nama: 'LAHAN GEDUNG', x: 119, z: -63, w: 30, d: 36 },
   { id: 'lahan-gedung-2', nama: 'LAHAN GEDUNG', x: 45, z: -63, w: 22, d: 36 },
 ];
+// data ringkas untuk peta 2D (menu Peta di website)
+export function dataPeta(kota) {
+  const pr = (kota && kota.perumahan) || [];
+  return {
+    daerah: DAERAH, kota: PETA_KOTA, pantaiX: PANTAI_X, relX: REL_X,
+    jalan: [...JALAN_BARU.map(j => j.slice(0, 5)), ...LINES.map(z => [-EDGE, z, EDGE, z, true]), ...LINES.map(x => [x, -EDGE, x, x === 0 ? 31 : 16, true])],
+    kali: KALI, kanal: KANAL, kotaX: [KOTA_X0, KOTA_X1], jembatanZ: JEMBATAN_Z,
+    kavling: KAVLING_PERUMAHAN.map((K, i) => { const p = pr.find(q => q.kavling === i); return { x: K.x, z: K.z, w: KAV_W, d: KAV_D, nama: p ? p.nama : null, blok: p ? p.blok : null }; }),
+    lahan: [...LAHAN_RENCANA, ...LAHAN_KOTA.map(L => ({ ...L, sub: '' }))],
+    bangunan: ((kota && kota.bangunan) || []).filter(b => !b.kawasan && b.tampil !== false).map(b => ({ x: +b.x, z: +b.z, nama: b.nama, tipe: b.tipe })),
+  };
+}
 export function grafKawasan(add, link) {
   const rantai = pts => { let p = null; for (const [x, z] of pts) { const n = add(x, z); if (p) link(p, n); p = n; } };
   rantai([[-26, 0], ...JALAN_X.map(x => [x, 0])]);
@@ -2150,6 +2162,12 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
       camera.position.copy(controls.target).add(off.setLength(len));
     },
     fokusBangunan(id) { const p = bangunanPos.get(id); if (p) fokusKe(p.x, p.z); },
+    fokusKe(x, z) { ikuti = null; fokusKe(x, z); },
+    // posisi "aku" untuk peta: karakter yang dijalankan, atau titik tengah layar
+    posisiSaya: () => pemain ? { x: pemain.g.position.x, z: pemain.g.position.z, ry: pemain.g.rotation.y, jalan: true }
+      : { x: controls.target.x, z: controls.target.z, ry: Math.atan2(controls.target.x - camera.position.x, controls.target.z - camera.position.z), jalan: false },
+    posisiBangunan: id => bangunanPos.get(id) || null,
+    dataPeta: () => dataPeta(kota),
     ikuti(obj) {
       ikuti = obj || (pemain ? pemain.g : null);
       if (obj) { // dekatkan kamera supaya label terbaca
