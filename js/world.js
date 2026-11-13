@@ -217,10 +217,15 @@ function pagarKeliling(vb, w, d, warna = '#e9e2d0') {
 // ---------------------------------------------------------------- kawasan baru (perluasan kota)
 // Barat: Kawasan Perumahan (padang luas, kavling 40 rumah per blok). Timur: Pusat Kota (lahan monumen & mal, perempatan bangjo).
 // peta = gabungan 2 persegi: kota + pusat kota (A) dan kawasan perumahan ke utara (B)
-const PETA = [{ x0: -264, x1: 140, z0: -86, z1: 36 }, { x0: -264, x1: -32, z0: -312, z1: -80 }];
-export const BATAS = { x0: -264, x1: 140, z0: -312, z1: 36 };   // kotak luar (kamera, gunung)
+// SKALA: 1 satuan peta = 2 meter. Kota (A) + kawasan perumahan (B) di tengah daerah luas (C: sawah, tambak, pantai, lahan rencana)
+const PETA_KOTA = [{ x0: -264, x1: 140, z0: -86, z1: 36 }, { x0: -264, x1: -32, z0: -312, z1: -80 }];
+export const DAERAH = { x0: -760, x1: 620, z0: -1000, z1: 500 };   // ±2,8 × 3 km
+const PETA = [...PETA_KOTA, DAERAH];
+export const BATAS = { x0: DAERAH.x0, x1: DAERAH.x1, z0: DAERAH.z0, z1: DAERAH.z1 };   // kotak luar (kamera, gunung)
+const KOTA_BOX = { x0: -264, x1: 140, z0: -312, z1: 36 };
 export const diPeta = (x, z, m = 0) => PETA.some(p => x > p.x0 + m && x < p.x1 - m && z > p.z0 + m && z < p.z1 - m);
-const jarakLuar = (x, z) => Math.min(...PETA.map(p => Math.hypot(Math.max(p.x0 - x, 0, x - p.x1), Math.max(p.z0 - z, 0, z - p.z1))));
+const diKota = (x, z, m = 0) => PETA_KOTA.some(p => x > p.x0 + m && x < p.x1 - m && z > p.z0 + m && z < p.z1 - m);
+const jarakLuar = (x, z) => Math.min(...[DAERAH].map(p => Math.hypot(Math.max(p.x0 - x, 0, x - p.x1), Math.max(p.z0 - z, 0, z - p.z1))));
 const JALAN_X = [-38, ...KAV_KOLOM.slice(0, -1).map(x => x - (KAV_W + 7) / 2)];       // jalan utara-selatan di sela kavling
 const JALAN_Z = KAV_BARIS.slice(1).map(z => z + KAV_D / 2 + 3);                        // jalan depan tiap baris kavling
 const JALAN_BARU = [   // [x1, z1, x2, z2, garis tengah?, lampu tiap … m]
@@ -228,6 +233,10 @@ const JALAN_BARU = [   // [x1, z1, x2, z2, garis tengah?, lampu tiap … m]
   ...JALAN_Z.map(z => [-262, z, -36, z, false, 24]),
   ...JALAN_X.map(x => [x, 0, x, -306, false, 24]),
   [28, 0, 140, 0, true, 12],          // jalan raya timur ke pusat kota
+  [140, 0, 592, 0, true, 30],         // jalan raya terus ke timur sampai pantai
+  [-740, 0, -262, 0, false, 40],      // jalan desa ke barat (sawah)
+  [-38, -306, -38, -770, false, 40],  // jalan ke utara (lahan bandara)
+  [0, 31, 0, 490, false, 40],         // jalan desa ke selatan (sawah)
   [62, -82, 62, 19, true, 12], [100, -82, 100, 19, true, 12],
   [34, -42, 136, -42, true, 12],
 ];
@@ -266,7 +275,7 @@ function dalamJalanBaru(x, z, m = 0) {
 // tanah di luar kota lama + jalan raya baru + bangjo + lahan + kavling perumahan
 function bangunKawasan(statik, kota, footprints, r) {
   const g = new VB();
-  const { x0, x1, z0, z1 } = BATAS, A = PETA[0], Bp = PETA[1];
+  const { x0, x1, z0, z1 } = KOTA_BOX, A = PETA_KOTA[0], Bp = PETA_KOTA[1];
   const tanah = [[A.x0, A.z0, -32, RIVER[0]], [A.x0, RIVER[1], -32, A.z1], [32, A.z0, A.x1, RIVER[0]], [32, RIVER[1], A.x1, A.z1], [-32, A.z0, 32, -32], [Bp.x0, Bp.z0, Bp.x1, A.z0]];
   for (const [a, b, c, d] of tanah) g.box((a + c) / 2, -0.62, (b + d) / 2, c - a, 0.6, d - b, '#a3b868');
   for (const [a, c] of [[A.x0, -32], [32, A.x1]]) { g.box((a + c) / 2, -1.4, 23, c - a, 0.8, 4, '#6f5a3c'); g.box((a + c) / 2, -0.75, 23, c - a, 0.5, 4, 'water'); }
@@ -379,7 +388,7 @@ function bangunKawasan(statik, kota, footprints, r) {
     || LAHAN_KOTA.some(L => Math.abs(x - L.x) < L.w / 2 + 1 && Math.abs(z - L.z) < L.d / 2 + 1);
   for (let i = 0, n = 0; i < 7000 && n < 650; i++) {
     const x = x0 + 3 + r() * (x1 - x0 - 6), z = z0 + 3 + r() * (z1 - z0 - 6);
-    if (!diPeta(x, z, 3) || (Math.abs(x) < 34 && z > -34)) continue;
+    if (!diKota(x, z, 3) || (Math.abs(x) < 34 && z > -34)) continue;
     if (z > RIVER[0] - 1.5 && z < RIVER[1] + 1.5) continue;
     if (dalamJalanBaru(x, z, 1.6) || kenaKavling(x, z)) continue;
     if (footprints.some(f => Math.abs(x - f.x) < f.w / 2 + 1.5 && Math.abs(z - f.z) < f.d / 2 + 1.5)) continue;
@@ -392,15 +401,15 @@ function bangunKawasan(statik, kota, footprints, r) {
 const TEBAL_HUTAN = 30;
 const MAT_GUNUNG = [];   // warna gunung diatur ulang tiap ganti jam (tanpa kabut supaya tetap tampak jauh)
 function bangunHutan(statik, r, ringan) {
-  const { x0, x1, z0, z1 } = BATAS, T = TEBAL_HUTAN, A = PETA[0];
+  const { x0, x1, z0, z1 } = BATAS, T = TEBAL_HUTAN, A = { x0: x0, x1: x1 };   // timur = laut (tanpa hutan)
   const lantai = new VB();   // lantai hutan di bawah seluruh peta (sedikit lebih rendah dari tanah kota), sungai dibiarkan terbuka
-  for (const [a, b, c, d] of [[x0 - T, z0 - T, x1 + T, RIVER[0]], [x0 - T, RIVER[1], x1 + T, z1 + T]])
+  for (const [a, b, c, d] of [[x0 - T, z0 - T, x1, RIVER[0]], [x0 - T, RIVER[1], x1, z1 + T]])
     lantai.box((a + c) / 2, -0.66, (b + d) / 2, c - a, 0.6, d - b, '#5f7a3a');
-  for (const [a, c] of [[x0 - T, A.x0], [A.x1, x1 + T]]) { lantai.box((a + c) / 2, -1.4, 23, c - a, 0.8, 4, '#6f5a3c'); lantai.box((a + c) / 2, -0.75, 23, c - a, 0.5, 4, 'water'); }
+  lantai.box((x0 - T + x0) / 2, -1.4, 23, T, 0.8, 4, '#6f5a3c'); lantai.box((x0 - T + x0) / 2, -0.75, 23, T, 0.5, 4, 'water');
   const gl = lantai.build({ shadow: false }); gl.children.forEach(m => { m.castShadow = false; }); statik.add(gl);
 
   // ribuan pohon rimbun (instanced supaya ringan)
-  const N = ringan ? 4500 : 9000;
+  const N = ringan ? 6000 : 12000;
   const geoBatang = new THREE.CylinderGeometry(0.16, 0.24, 1, 5); geoBatang.translate(0, 0.5, 0);
   const geoBulat = new THREE.IcosahedronGeometry(1, 0);
   const geoCemara = new THREE.ConeGeometry(1, 1, 6); geoCemara.translate(0, 0.5, 0);
@@ -410,10 +419,10 @@ function bangunHutan(statik, r, ringan) {
   const HIJAU = ['#3f6b2e', '#4a7a34', '#36602a', '#55843a', '#2f5426'], CEMARA = ['#2c5130', '#34603a', '#27482b', '#3d6b3f'];
   const taruh = (jenis, _k, x, y, z, sx, sy, sz, c) => { const k = jenis + '|' + Math.floor(x / CH) + '|' + Math.floor(z / CH); if (!kumpul.has(k)) kumpul.set(k, []); kumpul.get(k).push([x, y, z, sx, sy, sz, c, r() * 6.28]); };
   const batang = 'batang', bulat = 'bulat', cemara = 'cemara';
-  for (let t = 0; t < N * 4 && nb < N; t++) {
+  for (let t = 0; t < N * 40 && nb < N; t++) {
     const x = x0 - T + r() * (x1 - x0 + 2 * T), z = z0 - T + r() * (z1 - z0 + 2 * T);
     const dalam = jarakLuar(x, z);
-    if (dalam <= 0.3 || dalam > T) continue;
+    if (dalam <= 0.3 || dalam > T || x > x1 - 4) continue;
     if (z > RIVER[0] - 0.8 && z < RIVER[1] + 0.8) continue;
     const h = 3.5 + Math.min(1, dalam / T) * 5 + r() * 3;   // makin dalam makin tinggi & gelap
     taruh(batang, nb++, x, 0, z, 1, h * 0.55, 1, '#5a4029');
@@ -430,8 +439,8 @@ function bangunHutan(statik, r, ringan) {
   // semak lebat di garis tepi hutan
   const semak = 'semak';
   let ns = 0;
-  const tepi = (x, z) => { if (ns < 2200 && !diPeta(x, z, 0) && jarakLuar(x, z) < 2.5 && !(z > RIVER[0] - 0.8 && z < RIVER[1] + 0.8)) taruh(semak, ns++, x, 0.3, z, 0.9 + r() * 0.8, 0.7 + r() * 0.5, 0.9 + r() * 0.8, HIJAU[Math.floor(r() * HIJAU.length)]); };
-  for (const p of PETA) {
+  const tepi = (x, z) => { if (ns < 2200 && x < BATAS.x1 - 8 && !diPeta(x, z, 0) && jarakLuar(x, z) < 2.5 && !(z > RIVER[0] - 0.8 && z < RIVER[1] + 0.8)) taruh(semak, ns++, x, 0.3, z, 0.9 + r() * 0.8, 0.7 + r() * 0.5, 0.9 + r() * 0.8, HIJAU[Math.floor(r() * HIJAU.length)]); };
+  for (const p of [DAERAH]) {
     for (let x = p.x0; x <= p.x1; x += 1.3) { tepi(x + r(), p.z0 - 0.6 - r()); tepi(x + r(), p.z1 + 0.6 + r()); }
     for (let z = p.z0; z <= p.z1; z += 1.3) { tepi(p.x0 - 0.6 - r(), z + r()); tepi(p.x1 + 0.6 + r(), z + r()); }
   }
@@ -449,7 +458,7 @@ function bangunHutan(statik, r, ringan) {
     else { const lo = Math.min(az, bz); if (!diPeta(ax, lo - 4)) papan.push([ax, lo + 1.5, 0, true]); }
   }
   const ada = (x, z) => papan.some(p => Math.abs(p[0] - x) < 9 && Math.abs(p[1] - z) < 9);
-  for (const p of PETA) {   // papan di sepanjang tepi hutan (menghadap ke dalam kota)
+  for (const p of [{ ...DAERAH, x1: DAERAH.x1 + 1e4 }]) {   // papan di sepanjang tepi hutan (menghadap ke dalam kota); timur = laut
     for (let x = p.x0 + 20; x < p.x1 - 10; x += 38) for (const [z, dz, ry] of [[p.z0 + 1.6, -4, 0], [p.z1 - 1.4, 4, Math.PI]]) if (!diPeta(x, z + dz) && diPeta(x, z) && !ada(x, z) && !(z > RIVER[0] - 3 && z < RIVER[1] + 3)) papan.push([x, z, ry, false]);
     for (let z = p.z0 + 18; z < p.z1 - 4; z += 36) for (const [x, dx, ry] of [[p.x0 + 1.6, -4, Math.PI / 2], [p.x1 - 1.6, 4, -Math.PI / 2]]) if (!diPeta(x + dx, z) && diPeta(x, z) && !ada(x, z) && !(z > RIVER[0] - 3 && z < RIVER[1] + 3)) papan.push([x, z, ry, false]);
   }
@@ -473,10 +482,11 @@ function bangunHutan(statik, r, ringan) {
   MAT_GUNUNG.length = 0;
   const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
   for (let lapis = 0; lapis < 2; lapis++) {
-    const n = lapis ? 30 : 40, rx = (x1 - x0) / 2 + T + 70 + lapis * 90, rz = (z1 - z0) / 2 + T + 70 + lapis * 90;
+    const n = lapis ? 30 : 40, rx = (x1 - x0) / 2 + T + 200 + lapis * 240, rz = (z1 - z0) / 2 + T + 200 + lapis * 240;
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 + r() * 0.12;
-      const tinggi = (lapis ? 70 : 38) + r() * (lapis ? 55 : 30), lebar = tinggi * (0.75 + r() * 0.35);
+      const tinggi = ((lapis ? 70 : 38) + r() * (lapis ? 55 : 30)) * 2.6, lebar = tinggi * (0.75 + r() * 0.35);
+      if (Math.cos(a) > 0.55) continue;   // sisi timur: laut lepas, tanpa gunung
       const m = new THREE.MeshLambertMaterial({ flatShading: true, fog: false });
       m.userData.dasar = new THREE.Color(lapis ? '#5f7a8c' : ['#4f7045', '#5a7a4c', '#486a40'][i % 3]); m.userData.kabut = lapis ? 0.4 : 0.22;
       MAT_GUNUNG.push(m);
@@ -493,6 +503,85 @@ function bangunHutan(statik, r, ringan) {
 }
 function warnaGunung(kabut, malam) {
   for (const m of MAT_GUNUNG) { m.color.copy(m.userData.dasar).lerp(kabut, m.userData.kabut); if (malam) m.color.multiplyScalar(0.32); }
+}
+// ---------------------------------------------------------------- daerah luas (skala 1 satuan = 2 m): sawah, tambak, pantai, laut, lahan rencana
+// Belum ada fasilitas yang dibangun: hanya lahan berpapan peruntukan (bandara, jalur kereta, flyover, mal, dll.)
+export const LAHAN_RENCANA = [
+  { nama: 'LAHAN BANDARA', sub: 'rencana bandar udara · ±1,3 km', x: -200, z: -890, w: 640, d: 200 },
+  { nama: 'LAHAN STASIUN', sub: 'rencana stasiun kereta api', x: 140, z: -130, w: 30, d: 50 },
+  { nama: 'LAHAN TERMINAL BUS', sub: 'rencana terminal antarkota', x: 85, z: -150, w: 60, d: 50 },
+  { nama: 'LAHAN KAMPUS', sub: 'rencana universitas', x: -150, z: -400, w: 120, d: 80 },
+  { nama: 'LAHAN MAL', sub: 'rencana mal & pusat belanja', x: -110, z: 90, w: 80, d: 60 },
+  { nama: 'LAHAN STADION', sub: 'rencana stadion sepak bola', x: 90, z: 120, w: 110, d: 90 },
+  { nama: 'LAHAN RUMAH SAKIT', sub: 'rencana rumah sakit daerah', x: 40, z: 250, w: 70, d: 60 },
+  { nama: 'LAHAN PELABUHAN', sub: 'rencana pelabuhan ikan', x: 560, z: -260, w: 60, d: 80 },
+];
+const REL_X = 180, PANTAI_X = 596;   // koridor rencana jalur kereta (utara–selatan) & garis pantai timur
+function kenaRencana(x, z, m = 0) { return LAHAN_RENCANA.some(L => Math.abs(x - L.x) < L.w / 2 + m && Math.abs(z - L.z) < L.d / 2 + m); }
+function bangunDaerah(statik, r, footprints, ringan) {
+  const C = DAERAH, CH = 240, petak = new Map();
+  const vb = (x, z) => { const k = Math.floor(x / CH) + '|' + Math.floor(z / CH); if (!petak.has(k)) petak.set(k, new VB()); return petak.get(k); };
+  // tanah dasar daerah (sedikit di bawah tanah kota) + sungai sampai muara + pantai + laut
+  const t = new VB();
+  for (const [a, b, c, d] of [[C.x0, C.z0, PANTAI_X, RIVER[0]], [C.x0, RIVER[1], PANTAI_X, C.z1]]) t.box((a + c) / 2, -0.63, (b + d) / 2, c - a, 0.6, d - b, '#9fb466');
+  for (const [a, c] of [[C.x0, PETA_KOTA[0].x0], [PETA_KOTA[0].x1, PANTAI_X + 30]]) { t.box((a + c) / 2, -1.4, 23, c - a, 0.8, 4, '#6f5a3c'); t.box((a + c) / 2, -0.75, 23, c - a, 0.5, 4, 'water'); }
+  t.box((PANTAI_X + C.x1) / 2 + 2, -0.5, (C.z0 + C.z1) / 2, C.x1 - PANTAI_X + 4, 0.48, C.z1 - C.z0 + 60, '#e8d9a8');   // pasir pantai
+  t.box(C.x1 + 1400, -0.9, (C.z0 + C.z1) / 2, 2800, 0.5, 4200, 'water');                                            // laut lepas
+  const gt = t.build({ shadow: false }); gt.children.forEach(m => { m.castShadow = false; }); statik.add(gt);
+
+  const bebas = (x, z, m) => !diKota(x, z, -m) && !kenaRencana(x, z, m) && !dalamJalanBaru(x, z, m + 1)
+    && Math.abs(x - REL_X) > 16 + m && !(z > RIVER[0] - 3 - m && z < RIVER[1] + 3 + m);
+  // sawah berpetak (barat, selatan, utara) & tambak (timur sampai pantai)
+  const SAWAH = ['#9cc95a', '#8fbf4f', '#6fa53a', '#b8c95a', '#d6c25a', '#7fa6a0'], PEMATANG = '#8a6d47';
+  for (let x = C.x0 + 4; x < PANTAI_X - 4; x += 24) for (let z = C.z0 + 4; z < C.z1 - 4; z += 16) {
+    const cx = x + 12, cz = z + 8; if (!bebas(cx, cz, 4)) continue;
+    const v = vb(cx, cz);
+    if (cx > REL_X + 30) {   // tambak bandeng & udang
+      v.box(cx, -0.05, cz, 23, 0.25, 15, '#9c8461');
+      v.box(cx, 0.05, cz, 20.6, 0.22, 12.6, 'water');
+      if (r() < 0.25) { v.box(cx + 7, 0.27, cz - 4, 1.4, 0.12, 0.25, '#e9e2d0'); v.box(cx + 7, 0.27, cz - 4, 0.25, 0.12, 1.4, '#e9e2d0'); }   // kincir
+      if (r() < 0.05) { v.box(cx - 9, 0.2, cz + 5, 2.2, 1.6, 2, '#a07a4f').box(cx - 9, 1.8, cz + 5, 2.8, 0.25, 2.6, '#6b4a2a'); }       // gubuk jaga
+      continue;
+    }
+    const c = r() < 0.12 ? '#a9b56a' : SAWAH[Math.floor(r() * SAWAH.length)];
+    v.box(cx, -0.06, cz, 23.4, 0.1, 15.4, c);                                     // petak sawah
+    v.box(cx, -0.04, cz + 7.8, 24, 0.22, 0.6, PEMATANG); v.box(cx + 11.8, -0.04, cz, 0.6, 0.22, 16, PEMATANG);   // pematang
+    if (!ringan && c !== "#7fa6a0" && c !== "#a9b56a") for (let k = -7.5; k <= 7.5; k += 5) v.box(cx + k, 0.04, cz, 0.5, 0.25, 13, c === '#d6c25a' ? '#c9b24a' : '#5f9a32');   // barisan padi
+    if (r() < 0.012) { v.box(cx, 0.04, cz, 2.4, 1.4, 2.2, '#b08a5a').box(cx, 1.44, cz, 3, 0.25, 2.8, '#7a5a3a'); }   // gubuk sawah
+    if (r() < 0.035) pohon(v, cx + 11.6, cz + 7.6, r, 'kelapa');
+  }
+  // saluran irigasi memanjang
+  for (const z of [-520, -200, 260]) for (let x = C.x0 + 10; x < REL_X - 20; x += 24) if (bebas(x, z, 0)) vb(x, z).box(x, -0.08, z, 24, 0.1, 2.2, 'water');
+  for (const v of petak.values()) { const g = v.build({ shadow: false }); statik.add(g); }
+
+  // koridor rencana jalur kereta: patok tiap 20 m + papan
+  const pk = new Map(), pv = (x, z) => { const k = Math.floor(x / CH) + '|' + Math.floor(z / CH); if (!pk.has(k)) pk.set(k, new VB()); return pk.get(k); };
+  for (let z = C.z0 + 6; z < C.z1 - 6; z += 10) for (const sx of [-1, 1]) { const x = REL_X + sx * 13; if (z > RIVER[0] - 2 && z < RIVER[1] + 2) continue; pv(x, z).box(x, 0, z, 0.3, 1.0, 0.3, '#e9e2d0').box(x, 0.8, z, 0.32, 0.22, 0.32, '#d62828'); }
+  for (let z = C.z0 + 6; z < C.z1 - 6; z += 4) { if (z > RIVER[0] - 2 && z < RIVER[1] + 2) continue; pv(REL_X, z).box(REL_X, -0.02, z, 24, 0.06, 4, '#b8a77a'); }   // tanah diratakan
+  const papanRencana = (x, z, ry, judul, sub, lebar = 7) => {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry;
+    const v = new VB(); v.box(-lebar / 2 + 0.4, 0, 0, 0.25, 3.6, 0.25, '#4a3420').box(lebar / 2 - 0.4, 0, 0, 0.25, 3.6, 0.25, '#4a3420'); g.add(v.build());
+    const s1 = signMesh(judul, lebar, 1.3, '#0f4c5c', '#ffd166'); s1.position.set(0, 3.1, 0.15); g.add(s1);
+    const s2 = signMesh(sub, lebar, 0.8, '#f4ecd8', '#16324f'); s2.position.set(0, 2.05, 0.15); g.add(s2);
+    const s3 = signMesh('💬 komen like terbanyak = dibangun', lebar, 0.6, '#ffd166', '#3d2a00'); s3.position.set(0, 1.35, 0.15); g.add(s3);
+    statik.add(g);
+  };
+  for (let z = C.z0 + 120; z < C.z1 - 40; z += 260) if (!(z > -20 && z < 60)) papanRencana(REL_X + 16, z, -Math.PI / 2, 'RENCANA JALUR KERETA API', 'Surabaya – Sidoarjo – Malang');
+  papanRencana(REL_X - 9, 6, 0, 'RENCANA FLYOVER', 'jalan raya melintas di atas rel', 8);
+  papanRencana(REL_X + 9, -6, Math.PI, 'RENCANA FLYOVER', 'jalan raya melintas di atas rel', 8);
+  papanRencana(REL_X + 16, 34, -Math.PI / 2, 'RENCANA JEMBATAN KERETA', 'melintasi sungai', 8);
+  // lahan-lahan rencana: pagar patok + papan peruntukan
+  for (const L of LAHAN_RENCANA) {
+    if (footprints.some(f => Math.abs(f.x - L.x) < L.w / 2 && Math.abs(f.z - L.z) < L.d / 2)) continue;
+    const v = pv(L.x, L.z);
+    v.box(L.x, -0.02, L.z, L.w, 0.06, L.d, '#c2a172');
+    const jarak = L.w > 200 ? 8 : 3;
+    for (let x = -L.w / 2; x <= L.w / 2; x += jarak) for (const sz of [-1, 1]) v.box(L.x + x, 0, L.z + sz * L.d / 2, 0.2, 1.0, 0.2, '#e9e2d0');
+    for (let z = -L.d / 2; z <= L.d / 2; z += jarak) for (const sx of [-1, 1]) v.box(L.x + sx * L.w / 2, 0, L.z + z, 0.2, 1.0, 0.2, '#e9e2d0');
+    if (L.nama === 'LAHAN BANDARA') for (let x = -L.w / 2 + 60; x < L.w / 2 - 60; x += 30) v.box(L.x + x, 0.04, L.z, 14, 0.02, 1.2, '#f4f4f4');   // patok garis rencana landasan
+    papanRencana(L.x, L.z + L.d / 2 + 2, 0, L.nama, L.sub, L.w > 200 ? 10 : 7);
+  }
+  for (const v of pk.values()) statik.add(v.build({ shadow: false }));
 }
 // bangjo: lampu merah/kuning/hijau yang bergantian (arah x dan arah z)
 const GEO_BANGJO = new THREE.SphereGeometry(0.13, 10, 8);
@@ -1206,7 +1295,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog('#dfe6e4', 60, 165);
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 900);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 2600);
   camera.position.set(34, 38, 40);
 
   const controls = new OrbitControls(camera, canvas);
@@ -1215,14 +1304,14 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
   controls.dampingFactor = 0.08;
   controls.screenSpacePanning = false;
   controls.minDistance = 12;
-  controls.maxDistance = 130;
+  controls.maxDistance = 220;
   controls.maxPolarAngle = Math.PI * 0.42;
   controls.minPolarAngle = Math.PI * 0.12;
   controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
   controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
   controls.addEventListener('change', () => {
     const t = controls.target;
-    const cx = THREE.MathUtils.clamp(t.x, BATAS.x0 + 8, BATAS.x1 - 8), cz = THREE.MathUtils.clamp(t.z, t.x > -30 ? -80 : BATAS.z0 + 6, 32);
+    const cx = THREE.MathUtils.clamp(t.x, BATAS.x0 + 8, BATAS.x1 - 8), cz = THREE.MathUtils.clamp(t.z, BATAS.z0 + 6, BATAS.z1 - 6);
     if (cx !== t.x || cz !== t.z) { camera.position.x += cx - t.x; camera.position.z += cz - t.z; t.x = cx; t.z = cz; }
   });
 
@@ -1316,6 +1405,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     for (let x = -30; x <= 30; x += 3.3) { if (Math.abs(x) < 3) continue; if (r() < 0.5) pohon(pohonVB, x, RIVER[0] - 0.9, r, 'kelapa'); else pohonVB.bola(x, 0, RIVER[0] - 0.8, 1.1, 0.8, 1.1, '~#7a9a4a'); }
     statik.add(pohonVB.build());
     pohonPos.push(...bangunKawasan(statik, kota, footprints, r));
+    bangunDaerah(statik, r, footprints, RINGAN);   // sawah, tambak, pantai, lahan rencana (skala 1:2 m)
 
     // ---- detail tanah: ribuan helai rumput, bunga kecil, batu bersegi, bukit di kejauhan
     const diJalan = (x, z, m) => {
@@ -1348,13 +1438,13 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
 
     // awan
     awanG.clear();
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 34; i++) {
       const vb = new VB();
       const n = 3 + Math.floor(r() * 3);
       for (let k = 0; k < n; k++) vb.bola(k * 1.8 - n, r() * 0.6, (r() - 0.5) * 2, 2.8 + r() * 1.5, 1.6 + r(), 2.4 + r() * 1.2, '~#fbf7ef');
       const c = vb.build({ shadow: false });
       c.children.forEach(m => { m.material = MAT_AWAN; });
-      c.position.set(-5 + (r() - 0.5) * 300, 58 + r() * 12, -25 + (r() - 0.5) * 180); c.scale.setScalar(1.1);
+      c.position.set(BATAS.x0 + r() * (BATAS.x1 - BATAS.x0), 150 + r() * 40, BATAS.z0 + r() * (BATAS.z1 - BATAS.z0)); c.scale.setScalar(2.4);
       c.userData.v = 0.4 + r() * 0.6;
       awanG.add(c);
     }
@@ -1862,12 +1952,15 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     stepTamu(dt, t);
     stepHujan(dt);
     for (const a of ayam) stepAyam(a, dt, t);
-    for (const c of awanG.children) { c.position.x += c.userData.v * dt; if (c.position.x > 160) c.position.x = -170; }
+    for (const c of awanG.children) { c.position.x += c.userData.v * dt; if (c.position.x > BATAS.x1 + 100) c.position.x = BATAS.x0 - 100; }
     stepBangjo(t);
     if (!kameraManual) {   // matahari & bayangan ikut area yang sedang dilihat (peta sekarang luas)
       const tg = controls.target; sun.target.position.set(tg.x, 0, tg.z); sun.position.x = tg.x + sunOff.x; sun.position.z = tg.z + sunOff.z;
       sun.target.updateMatrixWorld();
       papanLod(camera.position);
+      // kabut menyesuaikan jarak kamera: dekat = suasana berkabut, jauh = peta luas tetap terlihat
+      const jk = Math.max(1, camera.position.distanceTo(tg) / 55) * kabutSkala;
+      scene.fog.near = (60 - hujan * 12) * jk; scene.fog.far = (165 - hujan * 30) * jk;
     }
     if (fokus) {
       fokus.t = Math.min(1, fokus.t + dt * 1.8);
