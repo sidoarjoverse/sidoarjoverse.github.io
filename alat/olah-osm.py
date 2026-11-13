@@ -149,6 +149,29 @@ hasil['jalan'] = jl
 hasil['rel'] = [q for p in hasil['rel'] for q in potong(p) if panjang(q) > 20]
 print('setelah dipotong: sungai', len(sg), 'jalan', len(jl))
 
+# ---------- lahan bandara di lokasi Juanda: kosongkan dari sungai kecil & jalan (dipotong lalu ujungnya dipangkas)
+_bx, _bz = xy(-7.3790, 112.7870)
+BRECT = (_bx - 55, _bx + 55, _bz - 20, _bz + 20)
+def _diB(x, z, m=0): return BRECT[0] - m < x < BRECT[1] + m and BRECT[2] - m < z < BRECT[3] + m
+def _rapat(p, step=3):
+    out = [p[0]]
+    for k in range(len(p) - 1):
+        (ax, az), (bx, bz) = p[k], p[k + 1]; n = max(1, int(math.dist(p[k], p[k + 1]) / step))
+        for i in range(1, n + 1): out.append([ax + (bx - ax) * i / n, az + (bz - az) * i / n])
+    return out
+def _buangB(p, m):
+    out, cur = [], []
+    for q in _rapat(p):
+        if _diB(*q, m):
+            if len(cur) > 1: out.append(cur)
+            cur = []
+        else: cur.append(q)
+    if len(cur) > 1: out.append(cur)
+    return [sederhana(c, 0.8) for c in out]
+hasil['sungai'] = [dict(s, p=q) for s in hasil['sungai'] for q in _buangB(s['p'], s['lebar'] / 2 + 6) if len(q) > 1]
+hasil['jalan'] = [dict(j, p=q) for j in hasil['jalan'] for q in _buangB(j['p'], 6) if len(q) > 1]
+hasil['bandara'] = {'n': 'Bandara Juanda', 'p': [[BRECT[0], BRECT[2]], [BRECT[1], BRECT[2]], [BRECT[1], BRECT[3]], [BRECT[0], BRECT[3]]], 'landasan': [[[BRECT[0] + 8, _bz], [BRECT[1] - 8, _bz]]]}
+
 # ---------- rapikan jaringan jalan: buang dobel, sambung ujung yang menggantung, buang potongan pendek
 KELAS = {'tol': 3, 'raya': 2, 'kabupaten': 1}
 def titik_terdekat(x, z, p):

@@ -606,7 +606,11 @@ function bangunHutan(statik, r, ringan) {
       const m = new THREE.MeshLambertMaterial({ fog: false });
       m.userData.dasar = new THREE.Color(lapis ? '#7c9196' : ['#5d7b4c', '#668553', '#557346'][i % 3]); m.userData.kabut = lapis ? 0.5 : 0.28; MAT_GUNUNG.push(m);
       const g = new THREE.Mesh(GEO_BUKIT, m); const lb = lebar * (1.6 + r() * 0.8);
-      g.scale.set(lb, tinggi * 0.75, lb * (0.6 + r() * 0.4)); g.position.set(cx + Math.cos(a) * rx * (0.95 + r() * 0.1), -6, cz + Math.sin(a) * rz * (0.95 + r() * 0.1)); g.rotation.y = r() * 3;
+      g.position.set(cx + Math.cos(a) * rx * (0.95 + r() * 0.1), -6, cz + Math.sin(a) * rz * (0.95 + r() * 0.1)); g.rotation.y = r() * 3;
+      const jarak = Math.max(BATAS.x0 - g.position.x, g.position.x - BATAS.x1, BATAS.z0 - g.position.z, g.position.z - BATAS.z1) - T - 20;   // jangan sampai masuk ke peta
+      if (jarak < 60) continue;
+      const rb = Math.min(lb, jarak * 0.95);
+      g.scale.set(rb, tinggi * 0.75 * Math.min(1, rb / lb * 1.3), rb * 0.8);
       statik.add(g);
     }
   }
@@ -623,8 +627,10 @@ function bangunDaerah(statik, r, footprints, ringan) {
   const vb = (x, z) => { const k = Math.floor(x / CH) + '|' + Math.floor(z / CH); if (!petak.has(k)) petak.set(k, new VB()); return petak.get(k); };
   // sungai (rumput tepi, lumpur, air)
   const tepiR = [], lumpur = [], air = [];
-  for (const s of SUNGAI) { tepiR.push(pita(s.p, s.lebar + 9, 0.045)); lumpur.push(pita(s.p, s.lebar + 3.5, 0.052)); air.push(pita(s.p, s.lebar, 0.06)); }
-  statik.add(gabungPita(tepiR, mat('#7d9a4a'))); statik.add(gabungPita(lumpur, mat('#6f5a3c'))); statik.add(gabungPita(air, MAT_SUNGAI));
+  for (const s of SUNGAI) { tepiR.push(pita(s.p, s.lebar + 9, 0.03)); lumpur.push(pita(s.p, s.lebar + 3.5, 0.07)); air.push(pita(s.p, s.lebar, 0.11)); }
+  // lapisan sungai: urutan gambar & offset kedalaman tetap → tidak belang/sobek di tikungan
+  const lapis = (g, m, urut, off) => { const mm = m.clone(); mm.polygonOffset = true; mm.polygonOffsetFactor = off; mm.polygonOffsetUnits = off * 4; mm.side = THREE.DoubleSide; if (g.material) g.material = mm; g.renderOrder = urut; return g; };
+  statik.add(lapis(gabungPita(tepiR, mat('#7d9a4a')), mat('#7d9a4a'), 1, -1)); statik.add(lapis(gabungPita(lumpur, mat('#6f5a3c')), mat('#6f5a3c'), 2, -2)); statik.add(lapis(gabungPita(air, MAT_SUNGAI), MAT_SUNGAI, 3, -3));
   // jalan asli: aspal + tepi + marka putus-putus (tol & raya)
   const tepiJ = [], aspal = [], marka = new VB();
   for (const jl of JALAN_ASLI) {
