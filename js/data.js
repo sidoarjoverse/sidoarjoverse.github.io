@@ -165,7 +165,12 @@ export async function cariNama(q) {
 
 export async function wargaTerbaru(limit = 30) {
   if (DEMO) return wargaDemo().slice(0, limit);
-  return rest(`/rest/v1/warga?select=${KOLOM}&order=created_at.desc&limit=${limit}`);
+  try { return await rest(`/rest/v1/warga?select=${KOLOM}&order=created_at.desc&limit=${limit}`); }
+  catch (e) {   // server mati: warga tetap jalan-jalan di peta pakai salinan di GitHub
+    const r = await fetch('data/warga-cadangan.json').catch(() => null);
+    if (r && r.ok) return (await r.json()).slice(0, limit);
+    throw e;
+  }
 }
 
 export async function wargaById(ids) {
