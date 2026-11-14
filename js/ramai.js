@@ -51,19 +51,19 @@ export function mulaiRamai({ world, saya, onJumlah }) {
   }
   let nTerakhir = -1;
   function hitung() { const n = terlihat.size + (world.sedangMain() ? 1 : 0); if (n !== nTerakhir) { nTerakhir = n; onJumlah && onJumlah(n); } }
-  // kirim posisi sendiri saat jalan-jalan: 5×/detik saat bergerak, tiap 3 detik saat diam
+  // kirim posisi sendiri saat jalan-jalan: 1×/detik saat bergerak, tiap 8 detik saat diam (hemat kuota Realtime)
   let akhir = { x: 1e9, z: 0, ry: 0, t: 0 };
   setInterval(() => {
     const st = world.statusPemain(), s = saya();
     if (!st || !s) return;
     const now = Date.now(), gerak = Math.hypot(st.x - akhir.x, st.z - akhir.z) > 0.05 || Math.abs(st.ry - akhir.ry) > 0.1;
-    if (gerak || now - akhir.t > 3000) {
+    if ((gerak && now - akhir.t > 1000) || now - akhir.t > 8000) {
       kirim('pos', { w: ringkas(s), x: +st.x.toFixed(2), z: +st.z.toFixed(2), ry: +st.ry.toFixed(2), j: st.j });
       akhir = { x: st.x, z: st.z, ry: st.ry, t: now };
     }
   }, 200);
   // warga yang tidak terdengar 10 detik dianggap pergi; jaga koneksi tetap hidup
-  setInterval(() => { const now = Date.now(); for (const [k, t] of terlihat) if (now - t > 10000) { terlihat.delete(k); world.tamuPergi(k); } hitung(); }, 2000);
+  setInterval(() => { const now = Date.now(); for (const [k, t] of terlihat) if (now - t > 20000) { terlihat.delete(k); world.tamuPergi(k); } hitung(); }, 2000);
   setInterval(() => { if (siap) try { ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++ref) })); } catch (_) {} }, 25000);
   addEventListener('pagehide', () => { if (saya() && world.sedangMain()) kirim('pamit', { w: ringkas(saya()) }); });
   sambung();

@@ -66,14 +66,39 @@ async function ambilKotaMentah() {
     if (s) { try { return JSON.parse(s); } catch (_) {} }
     return kotaBawaan();
   }
-  const rows = await rest(`/rest/v1/kota?id=eq.${encodeURIComponent(CONFIG.KOTA_ID)}&select=data`);
-  if (rows && rows[0] && rows[0].data && Object.keys(rows[0].data).length) return rows[0].data;
-  return kotaBawaan(); // tabel masih kosong: tampilkan data bawaan
+  // Hemat kuota Supabase: cek dulu jam perubahan terakhir (kecil). Data penuh hanya diunduh kalau berubah;
+  // kalau sama dengan yang sudah dipegang / salinan di GitHub (data/kota-cadangan.json), pakai itu.
+  // Kalau Supabase sedang mati / kuota habis, situs tetap jalan pakai salinan.
+  const id = encodeURIComponent(CONFIG.KOTA_ID);
+  try {
+    const jam = await rest(`/rest/v1/kota?id=eq.${id}&select=updated_at`, { signal: AbortSignal.timeout(8000) });
+    const j = jam && jam[0] && jam[0].updated_at;
+    if (j && SIMPAN.jam === j && SIMPAN.data) { OFFLINE.kota = false; return structuredClone(SIMPAN.data); }
+    const cad = SIMPAN.cadangan || await ambilCadangan();
+    if (j && cad && cad._updated_at && Date.parse(j) <= Date.parse(cad._updated_at)) { SIMPAN.jam = j; SIMPAN.data = cad; OFFLINE.kota = false; return structuredClone(cad); }
+    const rows = await rest(`/rest/v1/kota?id=eq.${id}&select=data`, { signal: AbortSignal.timeout(15000) });
+    OFFLINE.kota = false;
+    if (rows && rows[0] && rows[0].data && Object.keys(rows[0].data).length) { SIMPAN.jam = j; SIMPAN.data = rows[0].data; return structuredClone(rows[0].data); }
+    return kotaBawaan(); // tabel masih kosong: tampilkan data bawaan
+  } catch (e) {
+    if (SIMPAN.data) { OFFLINE.kota = true; return structuredClone(SIMPAN.data); }
+    const cad = SIMPAN.cadangan || await ambilCadangan();
+    if (cad) { console.warn('Supabase gagal, pakai salinan kota:', e.message); OFFLINE.kota = true; SIMPAN.data = cad; return structuredClone(cad); }
+    throw e;
+  }
 }
+const SIMPAN = { jam: null, data: null, cadangan: null };
+async function ambilCadangan() {
+  try { const r = await fetch('data/kota-cadangan.json?v=' + Math.floor(Date.now() / 6e5)); if (r.ok) return (SIMPAN.cadangan = await r.json()); } catch (_) {}
+  return null;
+}
+// penanda: data sedang dari salinan (Supabase tidak bisa dihubungi)
+export const OFFLINE = { kota: false };
 
 export async function simpanKota(data) {
   data.diperbarui = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).slice(0, 16);
   if (DEMO) { localStorage.setItem(KEY_KOTA, JSON.stringify(data)); return; }
+  if (OFFLINE.kota) throw new Error('Data kota yang terbuka adalah SALINAN (server sempat mati). Muat ulang halaman admin dulu sebelum menyimpan.');
   const sesi = sesiAdmin();
   if (!sesi) throw new Error('Belum login');
   const rows = await rest('/rest/v1/kota', {

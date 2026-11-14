@@ -338,7 +338,8 @@ async function refreshWarga() {
 // Muat ulang data otomatis tiap 2 menit (hanya saat tab terlihat), tanpa perlu refresh halaman.
 let sidikKota = '';
 async function segarkan() {
-  if (document.hidden || !kota) return;
+  if (document.hidden || !kota || Date.now() - (segarkan.t || 0) < 90000) return;
+  segarkan.t = Date.now();
   try {
     const k = await D.ambilKota();
     const sk = JSON.stringify(k);
@@ -570,6 +571,7 @@ async function mulai() {
     $('loading').innerHTML = `Gagal memuat data kota.<br><small>${esc(e.message)}</small>`;
     return;
   }
+  if (D.OFFLINE.kota) kota.berita = ['⚠️ Server lagi perbaikan: gawe KTP & tempati omah sementara durung iso. Peta tetap iso dijelajahi, rek!', ...(kota.berita || [])];
   renderHeader();
   try {
     world = createWorld($('map'), { onPick, onDekat });
@@ -581,7 +583,8 @@ async function mulai() {
     $('loading').innerHTML = 'Browser ini belum mendukung peta 3D (WebGL).<br><small>Menu lain tetap bisa dipakai.</small>';
   }
   sidikKota = JSON.stringify(kota);
-  if (kodeSaya) { try { saya = await D.cariKode(kodeSaya); } catch (_) {} if (!saya) { localStorage.removeItem(KEY_KTP); localStorage.removeItem(KEY_PIN); kodeSaya = ''; pinSaya = ''; } }
+  if (kodeSaya) { let cekOk = false; try { saya = await D.cariKode(kodeSaya); cekOk = true; } catch (_) {} if (!saya && cekOk) {   // KTP hanya dihapus dari HP kalau server JELAS bilang tidak ada (bukan karena server mati)
+    localStorage.removeItem(KEY_KTP); localStorage.removeItem(KEY_PIN); kodeSaya = ''; pinSaya = ''; } }
   if (world) { await refreshWarga(); $('loading').classList.add('done'); }
   // KTP lama (dibuat sebelum ada PIN): ambil PIN-nya sekali dari HP ini
   if (saya && !pinSaya) { const pin = await D.klaimPin(kodeSaya); if (pin) { pinSaya = pin; localStorage.setItem(KEY_PIN, pin); } }
@@ -590,7 +593,7 @@ async function mulai() {
   if (world && !D.DEMO) ramai = mulaiRamai({ world, saya: () => saya, onJumlah: n => { const el = $('online'); el.hidden = n < 1; el.textContent = `🟢 ${n} warga online`; } });
   renderInfo(); renderKTP(); renderDonasi(); renderAkun();
   renderPemilu();
-  setInterval(segarkan, 120000);
+  setInterval(segarkan, 300000);   // 5 menit (hemat kuota Supabase)
   document.addEventListener('visibilitychange', () => { if (!document.hidden) segarkan(); });
 }
 mulai();
