@@ -478,9 +478,13 @@ function kameraJalur(t, i, sh) {
   if (s.toleh) { const kf = s.toleh; let deg = kf[0][1]; for (let k = 1; k < kf.length; k++) if (fr >= kf[k - 1][0]) deg = kf[k - 1][1] + (kf[k][1] - kf[k - 1][1]) * ease((fr - kf[k - 1][0]) / ((kf[k][0] - kf[k - 1][0]) || 1));
     const a = deg * Math.PI / 180, dx = L.x - px, dz = L.z - pz; L.x = px + dx * Math.cos(a) + dz * Math.sin(a); L.z = pz - dx * Math.sin(a) + dz * Math.cos(a); }
   L.x += (Math.sin(t * 2.3) * 0.05 + Math.sin(t * 5.7) * 0.02) * g; L.y += (Math.sin(t * 3.1) * 0.04 + Math.sin(t * 7.3) * 0.015) * g;
+  if (i !== jalurSeg.i) { jalurSeg.awal = (jalurSeg.L && !s.glitch && SHOT[i - 1] && SHOT[i - 1].jalur) ? jalurSeg.L.clone() : null; jalurSeg.i = i; }
+  if (jalurSeg.awal) { const k = ease((t - T0) / 0.9); if (k < 1) L.lerp(jalurSeg.awal, 1 - k); }   // tanpa lompatan arah pandang antar adegan
+  jalurSeg.L = L.clone();
   camera.lookAt(L); camera.rotateZ(Math.sin(t * 1.1) * 0.015 * g);
   if (NASKAH.kabutIkut) world.ikutKamera(px, pz);
 }
+const jalurSeg = { i: -1, L: null, awal: null };
 function kamera(t) {
   const i = segPada(t), sh = SHOT[i];
   if (sh.jalur) { kameraJalur(t, i, sh); return; }
