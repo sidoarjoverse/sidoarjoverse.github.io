@@ -69,6 +69,27 @@ for (const k of NASKAH.iwak || []) {
     IWAK.push({ g, k, ph: r() * 6.28, sp: 0.25 + r() * 0.35, off: (r() - 0.5) * 2 * (k.sebar ?? 7), span: (k.panjang ?? 14) * (0.4 + r() * 0.6), lompat: r() < 0.35, tl: 2 + r() * 5, ekor });
   }
 }
+// warga mancing (naskah "pemancing": [{x, y, z, ry}]), joran + senar + pelampung; baris "pemancingToleh": true → menoleh ke kamera
+const PEMANCING = (NASKAH.pemancing || []).map((d, k) => {
+  const ch = makeCharUmum({ kulit: '#b9805a', baju: ['#4f772d', '#3a5a8c'][k % 2], celana: '#3d405b', rambut: '#1a1a1a' }, { topi: '#d9c38a' });
+  ch.position.set(d.x, d.y || 0, d.z); ch.rotation.y = (d.ry || 0) + (d.balik ? Math.PI : 0); scene.add(ch);
+  const m = new THREE.MeshStandardMaterial({ color: '#5a3e24', roughness: 0.6 });
+  const joran = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.045, 3.2, 6), m); joran.position.set(0.3, 1.9, 1.3); joran.rotation.x = 1.0; ch.add(joran);
+  const ujung = new THREE.Vector3(0.3, 2.75, 2.65), ap = (d.y || 0) - (d.air ?? 0.12);
+  const senar = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 1, 4), new THREE.MeshBasicMaterial({ color: '#eeeeee' })); ch.add(senar);
+  const pelampung = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), new THREE.MeshStandardMaterial({ color: '#e63946' })); ch.add(pelampung);
+  return { ch, d, ujung, ap, senar, pelampung, joran };
+});
+function aturPemancing(t, s) {
+  for (const p of PEMANCING) {
+    const goy = Math.sin(t * 1.3 + p.d.x) * 0.04; p.joran.rotation.x = 1.0 + goy;
+    const tip = p.ujung.clone(); tip.y += goy * 1.5; const bawah = new THREE.Vector3(tip.x, -p.ap + Math.sin(t * 2.1) * 0.03, tip.z + 0.6);
+    p.senar.position.copy(tip).add(bawah).multiplyScalar(0.5); p.senar.scale.y = tip.distanceTo(bawah); p.senar.lookAt(p.ch.localToWorld(bawah.clone())); p.senar.rotateX(Math.PI / 2);
+    p.pelampung.position.copy(bawah);
+    const head = p.ch.userData.anim && p.ch.userData.anim.head;
+    if (head) head.rotation.y = s.pemancingToleh ? Math.min(1.2, (t - s.start) * 3) * (p.d.tolehArah ?? 1) : 0;
+  }
+}
 function aturIwak(t) {
   for (const f of IWAK) {
     const { k } = f, a = k.arah || 0, dx = Math.sin(a), dz = Math.cos(a), u = Math.sin(t * f.sp + f.ph), du = Math.cos(t * f.sp + f.ph);
@@ -1043,6 +1064,7 @@ window.video = {
       a.legs[0].rotation.x = sw; a.legs[1].rotation.x = -sw;
       if (lari) { tangan.rotation.set(-sw, 0, 0.3); if (tanganKiri) tanganKiri.rotation.set(sw, 0, -0.3); }
     }
+    else if (s.darjoDi) { scene.add(darjo); const [dx, dz, dry, dy] = s.darjoDi; darjo.position.set(dx, (dy || 0) + darjo.position.y, dz); darjo.rotation.y = dry || 0; }   // Cak Darjo berdiri di lokasi mana pun (mis. vlog selfie)
     else if (diDalam) { DALAM.scene.add(darjo); darjo.position.set(-1.75, darjo.position.y, 2.9); darjo.rotation.y = 0.3; }
     else { scene.add(darjo); darjo.position.set(0, darjo.position.y, 0.6); darjo.rotation.y = 0; }
     // siang → malam (naskah "malam": true)
@@ -1076,7 +1098,7 @@ window.video = {
     world.setLampuMati(!!s.lampuMati || (s.kedip && (Math.sin(t * 29) + Math.sin(t * 13.7) > 0.4 || (t * 7) % 3 < 0.5)));
     const nIsi = aturPenghuni(t); window._nIsi = nIsi;
     if (NASKAH.tanpaPapan && !s.papanRumah) scene.traverse(o => { if (o.userData && o.userData.papanRumah) o.userData.papanRumah.visible = false; });
-    aturIwak(t);
+    aturIwak(t); aturPemancing(t, s);
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     if (diDalam) {
       if (DALAM.ch) { DALAM.ch.position.y = Math.abs(Math.sin(t * 2.2)) * 0.02; if (DALAM.tangan) DALAM.tangan.rotation.z = t % 5 < 1.8 ? 2.4 + Math.sin(t * 12) * 0.35 : 0; }

@@ -982,6 +982,24 @@ export const TIPE = {
     vb.box(0, 1.6, 0.62, 0.3, 0.3, 0.3, 'lamp');
     const sg = signMesh('KOPI', 1.4, 0.45, '#3d2a1e', '#ffd166'); sg.position.set(0, 2.55, 0.61); ex.push(sg);
   } },
+  kolampancing: { label: 'Kolam Pancing', w: 24, d: 18, build(vb, b, ex, r) {
+    vb.box(0, 0, 0, 24, 0.2, 18, '#b9ad94');                                  // pelataran
+    vb.box(0, 0.05, 0, 19, 0.2, 13, '#2f6f86');                               // dasar kolam (gelap)
+    const air = new THREE.Mesh(new THREE.PlaneGeometry(19, 13).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#3f9bb5', roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.88 }));
+    air.position.y = 0.32; ex.push(air);
+    for (const sz of [-1, 1]) vb.box(0, 0.2, sz * 7, 20.4, 0.35, 1.4, '#8b6a46');   // dermaga kayu keliling
+    for (const sx of [-1, 1]) vb.box(sx * 10.2, 0.2, 0, 1.4, 0.35, 15.4, '#8b6a46');
+    for (const x of [-6, 0, 6]) { vb.box(x, 0.2, -4.6, 1.2, 0.3, 3.6, '#9b7b52'); vb.box(x, 0.5, -3.2, 0.7, 0.45, 0.5, '#5a3e24'); }   // lapak mancing + bangku
+    for (let x = -11.5; x <= 11.5; x += 2.3) for (const sz of [-1, 1]) vb.box(x, 0.2, sz * 8.6, 0.15, 0.9, 0.15, '#f2efe6');   // pagar
+    // gazebo + payung warna-warni
+    for (const [ax, az] of [[-1.4, -1.4], [1.4, -1.4], [1.4, 1.4], [-1.4, 1.4]]) vb.box(9.6 + ax, 0.2, 6.6 + az, 0.2, 2.6, 0.2, '#6b4a2a');
+    vb.box(9.6, 2.8, 6.6, 3.8, 0.5, 3.8, '#c0392b');
+    for (const [x, c] of [[-8, '#ffd166'], [-2, '#06d6a0'], [4, '#ef476f']]) { vb.box(x, 0.2, 7.6, 0.12, 2.4, 0.12, '#555'); vb.bola(x, 2.4, 7.6, 2.6, 0.6, 2.6, c); }
+    // ikan warna-warni di permukaan
+    for (let i = 0; i < 26; i++) vb.bola((r() - 0.5) * 17, 0.28, (r() - 0.5) * 11, 0.7, 0.18, 0.35, ['#ff8c42', '#ffd166', '#f2f2f2', '#e63946', '#8ecae6'][i % 5]);
+    const sg = signMesh('🎣 KOLAM PANCING WARGA', 10, 1.4, '#0f4c5c', '#ffd166'); sg.position.set(0, 3.8, 9.2); ex.push(sg);
+    for (const sx of [-5.2, 5.2]) vb.box(sx, 0.2, 9.2, 0.35, 4.6, 0.35, '#5a3e24');
+  } },
   toko: { label: 'Toko Mitra', w: 7, d: 6, build(vb, b, ex) {
     const warna = ['#e76f51', '#2a9d8f', '#f4a261', '#457b9d', '#9b5de5'][Math.abs([...(b.id || b.nama || 'x')].reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % 5];
     vb.box(0, 0, 0, 6.6, 0.25, 5.6, '#d8d2c4');                       // teras
