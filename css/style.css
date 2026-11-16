@@ -230,9 +230,9 @@ body.bermain .online { top: 58px; }
 .rumah-aksi { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; justify-content: center; }
 
 /* ---------- peta 2D: peta mini + peta penuh */
-.peta-mini { position: absolute; right: 12px; top: 176px; width: 112px; height: 112px; border-radius: 50%; border: 3px solid var(--teal); box-shadow: 0 3px 0 var(--teal), 0 6px 16px rgba(0,0,0,.25); cursor: pointer; background: #5f7a3a; z-index: 5; }
-.peta-lokasi { position: absolute; right: 12px; top: 296px; max-width: 170px; padding: 5px 9px; border-radius: 10px; background: rgba(255,248,236,.94); border: 2px solid var(--teal); font-size: 11px; font-weight: 800; color: var(--teal); text-align: center; z-index: 5; pointer-events: none; }
-body.bermain .peta-lokasi { top: 296px; }
+.peta-mini { position: absolute; right: 12px; top: 176px; width: 76px; height: 76px; border-radius: 50%; border: 3px solid var(--teal); box-shadow: 0 3px 0 var(--teal), 0 6px 16px rgba(0,0,0,.25); cursor: pointer; background: #5f7a3a; z-index: 5; }
+.peta-lokasi { position: absolute; right: 12px; top: 258px; max-width: 170px; padding: 5px 9px; border-radius: 10px; background: rgba(255,248,236,.94); border: 2px solid var(--teal); font-size: 11px; font-weight: 800; color: var(--teal); text-align: center; z-index: 5; pointer-events: none; }
+body.bermain .peta-lokasi { top: 258px; }
 .peta-penuh { position: fixed; inset: 0; z-index: 60; background: #0f2a3a; display: flex; flex-direction: column; }
 .peta-penuh[hidden] { display: none; }
 .peta-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: #fff; flex-wrap: wrap; background: #0f2a3a; }
@@ -244,3 +244,9 @@ body.bermain .peta-lokasi { top: 296px; }
 .peta-info { color: #dfe8ea; font-size: 11px; text-align: center; padding: 4px 8px; }
 .peta-legenda { display: flex; flex-wrap: wrap; gap: 6px 12px; justify-content: center; padding: 6px 10px 14px; color: #fff; font-size: 11px; font-weight: 700; }
 .peta-legenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 4px; vertical-align: -2px; border: 1px solid rgba(255,255,255,.6); }
+
+.arah-toko { position: absolute; left: 50%; transform: translateX(-50%); top: 150px; z-index: 6; display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 14px; border: 2px solid var(--teal); background: rgba(255,248,236,.96); color: var(--teal); font-weight: 800; font-size: 13px; box-shadow: 0 3px 0 var(--teal); cursor: pointer; max-width: 70vw; }
+.arah-toko[hidden] { display: none; }
+.arah-toko i { font-style: normal; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--oren, #f28c28); color: #fff; font-size: 15px; transition: transform .35s; }
+.arah-toko span { display: flex; flex-direction: column; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arah-toko small { font-size: 11px; opacity: .8; font-weight: 700; }

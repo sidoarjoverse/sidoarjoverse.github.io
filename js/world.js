@@ -976,6 +976,25 @@ export const TIPE = {
     vb.box(0, 1.6, 0.62, 0.3, 0.3, 0.3, 'lamp');
     const sg = signMesh('KOPI', 1.4, 0.45, '#3d2a1e', '#ffd166'); sg.position.set(0, 2.55, 0.61); ex.push(sg);
   } },
+  toko: { label: 'Toko Mitra', w: 7, d: 6, build(vb, b, ex) {
+    const warna = ['#e76f51', '#2a9d8f', '#f4a261', '#457b9d', '#9b5de5'][Math.abs([...(b.id || b.nama || 'x')].reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % 5];
+    vb.box(0, 0, 0, 6.6, 0.25, 5.6, '#d8d2c4');                       // teras
+    vb.box(0, 0.25, -0.6, 6.0, 3.6, 4.0, '#f4efe6');                  // bangunan
+    vb.box(0, 3.85, -0.6, 6.3, 0.35, 4.3, '#3b3b3b');                 // atap
+    vb.box(-1.5, 0.25, 1.42, 2.4, 2.4, 0.1, '#8fc3d8').box(1.5, 0.25, 1.42, 2.4, 2.4, 0.1, '#8fc3d8');   // kaca etalase
+    vb.box(0, 0.25, 1.43, 0.25, 2.6, 0.12, '#3b3b3b');
+    for (let i = 0; i < 8; i++) vb.box(-2.8 + i * 0.8, 2.75, 1.85, 0.8, 0.14, 1.0, i % 2 ? '#ffffff' : warna);   // kanopi belang
+    for (const x of [-2.9, 2.9]) vb.box(x, 0.25, 2.5, 0.15, 2.6, 0.15, '#3b3b3b');
+    vb.box(0, 2.4, 1.5, 0.3, 0.3, 0.3, 'lamp');
+    vb.box(2.6, 0.25, 2.3, 0.7, 0.9, 0.7, '#6b4a2a');                 // pot
+    vb.bola(2.6, 1.1, 2.3, 0.9, 0.9, 0.9, '#5a9e4b');
+    const sg = signMesh((b.nama || 'TOKO').toUpperCase(), 5.6, 0.9, warna, '#ffffff'); sg.position.set(0, 3.25, 1.47); ex.push(sg);
+    // penanda lokasi melayang (kelihatan dari jauh)
+    const pin = new THREE.Group(); pin.position.set(0, 7.2, -0.6);
+    const kp = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.3, 12).rotateX(Math.PI), new THREE.MeshStandardMaterial({ color: warna, emissive: warna, emissiveIntensity: 0.35 }));
+    const bp = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 12), kp.material); bp.position.y = 0.9;
+    pin.add(kp, bp); pin.userData.pinToko = true; ex.push(pin);
+  } },
   perumahan: { label: 'Perumahan', w: 10, d: 12, build(vb, b, ex, r) {
     const pos = [[-2.6, -4], [2.6, -4], [-2.6, 0], [2.6, 0], [-2.6, 4], [2.6, 4]];
     const n = Math.max(1, Math.min(6, b.jumlah || 6));

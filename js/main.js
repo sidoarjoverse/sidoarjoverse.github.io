@@ -119,7 +119,20 @@ async function muatPenghuni(paksa) {
   if (!world || !(kota.bangunan || []).some(b => b.huni)) return;
   try { const m = await D.penghuni(kodeSaya, paksa); const sk = JSON.stringify(m); if (paksa || sk !== muatPenghuni.sidik) { muatPenghuni.sidik = sk; penghuniMap = m; world.setPenghuni(m || {}, kodeSaya); } } catch (e) { console.warn('penghuni', e); }
 }
+// toko mitra: tombol Google Maps toko asli + chat WhatsApp (data ikut kota JSON, tanpa kuota Supabase tambahan)
+const linkMaps = u => /^https:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps|(www\.)?google\.[a-z.]+\/maps|maps\.google\.[a-z.]+)\//i.test(String(u || '').trim()) ? String(u).trim() : '';
+const linkWa = (n, nama) => { let d = String(n || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '62' + d.slice(1); return d.length >= 9 ? `https://wa.me/${d}?text=${encodeURIComponent(`Halo ${nama}, aku ndelok tokomu nang SidoarjoVerse 👋`)}` : ''; };
+function kartuToko(b) {
+  const m = linkMaps(b.maps), w = linkWa(b.wa, b.nama);
+  return `${b.mitra ? '<div class="lab" style="color:var(--teal2);font-weight:800;font-size:12px">🤝 MITRA SIDOARJOVERSE</div>' : ''}<h3>🏪 ${esc(b.nama)}</h3>
+    ${b.ket ? `<p style="white-space:pre-line;font-size:15px;line-height:1.5">${esc(b.ket)}</p>` : ''}
+    <div class="ktp-acts" style="justify-content:flex-start;flex-wrap:wrap">
+      ${m ? `<a class="btn" href="${esc(m)}" target="_blank" rel="noopener">📍 Lokasi asli (Google Maps)</a>` : ''}
+      ${w ? `<a class="btn oren" href="${esc(w)}" target="_blank" rel="noopener">💬 Chat WhatsApp</a>` : ''}
+    </div>`;
+}
 function kartuBangunan(b) {
+  if (b.tipe === 'toko' && b.status === 'selesai') return kartuToko(b);
   if (b.huni && b.status === 'selesai') return kartuRumah(b);
   if (b.papan) return `<div class="lab" style="color:var(--teal2);font-weight:800;font-size:12px">📌 PAPAN PENGUMUMAN</div><h3>${esc(b.nama)}</h3><p style="white-space:pre-line;font-size:15px;line-height:1.5">${esc(b.ket)}</p>`;
   const p = b.status === 'selesai' ? 100 : (+b.progres || 0);
@@ -567,6 +580,25 @@ addEventListener('blur', () => { tekan.clear(); world && world.gerak(0, 0); });
 setTimeout(() => $('hint').classList.add('hide'), 7000);
 
 // ---------------------------------------------------------------- mulai
+// petunjuk arah ke toko mitra terdekat (muncul saat sudah dekat), ketuk = terbang ke toko
+function pasangArah() {
+  const el = document.createElement('button'); el.type = 'button'; el.className = 'arah-toko'; el.hidden = true;
+  (document.getElementById('view-peta') || document.body).appendChild(el);
+  let tujuan = null;
+  el.onclick = () => { if (!tujuan) return; world.fokusKe(+tujuan.x, +tujuan.z); const b = tujuan; setTimeout(() => onPick({ jenis: 'bangunan', data: b }), 900); };
+  setInterval(() => {
+    if (!world || !kota) return;
+    const toko = (kota.bangunan || []).filter(b => b.tipe === 'toko' && b.tampil !== false && b.status === 'selesai');
+    const p = world.posisiSaya(); let best = null, bd = 1e9;
+    for (const b of toko) { const d = Math.hypot(+b.x - p.x, +b.z - p.z); if (d < bd) { bd = d; best = b; } }
+    if (!best || bd > 120 || bd < 6) { el.hidden = true; tujuan = null; return; }
+    tujuan = best;
+    const rel = Math.atan2(+best.x - p.x, +best.z - p.z) - p.ry, m = bd * 20;
+    el.innerHTML = `<i style="transform:rotate(${(-rel * 180 / Math.PI).toFixed(0)}deg)">⬆</i><span>🏪 ${esc(best.nama)}<small>${m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : Math.round(m / 10) * 10 + ' m'}</small></span>`;
+    el.hidden = false;
+  }, 400);
+}
+
 async function mulai() {
   jamWIB(); setInterval(jamWIB, 15000);
   try {
@@ -598,6 +630,7 @@ async function mulai() {
   if (false && world && !D.DEMO) ramai = mulaiRamai({ world, saya: () => saya, onJumlah: n => { const el = $('online'); el.hidden = n < 1; el.textContent = `🟢 ${n} warga online`; } });
   renderInfo(); renderKTP(); renderDonasi(); renderAkun();
   renderPemilu();
+  if (world) pasangArah();
   setInterval(segarkan, 300000);   // 5 menit (hemat kuota Supabase)
   document.addEventListener('visibilitychange', () => { if (!document.hidden) segarkan(); });
 }

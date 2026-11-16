@@ -86,12 +86,13 @@ const SEKSI = {
   bangunan() {
     const opsiTipe = TIPE_LIST.map(t => [t.id, t.label]);
     const opsiStatus = [['lahan', 'Lahan (belum dibangun)'], ['dibangun', 'Sedang dibangun'], ['selesai', 'Selesai']];
-    return `<div class="tip">Peta punya jalan di x/z = −16, 0, 16 dan sungai di z 21–25. Posisi blok yang aman: x/z = ±8 (blok tengah), ±22 (blok luar), z = 28 untuk area seberang sungai. Lihat hasilnya dengan tombol "Buka peta" setelah menyimpan.</div>
+    return `<div class="tip"><b>Cara menentukan posisi:</b> buka <a href="index.html?koordinat" target="_blank">sidoarjoverse.github.io/?koordinat</a>, geser peta ke tempat yang diinginkan; kotak lokasi di bawah peta mini menampilkan <b>x</b> dan <b>z</b> titik tengah layar. Salin ke kolom Posisi x/z. Pusat kota kira-kira x −30…30, z −30…30.<br><b>Toko Mitra:</b> pilih Model "Toko Mitra", isi link Google Maps toko asli + nomor WhatsApp. Warga yang mendekat akan melihat petunjuk arah 🏪.</div>
     ${(kota.bangunan || []).map((b, i) => b.kawasan ? '' : `<div class="row"><div class="hd"><b>${esc(b.nama || '(tanpa nama)')}</b><button class="hapus" data-del="bangunan.${i}">Hapus</button></div><div class="grid">
       ${inp(`bangunan.${i}.nama`, 'Nama')}${sel(`bangunan.${i}.tipe`, 'Model', opsiTipe)}${sel(`bangunan.${i}.status`, 'Status', opsiStatus)}
       ${inp(`bangunan.${i}.progres`, 'Progres %', 'num', 'min="0" max="100"')}${inp(`bangunan.${i}.day`, 'DAY')}
       ${inp(`bangunan.${i}.x`, 'Posisi x', 'num', 'step="0.5"')}${inp(`bangunan.${i}.z`, 'Posisi z', 'num', 'step="0.5"')}${sel(`bangunan.${i}.rot`, 'Putar', [[0, '0°'], [90, '90°'], [180, '180°'], [270, '270°']].map(([v, t]) => [v, t]), 'data-t="num"')}
       ${b.tipe === 'perumahan' ? inp(`bangunan.${i}.jumlah`, 'Jumlah rumah (1–6)', 'num', 'min="1" max="6"') : ''}
+      ${b.tipe === 'toko' ? inp(`bangunan.${i}.maps`, 'Link Google Maps toko asli (https://maps.app.goo.gl/...)', 'text', 'style="grid-column:1/-1"') + inp(`bangunan.${i}.wa`, 'Nomor WhatsApp (08... / 628...)') + inp(`bangunan.${i}.mitra`, 'Tampilkan label "Mitra"', 'bool') : ''}
       ${inp(`bangunan.${i}.tampil`, 'Tampil', 'bool')}
       ${inp(`bangunan.${i}.usulan`, 'Usulan dari', 'text', 'style="grid-column:1/-1"')}
       ${inp(`bangunan.${i}.ket`, 'Keterangan', 'area')}

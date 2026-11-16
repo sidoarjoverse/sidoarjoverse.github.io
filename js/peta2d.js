@@ -5,6 +5,8 @@ const WARNA = {
   jalan: '#ffffff', jalanTepi: '#9a9488', sungai: '#4f8fb0', lahan: '#e2c99a', hutan: '#5f7a3a', teks: '#16324f',
 };
 
+// ?koordinat di alamat situs: tampilkan x, z (untuk admin menentukan posisi bangunan/toko)
+const KOORD = new URLSearchParams(location.search).has('koordinat');
 export function pasangPeta({ world, saya, rumahSaya }) {
   const D = world.dataPeta();
   const A = { x0: D.bbox.x0 - 30, x1: D.bbox.x1 + 120, z0: D.bbox.z0 - 30, z1: D.bbox.z1 + 30 };
@@ -130,7 +132,7 @@ export function pasangPeta({ world, saya, rumahSaya }) {
     if (!jalan) return;
     const p = world.posisiSaya();
     gambar(mini, 260, 260, 1.4, p.x, p.z, false);
-    const nm = namaTempat(p.x, p.z); if (nm !== lokTerakhir) { lokTerakhir = nm; lokasi.textContent = '📍 ' + nm; }
+    const nm = namaTempat(p.x, p.z) + (KOORD ? ` (x ${Math.round(p.x)}, z ${Math.round(p.z)})` : ''); if (nm !== lokTerakhir) { lokTerakhir = nm; lokasi.textContent = '📍 ' + nm; }
     if (bukaPenuh) { const [w, h] = [kv.clientWidth, kv.clientHeight]; gambar(kv, w, h, skala, cx, cz, true); ov.querySelector('.peta-skala').textContent = skalaTeks(); }
     requestAnimationFrame(loop);
   })();
