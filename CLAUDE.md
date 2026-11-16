@@ -50,6 +50,10 @@ Contoh satu baris naskah:
 - Uji di localhost dengan `?demo` agar tidak menyentuh database asli.
 - Folder rencana `konten-30-hari/` dan `roadmap-fitur/` sengaja tidak di-commit (repo publik).
 
+## Aturan video: musik latar
+Setiap video memakai musik latar `video/_musik/latar.mp3` (ambient piano, dari pemilik; folder video/ tidak di-commit), otomatis dicampur oleh `alat/audio.py`:
+pelan ±22% dan turun ke ±11% saat ada suara VO, supaya tidak mengganggu VO/sfx. Matikan dengan `"musik": false` di naskah.json.
+
 ## Aturan video: keterangan episode
 Setiap video WAJIB dibuka dengan keterangan episode. Isi `"episode": N` (dan opsional `"seri": "..."`) di `naskah.json`: video.js menampilkan kartu "EPISODE N" di 2,6 detik pertama + lencana "EPS N" di samping DAY. Baris kedua naskah menyebut "Sidoarjo Vers, episode …". Video peluncuran = Episode 4.
 

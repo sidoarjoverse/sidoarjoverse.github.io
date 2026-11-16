@@ -81,6 +81,25 @@ for tt, j in json.load(open('sfx.json')):
     i = int(tt * SR)
     if s is None or i >= len(mix): continue
     n = min(len(s), len(mix) - i); mix[i:i + n] += s[:n] * 0.55
+# musik latar (video/_musik/latar.mp3): pelan (±22%, turun ke ±11% saat ada suara VO), diulang sepanjang video, fade masuk/keluar.
+# Matikan per video dengan "musik": false di naskah.json; ganti lagu dengan "musik": "nama.mp3" (di video/_musik/).
+try: _nk = json.load(open('naskah.json'))
+except Exception: _nk = {}
+_lagu = _nk.get('musik', 'latar.mp3')
+if _lagu and os.path.exists('../_musik/' + _lagu):
+    import subprocess
+    raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', '../_musik/' + _lagu, '-ac', '1', '-ar', str(SR), '-f', 's16le', '-'], capture_output=True).stdout
+    m = np.frombuffer(raw, np.int16).astype(np.float32) / 32768
+    if len(m):
+        m = m / max(1e-6, np.abs(m).max())
+        m = np.tile(m, int(np.ceil(len(mix) / len(m))))[:len(mix)]
+        vo = baca('vo_track.wav'); vo = np.pad(vo, (0, max(0, len(mix) - len(vo))))[:len(mix)]
+        k = int(0.25 * SR); env = np.sqrt(np.convolve(vo ** 2, np.ones(k) / k, 'same'))
+        ada = np.clip(env / 0.02, 0, 1); ada = np.convolve(ada, np.ones(int(0.4 * SR)) / int(0.4 * SR), 'same')
+        gain = 0.22 - 0.11 * ada
+        x = np.arange(len(mix)) / SR; fade = np.minimum(1, np.minimum(x / 1.5, (x[-1] - x) / 2.0))
+        mix += m * gain * fade
+        print('musik latar:', _lagu)
 mix = np.clip(mix / max(1.0, np.abs(mix).max() / 0.95), -1, 1)
 w = wave.open('audio_final.wav', 'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes((mix * 32767).astype(np.int16).tobytes()); w.close()
 print('audio', round(len(mix) / SR, 2), 'detik')
