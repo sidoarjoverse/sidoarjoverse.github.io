@@ -61,9 +61,9 @@ export function hitungDay(k) {
 const denganDay = k => { if (k && k.day_mulai) k.day = hitungDay(k); return k; };
 export async function ambilKota() { return denganDay(lebarkanRumah(await ambilKotaMentah())); }
 // Hemat kuota: 1000 rumah perumahan standar tidak disimpan satu per satu, cukup {blok: jumlah} di kota.rumahMassal.
-const KUNCI_STD = new Set(['id', 'no', 'blok', 'huni', 'nama', 'tipe', 'status', 'kawasan', 'progres']);
+const KUNCI_STD = new Set(['id', 'no', 'blok', 'huni', 'nama', 'tipe', 'status', 'kawasan', 'progres', 'tampil']);
 const rumahStd = b => b && b.tipe === 'rumah' && b.kawasan === 'perumahan' && b.huni === true && b.status === 'selesai' && +b.progres === 100
-  && b.id === `rmh-${b.blok}${b.no}` && b.nama === `Rumah Blok ${b.blok} No. ${b.no}` && Object.keys(b).every(k => KUNCI_STD.has(k));
+  && b.tampil !== false && b.id === `rmh-${b.blok}${b.no}` && b.nama === `Rumah Blok ${b.blok} No. ${b.no}` && Object.keys(b).every(k => KUNCI_STD.has(k));
 const buatRumah = (blok, no) => ({ id: `rmh-${blok}${no}`, no, blok, huni: true, nama: `Rumah Blok ${blok} No. ${no}`, tipe: 'rumah', status: 'selesai', kawasan: 'perumahan', progres: 100 });
 function lebarkanRumah(k) {
   if (!k || !k.rumahMassal) return k;
