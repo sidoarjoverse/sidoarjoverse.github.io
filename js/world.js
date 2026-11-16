@@ -295,7 +295,8 @@ const tandaKotak = (x, z, w, d, b) => { for (let u = -w / 2; u <= w / 2; u += 2)
 // jalan asli (di luar kota) + penyambung dari ujung jalan kota ke jaringan asli
 const LEBAR_JALAN = { tol: 7, raya: 5, kabupaten: 3.6, akses: 3 };
 const potongKota = p => { const out = []; let cur = []; for (const q of p) { if (diKota(q[0], q[1], -6)) { if (cur.length > 1) out.push(cur); cur = []; } else cur.push(q); } if (cur.length > 1) out.push(cur); return out; };
-export const JALAN_ASLI = SDA.jalan.flatMap(j => potongKota(j.p).map(p => ({ ...j, p })));
+// jalan luar sudah dihentikan tepat di "pintu" kota oleh alat/rapikan-peta.py → tidak dipotong lagi di sini
+export const JALAN_ASLI = SDA.jalan.map(j => ({ ...j }));
 function titikTerdekat(x, z, daftar) { let best = null, bd = 1e18; for (const j of daftar) for (let k = 0; k + 1 < j.p.length; k++) { const [ax, az] = j.p[k], [bx, bz] = j.p[k + 1], dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1; const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2)), px = ax + dx * t, pz = az + dz * t, d = (px - x) ** 2 + (pz - z) ** 2; if (d < bd) { bd = d; best = [px, pz]; } } return best; }
 for (const p of SDA.penyambung || []) JALAN_ASLI.push({ k: 'raya', n: 'penyambung', p });
 for (const p of SDA.akses || []) JALAN_ASLI.push({ k: 'akses', n: 'akses', p });
@@ -304,27 +305,30 @@ for (const j of JALAN_ASLI) tandaGaris(j.p, LEBAR_JALAN[j.k] + 2, 1);
 export const SUNGAI = SDA.sungai.flatMap(s => potongKota(s.p).map(p => ({ ...s, p })));
 {
   const besar = SUNGAI.filter(s => s.lebar >= 5);
+  // kali kota disambung ke titik sungai terdekat yang jalurnya TIDAK menembus perumahan/lahan (rapi, tidak menabrak)
+  const kotakData = [...SDA.kavling.map(k => [k.x, k.z, 37 / 2 + 8, 54 / 2 + 8]), ...SDA.lahan.map(l => [l.x, l.z, l.w / 2 + 8, l.d / 2 + 8])];
+  const tabrak = pts => { for (let k = 0; k + 1 < pts.length; k++) { const [ax, az] = pts[k], [bx, bz] = pts[k + 1], n = Math.ceil(Math.hypot(bx - ax, bz - az) / 3);
+    for (let i = 0; i <= n; i++) { const x = ax + (bx - ax) * i / n, z = az + (bz - az) * i / n; if (kotakData.some(([cx, cz, hw, hd]) => Math.abs(x - cx) < hw && Math.abs(z - cz) < hd)) return true; } } return false; };
   for (const [x, arah] of [[-32, -1], [32, 1]]) {
-    const t = titikTerdekat(x + arah * 30, 23, besar);
-    if (t) { const mx = (x + t[0]) / 2, mz = (23 + t[1]) / 2 + 10 * arah; SUNGAI.push({ n: 'Kali Pucang', lebar: 4, p: [[x, 23], [x + arah * 12, 23], [mx, mz], t] }); }
+    const calon = [];
+    for (const s of besar) for (let k = 0; k < s.p.length; k++) calon.push([Math.hypot(s.p[k][0] - x, s.p[k][1] - 23), s.p[k]]);
+    calon.sort((a, b) => a[0] - b[0]);
+    for (const [d, t] of calon) {
+      if (d > 260) break;
+      const mx = (x + t[0]) / 2, mz = (23 + t[1]) / 2 + 10 * arah, jalur = [[x, 23], [x + arah * 12, 23], [mx, mz], t];
+      if (!tabrak(jalur)) { SUNGAI.push({ n: 'Kali Pucang', lebar: 4, p: jalur }); break; }
+    }
   }
 }
 for (const s of SUNGAI) tandaGaris(s.p, s.lebar + 9, 2);
 export const REL = SDA.rel.flatMap(p => potongKota(p));
 for (const p of REL) tandaGaris(p, 22, 4);
 for (const K of KAVLING_PERUMAHAN) tandaKotak(K.x, K.z, KAV_W + 6, KAV_D + 8, 8);
-export const LAHAN_RENCANA = SDA.lahan;
+export const LAHAN_RENCANA = SDA.lahan.filter(l => l.jenis !== 'lumpur');
 for (const L of LAHAN_RENCANA) tandaKotak(L.x, L.z, L.w + 4, L.d + 4, 8);
-// Wisata Lumpur Sidoarjo: danau lumpur bertanggul di dekat Porong (posisi kira-kira, cari lahan bebas terdekat)
-export const WISATA_LUMPUR = (() => {
-  const W = 64, D = 54;
-  for (let k = 0; k < 600; k++) {
-    const a = k * 0.7, r = k * 1.2, x = -40 + Math.cos(a) * r, z = 440 + Math.sin(a) * r;
-    const pojok = [[-1, -1], [1, -1], [1, 1], [-1, 1]].every(([u, v]) => diPoly(x + u * (W / 2 + 6), z + v * (D / 2 + 6)));
-    if (pojok && kotakBebas(x, z, W + 14, D + 22, 15)) { tandaKotak(x, z, W + 12, D + 20, 8); return { x: Math.round(x), z: Math.round(z), w: W, d: D }; }
-  }
-  return null;
-})();
+// Wisata Lumpur Sidoarjo: danau lumpur bertanggul di dekat Porong (lahan 'lumpur' dari data peta)
+export const WISATA_LUMPUR = SDA.lahan.find(l => l.jenis === 'lumpur') || null;
+if (WISATA_LUMPUR) tandaKotak(WISATA_LUMPUR.x, WISATA_LUMPUR.z, WISATA_LUMPUR.w + 12, WISATA_LUMPUR.d + 20, 8);
 const BANDARA = SDA.bandara;
 const diBandara = (x, z) => { if (!BANDARA) return false; const P = BANDARA.p; let d = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, zi] = P[i], [xj, zj] = P[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) d = !d; } return d; };
 
