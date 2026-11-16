@@ -56,6 +56,9 @@ darjo.position.set(0, 0, 0.6);
 scene.add(darjo);
 const tangan = darjo.children.find(c => c.isGroup && c.position.x > 0.3 && c.position.y > 1.1);
 const tanganAwal = tangan.rotation.clone();
+const gunting = new THREE.Group(); { const m = new THREE.MeshStandardMaterial({ color: '#d9d9d9', metalness: 0.8, roughness: 0.25 }), h = new THREE.MeshStandardMaterial({ color: '#e63946' });
+  for (const s of [-1, 1]) { const bl = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.42, 0.012), m); bl.position.set(s * 0.03, -0.25, 0); bl.rotation.z = s * 0.28; gunting.add(bl); const og = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.02, 6, 12), h); og.position.set(s * 0.06, 0, 0); gunting.add(og); }
+  gunting.position.set(0, -0.55, 0.05); gunting.visible = false; tangan.add(gunting); }
 // ikan di sungai (naskah "iwak": [{x, z, arah, n, sebar, panjang}]) — berenang di permukaan & sesekali melompat
 const IWAK = [];
 for (const k of NASKAH.iwak || []) {
@@ -89,6 +92,36 @@ function aturPemancing(t, s) {
     const head = p.ch.userData.anim && p.ch.userData.anim.head;
     if (head) head.rotation.y = s.pemancingToleh ? Math.min(1.2, (t - s.start) * 3) * (p.d.tolehArah ?? 1) : 0;
   }
+}
+// penonton (naskah "penonton": {n, cx, cz, r0, r1, a0, a1}) — warga berdiri melingkar menghadap pusat, sebagian bersorak
+const PENONTON = [];
+for (const P of [].concat(NASKAH.penonton || [])) {
+  const r = rng('penonton' + P.a0), KULIT = ['#f1c6a0', '#e0ac85', '#c98d5a', '#a8714a', '#8d5a3a'], BAJU = ['#e63946', '#2a9d8f', '#f4a261', '#457b9d', '#9b5de5', '#ffd166', '#06d6a0', '#ef476f', '#3d405b', '#ffffff'], RAMBUT = ['#1a1a1a', '#2b1d14', '#3b2a1e'];
+  for (let k = 0; k < (P.n || 120); k++) {
+    const a = (P.a0 ?? -1.2) + r() * ((P.a1 ?? 1.2) - (P.a0 ?? -1.2)), rr = (P.r0 ?? 6) + Math.sqrt(r()) * ((P.r1 ?? 16) - (P.r0 ?? 6));
+    const x = P.cx + Math.sin(a) * rr, z = P.cz + Math.cos(a) * rr;
+    const ch = makeCharUmum({ kulit: KULIT[Math.floor(r() * 5)], baju: BAJU[Math.floor(r() * 10)], celana: ['#3d405b', '#1d3557', '#5c4033'][Math.floor(r() * 3)], rambut: RAMBUT[Math.floor(r() * 3)], ...(r() < 0.4 ? { kerudung: BAJU[Math.floor(r() * 10)] } : {}) });
+    ch.position.set(x, 0, z); ch.rotation.y = Math.atan2(P.cx - x, P.cz - z) + (r() - 0.5) * 0.5; ch.scale.setScalar(0.92 + r() * 0.16); scene.add(ch);
+    const lengan = (ch.userData.anim && ch.userData.anim.arms) || [];
+    PENONTON.push({ ch, lengan, sorak: r() < 0.55, ph: r() * 6.28 });
+  }
+}
+function aturPenonton(t) {
+  for (const p of PENONTON) {
+    p.ch.position.y = p.sorak ? Math.abs(Math.sin(t * 6 + p.ph)) * 0.12 : 0;
+    if (p.sorak) p.lengan.forEach(l => l.rotation.set(0, 0, Math.sign(l.position.x || 1) * (2.5 + Math.sin(t * 9 + p.ph) * 0.3)));
+  }
+}
+// pita peresmian (naskah "pita": {x, z, lebar, putus}) + gunting di tangan Cak Darjo (pose "gunting")
+let PITA = null;
+if (NASKAH.pita) {
+  const P = NASKAH.pita, g = new THREE.Group(); g.position.set(P.x, 0, P.z);
+  const tiang = new THREE.MeshStandardMaterial({ color: '#d4af37', metalness: 0.6, roughness: 0.3 }), merah = new THREE.MeshStandardMaterial({ color: '#d62828', roughness: 0.5 });
+  for (const sx of [-1, 1]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.35, 10), tiang); t.position.set(sx * P.lebar / 2, 0.675, 0); g.add(t); const b = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), tiang); b.position.set(sx * P.lebar / 2, 1.38, 0); g.add(b); }
+  const sisi = (sx) => { const L = P.lebar / 2 - (P.putus ? 0.25 : 0), m = new THREE.Mesh(new THREE.BoxGeometry(L, 0.16, 0.03), merah); m.position.set(sx * (P.lebar / 2 - L / 2), P.putus ? 1.05 : 1.25, 0); if (P.putus) m.rotation.z = sx * 0.35; g.add(m); };
+  sisi(-1); sisi(1);
+  if (!P.putus) { const pita = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.06, 8, 16), merah); pita.position.set(0, 1.25, 0.02); g.add(pita); }
+  scene.add(g); PITA = g;
 }
 function aturIwak(t) {
   for (const f of IWAK) {
@@ -487,10 +520,12 @@ function animDarjo(t, f) {
     if (tanganKiri) tanganKiri.rotation.set(-1.25, 0, 0.55);
     head.rotation.x = 0.22 + (bicara ? -amp * 0.06 : 0);
     if (s.pose === 'geleng') head.rotation.y = Math.sin(t * 9) * 0.32;
+  } else if (s.pose === 'gunting') {   // dua tangan ke depan memegang gunting pita
+    tangan.rotation.set(-1.25, 0, -0.25); if (tanganKiri) tanganKiri.rotation.set(-1.1, 0, 0.35);
   } else if (s.pose === 'angkat-papan') {   // dua tangan ke atas memegang papan
     tangan.rotation.set(0, 0, 2.75); if (tanganKiri) tanganKiri.rotation.set(0, 0, -2.75);
   } else if (tanganKiri) tanganKiri.rotation.copy(kiriAwal);
-  papanAngkat.visible = s.pose === 'angkat-papan';
+  papanAngkat.visible = s.pose === 'angkat-papan'; gunting.visible = s.pose === 'gunting';
   hp.visible = s.pose === 'hp' || s.pose === 'geleng';
   if (tongkat) tongkat.visible = !pakaiAkua && !papanAngkat.visible;
   if (papanAngkat.visible) papanAngkat.position.y = Math.sin(t * 3) * 0.03;
@@ -1098,7 +1133,7 @@ window.video = {
     world.setLampuMati(!!s.lampuMati || (s.kedip && (Math.sin(t * 29) + Math.sin(t * 13.7) > 0.4 || (t * 7) % 3 < 0.5)));
     const nIsi = aturPenghuni(t); window._nIsi = nIsi;
     if (NASKAH.tanpaPapan && !s.papanRumah) scene.traverse(o => { if (o.userData && o.userData.papanRumah) o.userData.papanRumah.visible = false; });
-    aturIwak(t); aturPemancing(t, s);
+    aturIwak(t); aturPemancing(t, s); aturPenonton(t);
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     if (diDalam) {
       if (DALAM.ch) { DALAM.ch.position.y = Math.abs(Math.sin(t * 2.2)) * 0.02; if (DALAM.tangan) DALAM.tangan.rotation.z = t % 5 < 1.8 ? 2.4 + Math.sin(t * 12) * 0.35 : 0; }
