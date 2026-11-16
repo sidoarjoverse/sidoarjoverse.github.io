@@ -56,6 +56,29 @@ darjo.position.set(0, 0, 0.6);
 scene.add(darjo);
 const tangan = darjo.children.find(c => c.isGroup && c.position.x > 0.3 && c.position.y > 1.1);
 const tanganAwal = tangan.rotation.clone();
+// ikan di sungai (naskah "iwak": [{x, z, arah, n, sebar, panjang}]) — berenang di permukaan & sesekali melompat
+const IWAK = [];
+for (const k of NASKAH.iwak || []) {
+  const r = rng('iwak' + k.x + k.z);
+  for (let j = 0; j < (k.n || 20); j++) {
+    const g = new THREE.Group(), warna = ['#8a8f96', '#c97b3a', '#6f7f6a', '#b5b9be', '#d4a03a'][Math.floor(r() * 5)], m = new THREE.MeshStandardMaterial({ color: warna, roughness: 0.4, metalness: 0.3 });
+    const badan = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), m); badan.scale.set(0.55, 0.5, 1.5); g.add(badan);
+    const ekor = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.35, 4), m); ekor.rotation.x = -Math.PI / 2; ekor.scale.set(1, 1, 0.3); ekor.position.z = -0.42; g.add(ekor);
+    const sirip = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.22, 3), m); sirip.position.set(0, 0.12, 0.02); g.add(sirip);
+    const sk = (k.besar ?? 2) * (0.8 + r() * 0.7); g.scale.setScalar(sk); scene.add(g);
+    IWAK.push({ g, k, ph: r() * 6.28, sp: 0.25 + r() * 0.35, off: (r() - 0.5) * 2 * (k.sebar ?? 7), span: (k.panjang ?? 14) * (0.4 + r() * 0.6), lompat: r() < 0.35, tl: 2 + r() * 5, ekor });
+  }
+}
+function aturIwak(t) {
+  for (const f of IWAK) {
+    const { k } = f, a = k.arah || 0, dx = Math.sin(a), dz = Math.cos(a), u = Math.sin(t * f.sp + f.ph), du = Math.cos(t * f.sp + f.ph);
+    const x = k.x + dx * u * f.span + dz * f.off, z = k.z + dz * u * f.span - dx * f.off;
+    let y = (k.y ?? 0.1), rx = 0;
+    if (f.lompat) { const per = f.tl + 3, w = ((t + f.ph * 3) % per); if (w < 0.9) { const q = w / 0.9; y += Math.sin(q * Math.PI) * 1.3; rx = (q - 0.5) * 2.2; } }
+    f.g.position.set(x, y, z); f.g.rotation.set(rx, Math.atan2(dx * du, dz * du), 0);
+    f.ekor.rotation.y = Math.sin(t * 9 + f.ph) * 0.5;
+  }
+}
 const ayam = makeAyam(() => 0.2);
 ayam.position.set(1.35, 0, 1.9); ayam.rotation.y = -0.7;
 scene.add(ayam);
@@ -377,15 +400,45 @@ function kamBebas(k) {
   const [bx, bz, R, h, a0, a1] = k.putar, L = V(...(k.lihat || [bx, 1.4, bz]));
   return { a: { pos: V(bx, h, bz + R), look: L }, b: { pos: V(bx, h, bz + R), look: L.clone() }, e: ease, putar: { bx, bz, R, h, a0, a1 } };
 }
-const SHOT = []; { let prev = null; for (const s of SEG) { const b = s.kam ? Object.assign(kamBebas(s.kam), { cctv: /^cctv/.test(String(s.kamera)) }) : bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
+const SHOT = []; { let prev = null; for (const s of SEG) { const b = s.jalur ? { jalur: buatJalur(s.jalur), a: { pos: V(0, 2, 0), look: V(0, 2, 1) }, b: { pos: V(0, 2, 0), look: V(0, 2, 1) }, e: ease } : s.kam ? Object.assign(kamBebas(s.kam), { cctv: /^cctv/.test(String(s.kamera)) }) : bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
+// ---- kamera jalan kaki orang pertama (found footage): "jalur": [[x,z],...], "tinggi", "lihat": [x,y,z], "lihatDari": fraksi, "toleh": [[fraksi, derajat]...], "jalanSampai": fraksi, "goyang", "fov"
+function buatJalur(pts) { const cum = [0]; for (let k = 1; k < pts.length; k++) cum.push(cum[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1])); return { pts, cum, total: cum[cum.length - 1] || 0.001 }; }
+function titikJalur(J, d) {
+  const { pts, cum } = J; d = Math.max(0, d);
+  for (let k = 1; k < pts.length; k++) if (d <= cum[k] || k === pts.length - 1) { const u = (d - cum[k - 1]) / ((cum[k] - cum[k - 1]) || 1); return [pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * u, pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * u]; }
+  return pts[0];
+}
+let fovSkr = 40;
+function aturFov(f) { if (Math.abs(f - fovSkr) > 0.01) { fovSkr = f; camera.fov = f; camera.updateProjectionMatrix(); } }
+function kameraJalur(t, i, sh) {
+  const s = SEG[i], J = sh.jalur, T0 = mulai(i), T1 = selesai(i), fr = (t - T0) / Math.max(0.01, T1 - T0);
+  aturFov(s.fov ?? 62);
+  const u = Math.min(1, fr / (s.jalanSampai ?? 1)), d = J.total * (s.halus === false ? u : ease(u)), [px, pz] = titikJalur(J, d);
+  let [fx, fz] = titikJalur(J, d + 5); if (Math.hypot(fx - px, fz - pz) < 1) { const n = J.pts.length, a = J.pts[n - 2] || J.pts[0], b = J.pts[n - 1]; fx = px + (b[0] - a[0]); fz = pz + (b[1] - a[1]); }
+  const g = s.goyang ?? 1, gerak = u < 1;
+  const y = (s.tinggi ?? 1.65) + (gerak ? Math.abs(Math.sin(d * 1.7)) * 0.07 * g : 0) + Math.sin(t * 1.3) * 0.012 * g;
+  const ayun = gerak ? Math.sin(d * 0.85) * 0.05 * g : 0;
+  camera.position.set(px + ayun, y, pz);
+  const L = new THREE.Vector3(fx, y - 0.1, fz);
+  if (s.lihat) { const k = ease((fr - (s.lihatDari ?? 0)) / 0.18); L.lerp(V(...s.lihat), k); }
+  if (s.toleh) { const kf = s.toleh; let deg = kf[0][1]; for (let k = 1; k < kf.length; k++) if (fr >= kf[k - 1][0]) deg = kf[k - 1][1] + (kf[k][1] - kf[k - 1][1]) * ease((fr - kf[k - 1][0]) / ((kf[k][0] - kf[k - 1][0]) || 1));
+    const a = deg * Math.PI / 180, dx = L.x - px, dz = L.z - pz; L.x = px + dx * Math.cos(a) + dz * Math.sin(a); L.z = pz - dx * Math.sin(a) + dz * Math.cos(a); }
+  L.x += (Math.sin(t * 2.3) * 0.05 + Math.sin(t * 5.7) * 0.02) * g; L.y += (Math.sin(t * 3.1) * 0.04 + Math.sin(t * 7.3) * 0.015) * g;
+  camera.lookAt(L); camera.rotateZ(Math.sin(t * 1.1) * 0.015 * g);
+  if (NASKAH.kabutIkut) world.ikutKamera(px, pz);
+}
 function kamera(t) {
   const i = segPada(t), sh = SHOT[i];
+  if (sh.jalur) { kameraJalur(t, i, sh); return; }
+  aturFov(SEG[i].fov ?? 40);
   const d = Math.max(0.3, Math.min(selesai(i) - mulai(i), sh.e === easeOut ? 1.6 : 99));
   const k = sh.e((t - mulai(i)) / d);
   const cam = sh.dalam && DALAM ? DALAM.cam : camera;
   cam.position.copy(sh.a.pos).lerp(sh.b.pos, k);
   if (sh.putar) { const o = sh.putar, a = o.a0 + (o.a1 - o.a0) * k; cam.position.set(o.bx + Math.sin(a) * o.R, o.h - 1.5 * k, o.bz + Math.cos(a) * o.R); }
-  const L = sh.a.look.clone().lerp(sh.b.look, k); cam.lookAt(L);
+  const L = sh.a.look.clone().lerp(sh.b.look, k);
+  if (NASKAH.handycam) { L.x += Math.sin(t * 2.3) * 0.03 + Math.sin(t * 5.7) * 0.012; L.y += Math.sin(t * 3.1) * 0.025; }
+  cam.lookAt(L); if (NASKAH.handycam) cam.rotateZ(Math.sin(t * 1.1) * 0.012);
   if (NASKAH.kabutIkut && !sh.dalam) world.ikutKamera(L.x, L.z);
 }
 
@@ -533,6 +586,11 @@ SEG.forEach((s, i) => {
   (s.stiker || []).forEach((st, k) => { const td = st.tunda ?? (k === 0 ? 0.15 : 0.45 + k * 0.3); st._s0 = s.start + td; st._t0 = (st.lanjut ? mulai(i) : s.start) + td; });   // lanjut: tampil sejak adegan dimulai (tanpa kedip); stempel tetap ikut suara
   (s.isi || []).forEach(([td]) => catat(s.start + td, 'pop'));
   if (s.kilat != null) catat(s.start + s.dur * s.kilat, 'petir');
+  const durAdegan = () => +(selesai(i) - mulai(i)).toFixed(2);
+  for (const a of [].concat(s.suasana || [])) catat(mulai(i), `amb:${a}:${durAdegan()}`);
+  if (s.jalur && (s.langkah ?? true)) catat(mulai(i), `langkah:${(durAdegan() * (s.jalanSampai ?? 1)).toFixed(2)}`);
+  if (s.glitch) catat(mulai(i), 'glitch');
+  for (const [td, j] of s.efek || []) catat(mulai(i) + td, j);
   if (s.hantu) catat(s.start + s.dur * (s.hantu.dari || 0), 'seram');
   if (s.sfx === 'krik') catat(s.start + s.dur + 0.1, 'krik');
   else if (s.sfx === 'whoosh') catat(mulai(i) + 0.02, 'whoosh');
@@ -917,6 +975,33 @@ function overlay(t) {
 // ------------------------------------------------------------ API untuk perekam
 let tPrev = 0;
 let kabutSkr = null;
+// tampilan rekaman handycam (found footage): REC, waktu rekam, tanggal, baterai, bingkai, bintik film, glitch saat ganti adegan
+const BINTIK = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d'), im = g.createImageData(256, 256), r = rng('bintik');
+  for (let k = 0; k < im.data.length; k += 4) { const v = Math.floor(r() * 255); im.data[k] = im.data[k + 1] = im.data[k + 2] = v; im.data[k + 3] = 255; } g.putImageData(im, 0, 0); return cv; })();
+function handycam(t, s, i) {
+  c.save(); c.globalAlpha = 0.07; c.globalCompositeOperation = 'overlay';
+  const ox = (t * 977) % 256, oy = (t * 613) % 256; for (let x = -ox; x < W; x += 256) for (let y = -oy; y < H; y += 256) c.drawImage(BINTIK, x, y);
+  c.restore();
+  const m = 46, pj = 54; c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 4;
+  for (const [x, y, sx, sy] of [[m, m + 60, 1, 1], [W - m, m + 60, -1, 1], [m, H - m - 60, 1, -1], [W - m, H - m - 60, -1, -1]]) { c.beginPath(); c.moveTo(x, y + sy * pj); c.lineTo(x, y); c.lineTo(x + sx * pj, y); c.stroke(); }
+  const bayang = (f) => { c.save(); c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 6; f(); c.restore(); };
+  bayang(() => {
+    if (Math.floor(t * 1.4) % 2 === 0) { c.fillStyle = '#ff2b2b'; c.beginPath(); c.arc(m + 34, m + 104, 13, 0, 7); c.fill(); }
+    teks('REC', m + 58, m + 104, { size: 34, warna: '#fff', align: 'left', bobot: 800 });
+    const dtk = Math.floor(t), tc = `00:${String(Math.floor(dtk / 60)).padStart(2, '0')}:${String(dtk % 60).padStart(2, '0')}`;
+    teks(tc, W - m - 14, m + 104, { size: 30, warna: '#fff', align: 'right', bobot: 700 });
+    teks(NASKAH.tanggalRekam || '16 NOV 2026', m + 18, H - m - 92, { size: 26, warna: '#fff', align: 'left', bobot: 700 });
+    teks(s.jamRekam || '', W - m - 14, H - m - 92, { size: 26, warna: '#fff', align: 'right', bobot: 700 });
+    c.strokeStyle = '#fff'; c.lineWidth = 3; c.strokeRect(W - m - 70, m + 128, 50, 22); c.fillStyle = '#fff'; c.fillRect(W - m - 20, m + 134, 5, 10);
+    const bat = Math.max(1, 4 - Math.floor(t / (TL.durasi / 4))); for (let k = 0; k < bat; k++) c.fillRect(W - m - 66 + k * 11.5, m + 132, 9, 14);
+  });
+  const g0 = s.glitch ? (t - mulai(i)) : 9;
+  if (g0 >= 0 && g0 < 0.4) {   // glitch ganti adegan
+    const r = rng('g' + Math.floor(t * 30));
+    for (let k = 0; k < 9; k++) { const y = r() * H, hh = 8 + r() * 60, dx = (r() - 0.5) * 120; c.drawImage(out, 0, y * SKALA, out.width, hh * SKALA, dx, y, W, hh); }
+    c.fillStyle = `rgba(255,255,255,${0.25 * (1 - g0 / 0.4)})`; c.fillRect(0, 0, W, H);
+  }
+}
 window.video = {
   N, FPS, durasi: TL.durasi, sfx,
   render(f, mutu = 0.9) {
@@ -991,6 +1076,7 @@ window.video = {
     world.setLampuMati(!!s.lampuMati || (s.kedip && (Math.sin(t * 29) + Math.sin(t * 13.7) > 0.4 || (t * 7) % 3 < 0.5)));
     const nIsi = aturPenghuni(t); window._nIsi = nIsi;
     if (NASKAH.tanpaPapan && !s.papanRumah) scene.traverse(o => { if (o.userData && o.userData.papanRumah) o.userData.papanRumah.visible = false; });
+    aturIwak(t);
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     if (diDalam) {
       if (DALAM.ch) { DALAM.ch.position.y = Math.abs(Math.sin(t * 2.2)) * 0.02; if (DALAM.tangan) DALAM.tangan.rotation.z = t % 5 < 1.8 ? 2.4 + Math.sin(t * 12) * 0.35 : 0; }
@@ -1045,6 +1131,7 @@ window.video = {
     }
     if (s.fadeOut) { const a = 1 - (selesai(i) - t) / s.fadeOut; if (a > 0) { c.fillStyle = `rgba(0,0,0,${Math.min(1, a)})`; c.fillRect(0, 0, W, H); } }   // transisi: tenggelam ke gelap
     if (s.fade) { const a = 1 - (t - mulai(i)) / s.fade; if (a > 0) { c.fillStyle = `rgba(0,0,0,${Math.min(1, a)})`; c.fillRect(0, 0, W, H); } }   // transisi: muncul dari gelap
+    if (NASKAH.handycam) handycam(t, s, i);
     if (NASKAH.bioskop || s.bioskop) { c.fillStyle = '#000'; c.fillRect(0, 0, W, 96); c.fillRect(0, H - 96, W, 96); }   // garis hitam ala film
     c.restore();
     if (pj) {

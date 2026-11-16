@@ -560,6 +560,7 @@ function bangunKawasan(statik, kota, footprints, r) {
 const TEBAL_HUTAN = 30;
 const MAT_GUNUNG = [];
 const GEO_BUKIT = (() => { const g = new THREE.SphereGeometry(1, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i); p.setY(i, Math.pow(y, 1.6)); } g.computeVertexNormals(); return g; })();
+export const PAPAN_HUTAN = [];   // posisi papan "HUTAN LARANGAN" (dipakai video)
 function bangunHutan(statik, r, ringan) {
   const { x0, x1, z0, z1 } = BATAS, T = TEBAL_HUTAN;
   // lantai hutan (di bawah tanah kabupaten)
@@ -602,6 +603,7 @@ function bangunHutan(statik, r, ringan) {
   }
   for (const [x, z, ry] of papan) {
     if (kena(x, z, 1 | 2)) continue;
+    PAPAN_HUTAN.push([x, z, ry]);
     const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry;
     const v = new VB(); v.box(-1.3, 0, 0, 0.18, 2.6, 0.18, '#4a3420').box(1.3, 0, 0, 0.18, 2.6, 0.18, '#4a3420'); g.add(v.build());
     const s1 = signMesh('⛔ BATAS KABUPATEN', 3.0, 0.75, '#c1121f', '#ffffff'); s1.position.set(0, 2.15, 0.1); g.add(s1);

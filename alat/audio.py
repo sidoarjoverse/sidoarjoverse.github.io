@@ -35,10 +35,50 @@ def palu():   # ketukan palu & gergaji proyek, ramai
         h = 0.45 * np.sin(2 * np.pi * f * x) * np.exp(-x * 60) + 0.25 * rng.standard_normal(len(x)) * np.exp(-x * 80)
         out[i:i + len(h)] += h
     return out
-SFX = {'palu': palu(), 'petir': petir(), 'seram': seram(), 'pop': pop(), 'whoosh': whoosh(), 'krik': krik(), 'tada': tada(), 'stempel': stempel()}
+def lp(x, k): return np.convolve(x, np.ones(k) / k, 'same')
+def suasana(jenis, d):   # suara latar panjang (found footage)
+    n = int(d * SR); x = np.arange(n) / SR; out = 0.02 * lp(rng.standard_normal(n), 40)   # desis mikrofon
+    if jenis in ('kota', 'siang'):
+        out += 0.05 * lp(rng.standard_normal(n), 300) * (0.7 + 0.3 * np.sin(2 * np.pi * 0.13 * x))   # dengung kota jauh
+        for k in range(int(d * 1.3)):   # kicau burung
+            i = int(rng.random() * n); L = int(0.09 * SR); y = np.arange(L) / SR; f = 2800 + 1600 * rng.random() + 900 * np.sin(2 * np.pi * 28 * y)
+            ch = 0.06 * np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * y / 0.09); out[i:i + L] += ch[:max(0, min(L, n - i))]
+    if jenis in ('malam', 'hutan'):
+        ch = np.sin(2 * np.pi * 4600 * x) * (np.sin(2 * np.pi * 22 * x) > 0.6) * (np.sin(2 * np.pi * 0.9 * x) > -0.2)
+        out += 0.035 * ch + 0.07 * lp(rng.standard_normal(n), 900) * (0.6 + 0.4 * np.sin(2 * np.pi * 0.07 * x))   # jangkrik + angin
+    if jenis == 'hutan':
+        out += 0.12 * np.sin(2 * np.pi * (55 + 6 * np.sin(2 * np.pi * 0.2 * x)) * x) * np.minimum(1, x / 3)   # dengung mencekam
+        for tt in np.arange(2.0, d, 3.7):   # burung hantu
+            i = int(tt * SR); L = int(0.5 * SR); y = np.arange(L) / SR; o = 0.12 * np.sin(2 * np.pi * 380 * y) * np.sin(np.pi * y / 0.5) ** 2; out[i:i + L] += o[:max(0, min(L, n - i))]
+    if jenis == 'sungai':
+        w = rng.standard_normal(n); out += 0.12 * (lp(w, 6) - lp(w, 60)) * (0.8 + 0.2 * np.sin(2 * np.pi * 0.3 * x))   # gemericik air
+        for tt in rng.random(int(d * 0.6)) * d:   # cipratan ikan
+            i = int(tt * SR); L = int(0.25 * SR); y = np.arange(L) / SR; o = 0.25 * rng.standard_normal(L) * np.exp(-y * 18); out[i:i + L] += o[:max(0, min(L, n - i))]
+    if jenis == 'rumah':
+        for tt in np.arange(0.3, d, 1.0):   # jam dinding
+            i = int(tt * SR); L = int(0.03 * SR); o = 0.08 * rng.standard_normal(L) * np.exp(-np.arange(L) / SR * 120); out[i:i + L] += o[:max(0, min(L, n - i))]
+    fade = np.minimum(1, np.minimum(x / 0.3, (d - x) / 0.3)); return out * fade
+def langkah(d):
+    n = int(d * SR); out = np.zeros(n)
+    for tt in np.arange(0.15, d, 0.52):
+        i = int(tt * SR); L = int(0.12 * SR); y = np.arange(L) / SR
+        o = 0.35 * lp(rng.standard_normal(L), 12) * np.exp(-y * 35) + 0.25 * np.sin(2 * np.pi * 70 * y) * np.exp(-y * 40); out[i:i + L] += o[:max(0, min(L, n - i))]
+    return out
+def glitch():
+    x = t(0.35); return 0.35 * np.sign(np.sin(2 * np.pi * 60 * x)) * (rng.random(len(x)) > 0.5) * np.exp(-x * 4) + 0.2 * rng.standard_normal(len(x)) * np.exp(-x * 6)
+def napas():
+    x = t(3.2); env = np.maximum(0, np.sin(2 * np.pi * 0.7 * x)) ** 2; return 0.22 * lp(rng.standard_normal(len(x)), 30) * env
+def krek():
+    x = t(0.18); return 0.6 * rng.standard_normal(len(x)) * np.exp(-x * 45) + 0.3 * np.sin(2 * np.pi * 900 * x) * np.exp(-x * 60)
+def beep():
+    x = t(0.25); return 0.25 * np.sin(2 * np.pi * 2200 * x) * (x < 0.12) + 0.25 * np.sin(2 * np.pi * 2200 * x) * (x > 0.16)
+SFX = {'glitch': glitch(), 'napas': napas(), 'krek': krek(), 'beep': beep(), 'palu': palu(), 'petir': petir(), 'seram': seram(), 'pop': pop(), 'whoosh': whoosh(), 'krik': krik(), 'tada': tada(), 'stempel': stempel()}
 mix = baca('vo_track.wav').copy()
 for tt, j in json.load(open('sfx.json')):
-    s = SFX.get(j); i = int(tt * SR)
+    if j.startswith('amb:'): _, jn, d = j.split(':'); s = suasana(jn, float(d)) / 0.55
+    elif j.startswith('langkah:'): s = langkah(float(j.split(':')[1])) / 0.55
+    else: s = SFX.get(j)
+    i = int(tt * SR)
     if s is None or i >= len(mix): continue
     n = min(len(s), len(mix) - i); mix[i:i + n] += s[:n] * 0.55
 mix = np.clip(mix / max(1.0, np.abs(mix).max() / 0.95), -1, 1)
