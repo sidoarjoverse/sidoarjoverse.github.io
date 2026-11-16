@@ -315,6 +315,16 @@ for (const p of REL) tandaGaris(p, 22, 4);
 for (const K of KAVLING_PERUMAHAN) tandaKotak(K.x, K.z, KAV_W + 6, KAV_D + 8, 8);
 export const LAHAN_RENCANA = SDA.lahan;
 for (const L of LAHAN_RENCANA) tandaKotak(L.x, L.z, L.w + 4, L.d + 4, 8);
+// Wisata Lumpur Sidoarjo: danau lumpur bertanggul di dekat Porong (posisi kira-kira, cari lahan bebas terdekat)
+export const WISATA_LUMPUR = (() => {
+  const W = 64, D = 54;
+  for (let k = 0; k < 600; k++) {
+    const a = k * 0.7, r = k * 1.2, x = -40 + Math.cos(a) * r, z = 440 + Math.sin(a) * r;
+    const pojok = [[-1, -1], [1, -1], [1, 1], [-1, 1]].every(([u, v]) => diPoly(x + u * (W / 2 + 6), z + v * (D / 2 + 6)));
+    if (pojok && kotakBebas(x, z, W + 14, D + 22, 15)) { tandaKotak(x, z, W + 12, D + 20, 8); return { x: Math.round(x), z: Math.round(z), w: W, d: D }; }
+  }
+  return null;
+})();
 const BANDARA = SDA.bandara;
 const diBandara = (x, z) => { if (!BANDARA) return false; const P = BANDARA.p; let d = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, zi] = P[i], [xj, zj] = P[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) d = !d; } return d; };
 
@@ -343,7 +353,7 @@ export function dataPeta(kota) {
     jalan: [...JALAN_ASLI.map(j => ({ k: j.k, p: j.p })), ...JALAN_BARU.map(j => ({ k: 'kota', p: [[j[0], j[1]], [j[2], j[3]]] })), ...LINES.map(z => ({ k: 'kota', p: [[-EDGE, z], [EDGE, z]] })), ...LINES.map(x => ({ k: 'kota', p: [[x, -EDGE], [x, x === 0 ? 31 : 16]] }))],
     sungai: SUNGAI, rel: REL, bandara: BANDARA, kecamatan: SDA.kecamatan,
     kavling: KAVLING_PERUMAHAN.map((K, i) => { const p = pr.find(q => q.kavling === i); return { x: K.x, z: K.z, w: KAV_W, d: KAV_D, nama: p ? p.nama : K.n, blok: p ? p.blok : null, ada: !!p }; }),
-    lahan: [...LAHAN_RENCANA, ...LAHAN_KOTA.map(L => ({ ...L, sub: '' }))],
+    lahan: [...LAHAN_RENCANA, ...(WISATA_LUMPUR ? [{ ...WISATA_LUMPUR, nama: 'WISATA LUMPUR', sub: '' }] : []), ...LAHAN_KOTA.map(L => ({ ...L, sub: '' }))],
     jembatan: JEMBATAN,
   };
 }
@@ -621,6 +631,52 @@ function warnaGunung(kabut, malam) {
 // ---------------------------------------------------------------- daerah: sawah, tambak, sungai, jalan asli, jembatan, rel rencana, bandara rencana, lahan rencana
 function kenaRencana(x, z, m = 0) { return LAHAN_RENCANA.some(L => Math.abs(x - L.x) < L.w / 2 + m && Math.abs(z - L.z) < L.d / 2 + m); }
 const PETAK_SAWAH = [];
+function bangunLumpur(statik, L, r, papanRencana) {
+  const { x: cx, z: cz, w: W, d: D } = L, g = new THREE.Group(); g.position.set(cx, 0, cz);
+  // danau lumpur: bentuk lonjong tak beraturan, abu-abu kecoklatan, bagian tengah lebih basah
+  const blob = (sk, y, warna, rough) => {
+    const sh = new THREE.Shape();
+    for (let i = 0; i <= 40; i++) { const t = i / 40 * Math.PI * 2, n = 1 + Math.sin(t * 3 + 1) * 0.05 + Math.sin(t * 5) * 0.03;
+      const px = Math.cos(t) * W / 2 * sk * n, pz = Math.sin(t) * D / 2 * sk * n; i ? sh.lineTo(px, -pz) : sh.moveTo(px, -pz); }
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: warna, roughness: rough, metalness: 0 }));
+    m.position.y = y; m.receiveShadow = true; g.add(m);
+  };
+  { const m = new THREE.Mesh(new THREE.PlaneGeometry(W, D).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#a39885', roughness: 1 })); m.position.y = 0.09; m.receiveShadow = true; g.add(m); }   // dasar lumpur kering
+  blob(0.92, 0.12, '#8b8276', 1); blob(0.7, 0.15, '#776e63', 0.85); blob(0.42, 0.18, '#5f574d', 0.55);
+  const v = new VB();
+  // tanggul keliling (jalan setapak di atasnya)
+  const tg = 3.2, H = 1.6;
+  v.box(0, 0, -D / 2 - tg / 2, W + tg * 2, H, tg, '#9a8566').box(0, 0, D / 2 + tg / 2, W + tg * 2, H, tg, '#9a8566');
+  v.box(-W / 2 - tg / 2, 0, 0, tg, H, D, '#9a8566').box(W / 2 + tg / 2, 0, 0, tg, H, D, '#9a8566');
+  v.box(0, H, -D / 2 - tg / 2, W + tg * 2, 0.06, 1.6, '#d9cfb8').box(0, H, D / 2 + tg / 2, W + tg * 2, 0.06, 1.6, '#d9cfb8');
+  v.box(-W / 2 - tg / 2, H, 0, 1.6, 0.06, D, '#d9cfb8').box(W / 2 + tg / 2, H, 0, 1.6, 0.06, D, '#d9cfb8');
+  for (let u = -W / 2; u <= W / 2; u += 4) for (const sz of [-1, 1]) v.box(u, H, sz * (D / 2 + tg - 0.3), 0.15, 1.0, 0.15, '#f2efe6');   // pagar
+  // gelembung lumpur
+  for (let i = 0; i < 26; i++) { const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 0.75, s = 0.6 + r() * 1.4;
+    v.bola(Math.cos(a) * W / 2 * d, 0.05, Math.sin(a) * D / 2 * d, s, s * 0.45, s, '#6b6359'); }
+  // tangga naik tanggul + gapura di sisi selatan
+  const gz = D / 2 + tg + 4;
+  v.box(0, 0, D / 2 + tg + 1.2, 5, 0.8, 2.4, '#b9ad94');
+  for (const sx of [-4.2, 4.2]) v.box(sx, 0, gz, 1.2, 6.2, 1.2, '#7a5a3a').box(sx, 6.2, gz, 1.6, 0.5, 1.6, '#5a3e24');
+  v.box(0, 5.4, gz, 9.6, 0.5, 0.9, '#5a3e24');
+  // menara pandang di pojok timur laut
+  const mx = W / 2 - 4, mz = -D / 2 + 4;
+  for (const [ax, az] of [[-1.4, -1.4], [1.4, -1.4], [1.4, 1.4], [-1.4, 1.4]]) v.box(mx + ax, H, mz + az, 0.35, 8, 0.35, '#7a5a3a');
+  v.box(mx, H + 8, mz, 4.2, 0.35, 4.2, '#8b6a46').box(mx, H + 8.35, mz - 2, 4.2, 1.0, 0.15, '#7a5a3a').box(mx, H + 9.6, mz, 4.8, 0.3, 4.8, '#b8452f');
+  // gazebo di tanggul barat & area parkir di depan gapura
+  for (const gzb of [[-W / 2 - tg / 2, -8], [-W / 2 - tg / 2, 10]]) {
+    for (const [ax, az] of [[-1.1, -1.1], [1.1, -1.1], [1.1, 1.1], [-1.1, 1.1]]) v.box(gzb[0] + ax, H, gzb[1] + az, 0.2, 2.4, 0.2, '#7a5a3a');
+    v.box(gzb[0], H + 2.4, gzb[1], 3.2, 0.5, 3.2, '#b8452f');
+  }
+  v.box(0, 0, gz + 6, 22, 0.05, 8, '#9d9d98');
+  for (let i = -3; i <= 3; i++) v.box(i * 3, 0.05, gz + 6, 0.15, 0.02, 7, '#f2efe6');
+  g.add(v.build());
+  const s = signMesh('WISATA LUMPUR SIDOARJO', 9.4, 1.3, '#5a3e24', '#ffd166'); s.position.set(0, 4.6, gz + 0.5); g.add(s);
+  const s2 = signMesh('🚧 SEGERA DIBUKA', 5, 0.8, '#ffd166', '#3d2a00'); s2.position.set(0, 3.5, gz + 0.5); g.add(s2);
+  statik.add(g);
+  papanRencana(cx + 15, cz + gz + 3, 0, 'WISATA LUMPUR', 'rencana wisata · tanggul lumpur Porong', 7);
+}
+
 function bangunDaerah(statik, r, footprints, ringan) {
   PETAK_SAWAH.length = 0;
   const C = BATAS, CH = 240, petak = new Map();
@@ -733,6 +789,7 @@ function bangunDaerah(statik, r, footprints, ringan) {
     for (let z = -L.d / 2; z <= L.d / 2; z += 3) for (const sx of [-1, 1]) v.box(L.x + sx * L.w / 2, 0, L.z + z, 0.2, 1.0, 0.2, '#e9e2d0');
     papanRencana(L.x, L.z + L.d / 2 + 2, 0, L.nama, L.sub, 7);
   }
+  if (WISATA_LUMPUR) bangunLumpur(statik, WISATA_LUMPUR, r, papanRencana);
   for (const v of pk.values()) statik.add(v.build({ shadow: false }));
   // papan nama kecamatan
   for (const [n, x0k, z0k] of SDA.kecamatan) { let x = x0k, z = z0k; for (let k = 0; k < 40 && !titikBebas(x, z); k++) { x = x0k + Math.cos(k) * k * 3; z = z0k + Math.sin(k) * k * 3; } if (!titikBebas(x, z)) continue; const g = new THREE.Group(); g.position.set(x, 0, z); const v = new VB(); v.box(-2.4, 0, 0, 0.3, 3.4, 0.3, '#3a3a3a').box(2.4, 0, 0, 0.3, 3.4, 0.3, '#3a3a3a'); g.add(v.build()); const s = signMesh('KEC. ' + n.toUpperCase(), 5.4, 1.1, '#2a6f4f', '#ffffff'); s.position.set(0, 2.9, 0.18); g.add(s); statik.add(g); }

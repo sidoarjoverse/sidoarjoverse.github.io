@@ -916,6 +916,7 @@ function overlay(t) {
 
 // ------------------------------------------------------------ API untuk perekam
 let tPrev = 0;
+let kabutSkr = null;
 window.video = {
   N, FPS, durasi: TL.durasi, sfx,
   render(f, mutu = 0.9) {
@@ -926,6 +927,7 @@ window.video = {
     const ks = (t - s.start - 0.3) / 0.5;
     sorot.visible = ada && ks > 0;
     sorot.material.opacity = Math.min(1, Math.max(0, ks)) * (0.42 + Math.sin(t * 6) * 0.14);
+    { const kb = s.kabut ?? NASKAH.kabut ?? 1; if (kb !== kabutSkr) { kabutSkr = kb; world.setKabut(kb); } }   // kabut per baris (shot sinematik jernih)
     kamera(t);
     if (s.getar != null) {           // layar bergetar (kaget)
       const u = t - (s.start + s.dur * s.getar);
@@ -1041,6 +1043,8 @@ window.video = {
       const u = t - (s.start + s.dur * s.kilat), a = u < 0 ? 0 : u < 0.12 ? 0.9 : u < 0.3 ? 0.9 * (1 - (u - 0.12) / 0.18) : u > 0.42 && u < 0.5 ? 0.6 : 0;
       if (a > 0) { c.fillStyle = `rgba(235,242,255,${a})`; c.fillRect(0, 0, W, H); }
     }
+    if (s.fadeOut) { const a = 1 - (selesai(i) - t) / s.fadeOut; if (a > 0) { c.fillStyle = `rgba(0,0,0,${Math.min(1, a)})`; c.fillRect(0, 0, W, H); } }   // transisi: tenggelam ke gelap
+    if (s.fade) { const a = 1 - (t - mulai(i)) / s.fade; if (a > 0) { c.fillStyle = `rgba(0,0,0,${Math.min(1, a)})`; c.fillRect(0, 0, W, H); } }   // transisi: muncul dari gelap
     if (NASKAH.bioskop || s.bioskop) { c.fillStyle = '#000'; c.fillRect(0, 0, W, 96); c.fillRect(0, H - 96, W, 96); }   // garis hitam ala film
     c.restore();
     if (pj) {

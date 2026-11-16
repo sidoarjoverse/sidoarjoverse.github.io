@@ -59,4 +59,5 @@ Nama akun pada kartu komen/protes di video (stiker `protes`, `tumpuk`, `komen`) 
 ## Aturan video: kalimat perkenalan (template tiap video)
 Setiap video (episode maupun spesial) memuat kalimat perkenalan setelah hook / setelah menyebut episode, supaya penonton baru langsung paham:
 > "Gawe sampeyan sing durung ngerti: iki Sidoarjo Vers, kota impian sing dibangun teko komen-komen kalian!"
+Visual baris ini **selalu shot sinematik indahnya kota** (siang/sore cerah, tanpa Cak Darjo, mis. drone di atas perumahan + sungai + sawah; `"darjo": "tidak"`, `"jam"`, `"kabut": 3`), **tidak mengikuti suasana video** (mis. walau adegan lain malam/lampu mati). Beri transisi `"fade"` (muncul dari gelap) bila baris sebelumnya bernada beda.
 Di naskah, baris itu diberi stiker `{"jenis": "kenalan"}` (kartu "🏙️ KENALAN SIK, REK! · SidoarjoVerse · kota impian sing dibangun teko komen kalian").
