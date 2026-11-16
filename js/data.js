@@ -388,12 +388,31 @@ export async function hapusKandidat(id) {
 const KEY_RUMAH = 'sv_rumah_' + CONFIG.KOTA_ID;
 const rumahDemo = () => { try { return JSON.parse(localStorage.getItem(KEY_RUMAH) || '{}'); } catch (_) { return {}; } };
 // { [rumah_id]: { kode, nama, gender, kecamatan, pekerjaan, sejak } } — null bila fitur belum dipasang di database
-export async function penghuni() {
+// Hemat kuota: daftar penghuni untuk papan nama di peta cukup {rumah_id, nama} (±35 KB, bukan 140 KB),
+// disimpan di HP 15 menit. Detail (pekerjaan, kecamatan) diambil per rumah saat kartunya dibuka.
+const KEY_PENGHUNI = 'sv_penghuni_' + CONFIG.KOTA_ID;
+export async function penghuni(kodeSaya, paksa) {
   if (DEMO) { const r = rumahDemo(), ws = wargaDemo(), out = {}; for (const [id, x] of Object.entries(r)) { const w = ws.find(w => w.kode === x.kode); if (w) out[id] = Object.assign({ sejak: x.sejak }, w); } return out; }
   try {
-    const rows = await rest('/rest/v1/penghuni?select=*');
-    return Object.fromEntries(rows.map(r => [r.rumah_id, r]));
+    let rows = null;
+    if (!paksa) { try { const c = JSON.parse(localStorage.getItem(KEY_PENGHUNI) || 'null'); if (c && Date.now() - c.t < 15 * 60e3) rows = c.rows; } catch (_) {} }
+    if (!rows) {
+      rows = (await rest('/rest/v1/penghuni?select=rumah_id,nama')).map(r => [r.rumah_id, r.nama]);
+      try { localStorage.setItem(KEY_PENGHUNI, JSON.stringify({ t: Date.now(), rows })); } catch (_) {}
+    }
+    const out = Object.fromEntries(rows.map(([id, nama]) => [id, { nama }]));
+    if (kodeSaya) {   // rumahku: data lengkap (termasuk kode) hanya untuk diriku sendiri
+      const mine = await rest(`/rest/v1/penghuni?kode=eq.${encodeURIComponent(kodeSaya)}&select=*`);
+      for (const [id, x] of Object.entries(out)) if (x.kode) delete out[id];
+      for (const r of mine || []) out[r.rumah_id] = r;
+    }
+    return out;
   } catch (e) { if (/penghuni|404|PGRST/i.test(e.message)) return null; throw e; }
+}
+export async function detailPenghuni(rumahId) {
+  if (DEMO) return null;
+  const rows = await rest(`/rest/v1/penghuni?rumah_id=eq.${encodeURIComponent(rumahId)}&select=*`);
+  return (rows && rows[0]) || null;
 }
 export async function tempatiRumah(kode, pin, rumahId) {
   kode = (kode || '').trim().toUpperCase(); pin = (pin || '').trim().toUpperCase();
