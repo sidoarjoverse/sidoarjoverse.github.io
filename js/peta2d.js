@@ -98,7 +98,7 @@ export function pasangPeta({ world, saya, rumahSaya }) {
     if (rm) { const [x, y] = ke(rm.x, rm.z); ctx.font = (penuh ? 22 : 16) + 'px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🏠', x, y); }
     // aku
     const p = world.posisiSaya(); const [x, y] = ke(p.x, p.z);
-    const t = performance.now() / 1000, r0 = penuh ? 9 : 6;
+    const t = performance.now() / 1000, r0 = penuh ? 9 : 18;
     ctx.fillStyle = 'rgba(230,57,70,.22)'; ctx.beginPath(); ctx.arc(x, y, r0 + 6 + Math.sin(t * 4) * 3, 0, 7); ctx.fill();
     ctx.save(); ctx.translate(x, y); ctx.rotate(-p.ry + Math.PI);   // arah hadap (kerucut pandang)
     ctx.fillStyle = 'rgba(230,57,70,.35)'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, r0 * 3.2, Math.PI / 2 - 0.5, Math.PI / 2 + 0.5); ctx.closePath(); ctx.fill(); ctx.restore();
@@ -106,8 +106,8 @@ export function pasangPeta({ world, saya, rumahSaya }) {
     if (penuh) {
       const lb = p.jalan ? 'Kamu di sini' : 'Kamu lihat sini'; ctx.font = '900 13px system-ui'; ctx.textAlign = 'center';
       ctx.lineWidth = 4; ctx.strokeStyle = '#fff'; ctx.strokeText(lb, x, y - r0 - 12); ctx.fillStyle = '#e63946'; ctx.fillText(lb, x, y - r0 - 12);
-    } else {   // arah utara
-      ctx.font = '900 13px system-ui'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText('U ▲', w / 2, 14);
+    } else {   // peta mini kecil (seukuran tombol): tanpa tulisan arah utara
+      void 0;
     }
   }
   const diPoly = (P, x, z) => { let d = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, zi] = P[i], [xj, zj] = P[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) d = !d; } return d; };

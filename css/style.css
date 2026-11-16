@@ -230,9 +230,10 @@ body.bermain .online { top: 58px; }
 .rumah-aksi { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; justify-content: center; }
 
 /* ---------- peta 2D: peta mini + peta penuh */
-.peta-mini { position: absolute; right: 12px; top: 176px; width: 76px; height: 76px; border-radius: 50%; border: 3px solid var(--teal); box-shadow: 0 3px 0 var(--teal), 0 6px 16px rgba(0,0,0,.25); cursor: pointer; background: #5f7a3a; z-index: 5; }
-.peta-lokasi { position: absolute; right: 12px; top: 258px; max-width: 170px; padding: 5px 9px; border-radius: 10px; background: rgba(255,248,236,.94); border: 2px solid var(--teal); font-size: 11px; font-weight: 800; color: var(--teal); text-align: center; z-index: 5; pointer-events: none; }
-body.bermain .peta-lokasi { top: 258px; }
+.peta-mini { position: absolute; right: 12px; top: 168px; width: 44px; height: 44px; border-radius: 12px; border: 2px solid var(--teal); box-shadow: 0 3px 0 var(--teal); cursor: pointer; background: var(--krem); z-index: 5; }
+.peta-mini:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--teal); }
+.peta-lokasi { position: absolute; right: 12px; top: 222px; max-width: 170px; padding: 5px 9px; border-radius: 10px; background: rgba(255,248,236,.94); border: 2px solid var(--teal); font-size: 11px; font-weight: 800; color: var(--teal); text-align: center; z-index: 5; pointer-events: none; }
+body.bermain .peta-lokasi { top: 222px; }
 .peta-penuh { position: fixed; inset: 0; z-index: 60; background: #0f2a3a; display: flex; flex-direction: column; }
 .peta-penuh[hidden] { display: none; }
 .peta-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: #fff; flex-wrap: wrap; background: #0f2a3a; }
