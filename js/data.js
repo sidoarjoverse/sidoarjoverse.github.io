@@ -59,7 +59,28 @@ export function hitungDay(k) {
   return Math.max(0, hari + 1);
 }
 const denganDay = k => { if (k && k.day_mulai) k.day = hitungDay(k); return k; };
-export async function ambilKota() { return denganDay(await ambilKotaMentah()); }
+export async function ambilKota() { return denganDay(lebarkanRumah(await ambilKotaMentah())); }
+// Hemat kuota: 1000 rumah perumahan standar tidak disimpan satu per satu, cukup {blok: jumlah} di kota.rumahMassal.
+const KUNCI_STD = new Set(['id', 'no', 'blok', 'huni', 'nama', 'tipe', 'status', 'kawasan', 'progres']);
+const rumahStd = b => b && b.tipe === 'rumah' && b.kawasan === 'perumahan' && b.huni === true && b.status === 'selesai' && +b.progres === 100
+  && b.id === `rmh-${b.blok}${b.no}` && b.nama === `Rumah Blok ${b.blok} No. ${b.no}` && Object.keys(b).every(k => KUNCI_STD.has(k));
+const buatRumah = (blok, no) => ({ id: `rmh-${blok}${no}`, no, blok, huni: true, nama: `Rumah Blok ${blok} No. ${no}`, tipe: 'rumah', status: 'selesai', kawasan: 'perumahan', progres: 100 });
+function lebarkanRumah(k) {
+  if (!k || !k.rumahMassal) return k;
+  const ada = new Set((k.bangunan || []).map(b => b.id)), tambah = [];
+  for (const [blok, n] of Object.entries(k.rumahMassal)) for (let no = 1; no <= n; no++) if (!ada.has(`rmh-${blok}${no}`)) tambah.push(buatRumah(blok, no));
+  k.bangunan = [...(k.bangunan || []), ...tambah]; delete k.rumahMassal; return k;
+}
+export function ringkasRumah(k) {
+  const out = Object.assign({}, k), per = {}, sisa = [];
+  for (const b of k.bangunan || []) { if (rumahStd(b)) (per[b.blok] = per[b.blok] || []).push(+b.no); else sisa.push(b); }
+  const massal = {};
+  for (const [blok, nos] of Object.entries(per)) {   // hanya diringkas kalau nomornya lengkap 1..n
+    const n = Math.max(...nos);
+    if (nos.length === n && new Set(nos).size === n) massal[blok] = n; else sisa.push(...nos.map(no => buatRumah(blok, no)));
+  }
+  out.bangunan = sisa; if (Object.keys(massal).length) out.rumahMassal = massal; return out;
+}
 async function ambilKotaMentah() {
   if (DEMO) {
     const s = localStorage.getItem(KEY_KOTA);
@@ -104,7 +125,7 @@ export async function simpanKota(data) {
   const rows = await rest('/rest/v1/kota', {
     method: 'POST',
     headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify({ id: CONFIG.KOTA_ID, data, updated_at: new Date().toISOString() }),
+    body: JSON.stringify({ id: CONFIG.KOTA_ID, data: ringkasRumah(data), updated_at: new Date().toISOString() }),
   }, sesi.token);
   if (!rows || !rows.length) throw new Error('Tidak diizinkan. Pastikan email kamu ada di tabel admins.');
 }

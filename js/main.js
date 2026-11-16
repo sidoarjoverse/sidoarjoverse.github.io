@@ -590,7 +590,8 @@ async function mulai() {
   if (saya && !pinSaya) { const pin = await D.klaimPin(kodeSaya); if (pin) { pinSaya = pin; localStorage.setItem(KEY_PIN, pin); } }
   await muatPenghuni(true);
   cekCuaca(); setInterval(cekCuaca, 15 * 60 * 1000);
-  if (world && !D.DEMO) ramai = mulaiRamai({ world, saya: () => saya, onJumlah: n => { const el = $('online'); el.hidden = n < 1; el.textContent = `🟢 ${n} warga online`; } });
+  // Mode Ramai (warga online lewat Supabase Realtime) DIMATIKAN: penyedot kuota terbesar. Sapa 💬 tetap jalan (hanya di HP sendiri).
+  if (false && world && !D.DEMO) ramai = mulaiRamai({ world, saya: () => saya, onJumlah: n => { const el = $('online'); el.hidden = n < 1; el.textContent = `🟢 ${n} warga online`; } });
   renderInfo(); renderKTP(); renderDonasi(); renderAkun();
   renderPemilu();
   setInterval(segarkan, 300000);   // 5 menit (hemat kuota Supabase)
