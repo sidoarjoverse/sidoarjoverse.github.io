@@ -106,8 +106,11 @@ for (const P of [].concat(NASKAH.penonton || [])) {
     PENONTON.push({ ch, lengan, sorak: r() < 0.55, ph: r() * 6.28 });
   }
 }
-function aturPenonton(t) {
+function aturPenonton(t, s) {
+  const tampil = !NASKAH.peresmianPerBaris || !!(s && s.peresmian);
+  if (PITA) PITA.visible = tampil;
   for (const p of PENONTON) {
+    p.ch.visible = tampil; if (!tampil) continue;
     p.ch.position.y = p.sorak ? Math.abs(Math.sin(t * 6 + p.ph)) * 0.12 : 0;
     if (p.sorak) p.lengan.forEach(l => l.rotation.set(0, 0, Math.sign(l.position.x || 1) * (2.5 + Math.sin(t * 9 + p.ph) * 0.3)));
   }
@@ -1157,7 +1160,7 @@ window.video = {
     world.setLampuMati(!!s.lampuMati || (s.kedip && (Math.sin(t * 29) + Math.sin(t * 13.7) > 0.4 || (t * 7) % 3 < 0.5)));
     const nIsi = aturPenghuni(t); window._nIsi = nIsi;
     if (NASKAH.tanpaPapan && !s.papanRumah) scene.traverse(o => { if (o.userData && o.userData.papanRumah) o.userData.papanRumah.visible = false; });
-    aturIwak(t); aturPemancing(t, s); aturPenonton(t); aturHiu(t);
+    aturIwak(t); aturPemancing(t, s); aturPenonton(t, s); aturHiu(t);
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     if (diDalam) {
       if (DALAM.ch) { DALAM.ch.position.y = Math.abs(Math.sin(t * 2.2)) * 0.02; if (DALAM.tangan) DALAM.tangan.rotation.z = t % 5 < 1.8 ? 2.4 + Math.sin(t * 12) * 0.35 : 0; }
