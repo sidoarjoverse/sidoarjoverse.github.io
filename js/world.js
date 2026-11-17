@@ -1747,6 +1747,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     padiPusat = [tx, tz]; let k = 0; const R = RINGAN ? 40 : 58, rr = rng(Math.round(tx) * 31 + Math.round(tz));
     for (const [cx, cz, c, uk = 1] of PETAK_SAWAH) {
       if ((cx - tx) ** 2 + (cz - tz) ** 2 > R * R || k >= PADI_N) continue;
+      if (rintangan && rintangan.some(f => Math.abs(cx - f.x) < f.w / 2 + 12 * uk && Math.abs(cz - f.z) < f.d / 2 + 8 * uk)) continue;   // petak tertutup bangunan
       const kuning = c === '#d6c25a' || c === '#b8c95a';
       for (let x = -10.9 * uk - (uk < 1 ? 0.2 : 0); x <= 10.9 * uk; x += 0.55) for (let z = -6.9 * uk; z <= 6.9 * uk; z += 0.6) {
         if (k >= PADI_N) break;
@@ -1772,6 +1773,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     for (let t = 0; t < RUMPUT_N * 2.2 && k < RUMPUT_N; t++) {   // titik acak merata dalam lingkaran (pusat lebih rapat)
       const a = rr() * 6.2832, d = R * Math.sqrt(rr()) * (rr() < 0.25 ? rr() : 1), jx = tx + Math.cos(a) * d, jz = tz + Math.sin(a) * d;
       if (kena(jx, jz, 31) || diKota(jx, jz, -2) || !diPoly(jx, jz)) continue;
+      if (rintangan && rintangan.some(f => Math.abs(jx - f.x) < f.w / 2 + 1 && Math.abs(jz - f.z) < f.d / 2 + 1)) continue;   // tidak tumbuh di atas bangunan (kolam, toko, dll)
       _o.position.set(jx, -0.02, jz); _o.rotation.set((rr() - 0.5) * 0.3, rr() * 6.28, (rr() - 0.5) * 0.3);
       const sk = 0.8 + rr() * 0.6; _o.scale.set(sk, sk * (0.7 + rr() * 0.6), sk); _o.updateMatrix(); rumputIM.setMatrixAt(k, _o.matrix);
       rumputIM.setColorAt(k, _c.set(RUMPUT_WARNA[Math.floor(rr() * RUMPUT_WARNA.length)]).multiplyScalar(0.85 + rr() * 0.3)); k++;

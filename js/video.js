@@ -64,7 +64,7 @@ const IWAK = [];
 for (const k of NASKAH.iwak || []) {
   const r = rng('iwak' + k.x + k.z);
   for (let j = 0; j < (k.n || 20); j++) {
-    const g = new THREE.Group(), warna = ['#8a8f96', '#c97b3a', '#6f7f6a', '#b5b9be', '#d4a03a'][Math.floor(r() * 5)], m = new THREE.MeshStandardMaterial({ color: warna, roughness: 0.4, metalness: 0.3 });
+    const g = new THREE.Group(), warna = k.warna ? k.warna[Math.floor(r() * k.warna.length)] : ['#8a8f96', '#c97b3a', '#6f7f6a', '#b5b9be', '#d4a03a'][Math.floor(r() * 5)], m = new THREE.MeshStandardMaterial({ color: warna, roughness: 0.4, metalness: 0.3 });
     const badan = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), m); badan.scale.set(0.55, 0.5, 1.5); g.add(badan);
     const ekor = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.35, 4), m); ekor.rotation.x = -Math.PI / 2; ekor.scale.set(1, 1, 0.3); ekor.position.z = -0.42; g.add(ekor);
     const sirip = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.22, 3), m); sirip.position.set(0, 0.12, 0.02); g.add(sirip);
@@ -122,6 +122,22 @@ if (NASKAH.pita) {
   sisi(-1); sisi(1);
   if (!P.putus) { const pita = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.06, 8, 16), merah); pita.position.set(0, 1.25, 0.02); g.add(pita); }
   scene.add(g); PITA = g;
+}
+// hiu (naskah "hiu": [{x, z, r, y, muncul}]) — berputar di kolam, sirip punggung menyembul; "muncul": detik mulai terlihat
+const HIU = (NASKAH.hiu || []).map(k => {
+  const g = new THREE.Group(), m = new THREE.MeshStandardMaterial({ color: '#6b7b8c', roughness: 0.5 }), pt = new THREE.MeshStandardMaterial({ color: '#e8edf2', roughness: 0.6 });
+  const badan = new THREE.Mesh(new THREE.SphereGeometry(0.5, 14, 10), m); badan.scale.set(0.7, 0.55, 2.6); g.add(badan);
+  const perut = new THREE.Mesh(new THREE.SphereGeometry(0.48, 14, 10), pt); perut.scale.set(0.62, 0.4, 2.3); perut.position.y = -0.1; g.add(perut);
+  const sirip = new THREE.Mesh(new THREE.ConeGeometry(0.32, 1.0, 4), m); sirip.scale.set(0.35, 1, 1); sirip.position.set(0, 0.62, 0.1); sirip.rotation.x = -0.35; g.add(sirip);
+  const ekor = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.9, 4), m); ekor.rotation.x = Math.PI / 2; ekor.scale.set(0.25, 1, 1.4); ekor.position.z = -1.5; g.add(ekor);
+  g.scale.setScalar(k.besar || 1.3); g.visible = false; scene.add(g); return { g, k, ekor };
+});
+function aturHiu(t) {
+  for (const h of HIU) {
+    const { k } = h, a = t * (k.laju || 0.5), x = k.x + Math.cos(a) * (k.r || 4), z = k.z + Math.sin(a) * (k.r || 4) * 0.7;
+    h.g.visible = t >= (k.muncul || 0); h.g.position.set(x, (k.y ?? 0.05) + Math.sin(t * 2) * 0.03, z);
+    h.g.rotation.y = Math.atan2(-Math.sin(a), Math.cos(a) * 0.7) ; h.ekor.rotation.y = Math.sin(t * 6) * 0.4;
+  }
 }
 function aturIwak(t) {
   for (const f of IWAK) {
@@ -1137,7 +1153,7 @@ window.video = {
     world.setLampuMati(!!s.lampuMati || (s.kedip && (Math.sin(t * 29) + Math.sin(t * 13.7) > 0.4 || (t * 7) % 3 < 0.5)));
     const nIsi = aturPenghuni(t); window._nIsi = nIsi;
     if (NASKAH.tanpaPapan && !s.papanRumah) scene.traverse(o => { if (o.userData && o.userData.papanRumah) o.userData.papanRumah.visible = false; });
-    aturIwak(t); aturPemancing(t, s); aturPenonton(t);
+    aturIwak(t); aturPemancing(t, s); aturPenonton(t); aturHiu(t);
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     if (diDalam) {
       if (DALAM.ch) { DALAM.ch.position.y = Math.abs(Math.sin(t * 2.2)) * 0.02; if (DALAM.tangan) DALAM.tangan.rotation.z = t % 5 < 1.8 ? 2.4 + Math.sin(t * 12) * 0.35 : 0; }
