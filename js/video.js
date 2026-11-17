@@ -331,6 +331,10 @@ const MON = (() => {
 })();
 function aturKerumunan(t, s) {
   if (GEL) GEL.g.visible = !!s.gelandangan;
+  if (MON && MON.userData.rencana !== !!s.monumenRencana) {   // monumen rencana: tembus pandang (belum dibangun / tertunda)
+    MON.userData.rencana = !!s.monumenRencana;
+    MON.traverse(o => { if (o.isMesh) { if (!o.userData.mAsli) { o.userData.mAsli = o.material; o.userData.mTembus = o.material.clone(); o.userData.mTembus.transparent = true; o.userData.mTembus.opacity = 0.32; o.userData.mTembus.depthWrite = false; } o.material = MON.userData.rencana ? o.userData.mTembus : o.userData.mAsli; } });
+  }
   if (MON) { MON.visible = !!s.monumen; if (s.monumen) { const u = Math.min(1, (t - mulai(segPada(t))) / 1.2); MON.scale.y = s.monumenNaik ? Math.max(0.01, easeOut(u)) : 1; MON.children.at(-6) && 0; } }
   if (KER) { KER.g.visible = !!s.kerumunan; if (s.kerumunan) KER.update(t); }
   TUKANG_DEKAT.forEach((c, k) => { c.visible = !!s.kerumunan; const a = c.userData.anim; a.arms[1].rotation.x = -1.2 + Math.abs(Math.sin(t * 7 + k)) * -1.1; a.arms[0].rotation.x = -0.4; });
