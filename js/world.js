@@ -1081,7 +1081,7 @@ export const TIPE = {
     for (const x of [-3.6, -1.8, 0, 1.8, 3.6]) vb.box(x, 1.3, 0.11, 1.1, 1.0, 0.06, 'win');
     vb.box(0, 0.12, 0.12, 1, 1.9, 0.08, '#6d4527');
     vb.box(0, 0.12, 2.4, 0.12, 4.2, 0.12, '#dddddd').box(0.55, 3.7, 2.4, 0.9, 0.3, 0.04, '#e63946').box(0.55, 3.4, 2.4, 0.9, 0.3, 0.04, '#ffffff');
-    const sg = signMesh('SD SIDOARJOVERSE', 4, 0.5, '#ffffff', '#c44536'); sg.position.set(0, 2.6, 0.13); ex.push(sg);
+    const sg = signMesh((b.nama || 'SD SIDOARJOVERSE').toUpperCase(), 4.6, 0.55, '#ffffff', '#c44536'); sg.position.set(0, 2.6, 0.13); ex.push(sg);
   } },
   puskesmas: { label: 'Puskesmas', w: 8, d: 6, build(vb) {
     vb.box(0, 0, 0, 8, 0.12, 6, '#cfc6b4');

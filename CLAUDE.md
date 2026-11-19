@@ -10,7 +10,7 @@ Bahasa komunikasi dengan pemilik: **Bahasa Indonesia**, santai dan jelas (pemili
 - Mode Ramai (`js/ramai.js`): warga online saling terlihat + sapa pakai kalimat template/emote (tanpa chat bebas), via Supabase Realtime broadcast (tanpa SQL). Uji: `?ramai=uji`.
 - Website: peta 3D, KTP warga (tanpa PIN), klasemen 18 kecamatan, Pemilu (1 KTP = 1 suara), donasi, mode jalan-jalan.
 - Event bertahap sesuai follower: 1.000 = Pemilihan Ketua RT, 3.000 = Camat Verse, 5.000 = sponsor/ruko mitra, 10.000 = Wakil Kepala Kota.
-- Tetap fiktif & sopan: tanpa politik nyata, SARA, nama pejabat/merek asli. Jangan meniru karakter/nama/kalimat akun lain (mis. @sekolahbebaz): hanya format yang boleh mirip.
+- Tetap fiktif & sopan: tanpa politik nyata, SARA, nama pejabat/merek asli. Jangan meniru karakter/nama/kalimat akun lain: hanya format yang boleh mirip. Pengecualian: **@sekolahbebaz resmi collab** (Nov 2026; sumbangan 100 juta di cerita = fiktif) — nama/sekolahnya boleh tampil sesuai kesepakatan pemilik.
 
 ## Cak Darjo (WAJIB konsisten), desain Gen Z (sejak 7 Nov 2026)
 Dibuat oleh `makeCakDarjo()` di `js/world.js` (satu sumber untuk website, video, gambar). Jangan buat versi lain.
