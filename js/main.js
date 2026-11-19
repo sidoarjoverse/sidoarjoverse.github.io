@@ -3,6 +3,7 @@ import * as D from './data.js';
 import { CONFIG } from './config.js';
 import { KENDARAAN, kendaraanRumah } from './tipe.js';
 import { lookFor, drawPortrait } from './avatar.js';
+import { bukaMancing } from './mancing.js';
 import { mulaiRamai, KALIMAT, EMOTE, teksChat } from './ramai.js';
 import { bukaRumah, tutupRumah } from './rumah.js';
 import { pasangPeta } from './peta2d.js';
@@ -133,6 +134,9 @@ function kartuToko(b) {
 }
 function kartuBangunan(b) {
   if (b.tipe === 'toko' && b.status === 'selesai') return kartuToko(b);
+  if (b.tipe === 'kolampancing' && b.status === 'selesai') return `<div class="lab" style="color:var(--teal2);font-weight:800;font-size:12px">🎣 KOLAM PANCING</div><h3>${esc(b.nama)}</h3>
+    <p style="font-size:15px;line-height:1.5">Mancing gratis! Oleh iwak reno-reno: bandeng, lele, gurami, koi emas... sopo ngerti oleh <b>hiu</b> 😱</p>
+    <div class="ktp-acts" style="justify-content:flex-start"><button class="btn oren" id="btnMancing">🎣 Mancing saiki</button></div>`;
   if (b.huni && b.status === 'selesai') return kartuRumah(b);
   if (b.papan) return `<div class="lab" style="color:var(--teal2);font-weight:800;font-size:12px">📌 PAPAN PENGUMUMAN</div><h3>${esc(b.nama)}</h3><p style="white-space:pre-line;font-size:15px;line-height:1.5">${esc(b.ket)}</p>`;
   const p = b.status === 'selesai' ? 100 : (+b.progres || 0);
@@ -175,6 +179,7 @@ function onPick(p, obj) {
   if (fm) { try { fm.getContext('2d').drawImage(potretWarga(p.data, 96, '#cfe8ef'), 0, 0, 96, 96); } catch (_) { drawPortrait(fm.getContext('2d'), 0, 0, 96, 96, lookFor(p.data)); } }
   const bi = $('btnIkuti'); if (bi) bi.onclick = () => { world.ikuti(obj); bi.textContent = '🎥 Mengikuti…'; };
   const bk = $('btnKtpku'); if (bk) bk.onclick = () => buka('ktp');
+  { const bmc = $('btnMancing'); if (bmc) bmc.onclick = () => { tutupCard(); bukaMancing({ nama: saya && saya.nama }); }; }
   if (p.jenis === 'bangunan' && p.data.huni) {
     const bm = $('btnMasuk'); if (bm) bm.onclick = () => masukRumah(p.data);
     const ph = p.data.penghuni;   // detail penghuni diambil saat kartu dibuka (hemat kuota)
@@ -508,10 +513,10 @@ function onDekat(b) {
   dekatB = b;
   const el = $('dekat');
   if (!b) { el.hidden = true; return; }
-  el.innerHTML = `📍 ${esc(b.nama)}<small>Ketuk untuk lihat info</small>`;
+  el.innerHTML = b.tipe === 'kolampancing' ? `🎣 Mancing nang ${esc(b.nama)}<small>Ketuk gawe mancing!</small>` : `📍 ${esc(b.nama)}<small>Ketuk untuk lihat info</small>`;
   el.hidden = false;
 }
-$('dekat').onclick = () => { if (dekatB) onPick({ jenis: 'bangunan', data: dekatB }); };
+$('dekat').onclick = () => { if (!dekatB) return; if (dekatB.tipe === 'kolampancing') bukaMancing({ nama: saya && saya.nama }); else onPick({ jenis: 'bangunan', data: dekatB }); };
 
 async function mulaiMain() {
   if (!saya || !world) { buka('ktp'); return; }

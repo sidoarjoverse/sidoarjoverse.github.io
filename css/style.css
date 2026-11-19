@@ -251,3 +251,14 @@ body.bermain .peta-lokasi { top: 222px; }
 .arah-toko i { font-style: normal; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--oren, #f28c28); color: #fff; font-size: 15px; transition: transform .35s; }
 .arah-toko span { display: flex; flex-direction: column; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .arah-toko small { font-size: 11px; opacity: .8; font-weight: 700; }
+
+.mancing { position: fixed; inset: 0; z-index: 80; background: rgba(10,30,45,.82); display: grid; place-items: center; padding: 14px; }
+.mancing[hidden] { display: none; }
+.mc-kotak { width: min(440px, 100%); max-height: 100%; overflow: auto; background: #fff8ec; border: 3px solid var(--teal); border-radius: 22px; padding: 12px; box-shadow: 0 6px 0 var(--teal); }
+.mc-atas { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--teal); }
+.mc-atas b { flex: 1; font-size: 18px; } .mc-atas span { font-size: 13px; font-weight: 800; }
+.mc-tutup { border: 0; background: #ffd166; border-radius: 10px; width: 34px; height: 34px; font-weight: 900; color: var(--teal); }
+.mc-kanvas { width: 100%; border-radius: 14px; display: block; touch-action: manipulation; }
+.mc-pesan { text-align: center; font-weight: 700; color: var(--teal); margin: 10px 0; min-height: 22px; }
+.mc-tombol { font-size: 22px; padding: 14px; }
+.mc-kartu { width: 100%; border-radius: 16px; display: block; margin-bottom: 10px; }
