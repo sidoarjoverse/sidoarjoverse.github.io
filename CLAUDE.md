@@ -57,7 +57,8 @@ pelan ±22% dan turun ke ±11% saat ada suara VO, supaya tidak mengganggu VO/sfx
 ## Aturan video: cover/thumbnail
 Setiap video diberi cover 1080×1920 gaya "episode" (label kuning miring di kiri atas, chip tag, judul besar putih+kuning di bawah, latar adegan 3D dari video):
 `node alat/sampul.js video/<nama> '{"bg":"frame.jpg","badgeAtas":"SIDOARJOVERSE","badge":"EPISODE 14","chips":["…"],"judul":"Baris<br><span>KUNING</span>"}'` → `video/<nama>/sampul.jpg`.
-Saat unggah lewat Tebar: IG `cover_media_id`, TikTok `cover_media_id` (akun bisnis). YouTube Shorts tidak bisa custom thumbnail.
+**Otomatis:** isi `"sampul": {"t": <detik latar>, "badge": "EPISODE N", "chips": [...], "judul": "..."}` di `naskah.json`; `buat-video.sh` lalu membuat `sampul.jpg`, `SidoarjoVerse-<nama>-shorts.mp4` (cover 1 detik di awal) dan `-kecil.mp4` (720p).
+Saat unggah lewat Tebar (WAJIB tiap video): IG & TikTok → video biasa + `cover_media_id` = sampul.jpg; YouTube Shorts → file `-shorts.mp4`.
 
 ## Aturan video: keterangan episode
 Setiap video WAJIB dibuka dengan keterangan episode. Isi `"episode": N` (dan opsional `"seri": "..."`) di `naskah.json`: video.js menampilkan kartu "EPISODE N" di 2,6 detik pertama + lencana "EPS N" di samping DAY. Baris kedua naskah menyebut "Sidoarjo Vers, episode …". Video peluncuran = Episode 4.
