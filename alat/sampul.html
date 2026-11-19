@@ -28,5 +28,6 @@ document.getElementById('bg').src = q.bg;
 document.getElementById('b1').textContent = q.badgeAtas || 'SIDOARJOVERSE';
 document.getElementById('b2').textContent = q.badge || '';
 document.getElementById('chips').innerHTML = (q.chips || []).map((c, i) => `<span class="chip ${i % 2 ? 'b' : ''}">${c}</span>`).join('');
-document.getElementById('judul').innerHTML = q.judul;   // pakai <span> untuk kata kuning, <br> untuk baris baru
+const j = document.getElementById('judul'); j.innerHTML = q.judul;   // pakai <span> untuk kata kuning, <br> untuk baris baru
+let fs = 128; while ((j.scrollWidth > j.clientWidth + 2 || j.offsetHeight > 420) && fs > 60) { fs -= 4; j.style.fontSize = fs + 'px'; }
 </script></body></html>
