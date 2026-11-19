@@ -10,10 +10,14 @@ for i, b in enumerate(B, 1):
     if rekaman: continue
     mp3, wav = f'vo{i:02d}.mp3', f'vo{i:02d}.wav'
     if ulang or not os.path.exists(mp3) or json.load(open('.tts_cache.json')).get(str(i)) != b['tts'] if os.path.exists('.tts_cache.json') else True:
-        body = {"text": b['tts'], "model_id": "eleven_multilingual_v2",
-                "voice_settings": {"stability": 0.42, "similarity_boost": 0.8, "style": 0.4, "use_speaker_boost": True}}
-        if i > 1: body['previous_text'] = B[i - 2]['tts']
-        if i < len(B): body['next_text'] = B[i]['tts']
+        MODEL = N.get('model', 'eleven_multilingual_v2')   # "eleven_v3" → tag [whispers]/[laugh]/[gasps] di teks dipahami
+        if MODEL == 'eleven_v3':
+            body = {"text": b['tts'], "model_id": MODEL, "voice_settings": {"stability": 0.5, "similarity_boost": 0.8, "use_speaker_boost": True}}
+        else:
+            body = {"text": b['tts'], "model_id": MODEL,
+                    "voice_settings": {"stability": 0.42, "similarity_boost": 0.8, "style": 0.4, "use_speaker_boost": True}}
+            if i > 1: body['previous_text'] = B[i - 2]['tts']
+            if i < len(B): body['next_text'] = B[i]['tts']
         r = subprocess.run(['curl', '-sS', '-X', 'POST', f'https://api.elevenlabs.io/v1/text-to-speech/{VOICE}?output_format=mp3_44100_128',
                             '-H', 'xi-api-key: proxy-injected', '-H', 'Content-Type: application/json', '-d', json.dumps(body), '-o', mp3, '-w', '%{http_code}'],
                            capture_output=True, text=True)
@@ -25,7 +29,7 @@ for i, b in enumerate(B, 1):
 # timeline: jeda 0.35 detik antar baris; setelah baris ber-efek "krik" diberi jeda 1.4 detik
 t, seg = 0.0, []
 for i, b in enumerate(B, 1):
-    t += 0.35 if i == 1 or B[i - 2].get('sfx') != 'krik' else 1.4
+    t += (0.35 if i == 1 or B[i - 2].get('sfx') != 'krik' else 1.4) + b.get('jedaSebelum', 0)
     w = wave.open(f'vo{i:02d}.wav'); d = w.getnframes() / SR
     seg.append({'id': i, 'start': round(t, 3), 'dur': round(d, 3), 'cap': b['cap']}); t += d
 total = round(t + 1.4, 3); n = int(total * SR)

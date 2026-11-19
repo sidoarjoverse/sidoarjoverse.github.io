@@ -26,7 +26,7 @@ await Promise.all(NASKAH.baris.flatMap(b => (b.stiker || []).filter(x => x.jenis
 })));
 const SEG = TL.segmen.map((s, i) => {
   const b = NASKAH.baris[i];
-  return Object.assign({}, s, b, { cap: b.subtitle_khusus ? s.cap : rapikan(b.tts) });
+  return Object.assign({}, s, b, { cap: b.subtitle_khusus ? s.cap : rapikan(b.tts.replace(/\[[a-z ]+\]\s*/gi, "")) });
 });
 const n = SEG.length;
 const mulai = i => (i === 0 ? 0 : SEG[i - 1].start + SEG[i - 1].dur);          // adegan i mulai saat baris sebelumnya selesai
@@ -374,6 +374,51 @@ function aturCahaya(t, s) {
   const u = (t - s.start) / s.dur, m = h.mulai ?? 0, k = Math.min(1, Math.max(0, (u - m) / (h.lama ?? (1 - m))));
   cahaya.position.set(h.dari[0] + (h.ke[0] - h.dari[0]) * k, (h.y ?? 1.9) + Math.sin(t * 7) * 0.08, h.dari[1] + (h.ke[1] - h.dari[1]) * k);
   cahaya.children[1].intensity = 60 * (0.75 + 0.25 * Math.sin(t * 23) * Math.sin(t * 7.3));
+}
+// Mbah Paijo, penjaga hutan (naskah "mbah": {x, z, ry}) — rambut & kumis putih, peci, sarung, senter. Baris "mbah": true → tampil;
+// "mbahJalan": [[x, z], [x, z]] → berjalan; "mbahSenter": false → senter mati; "mbahTawa": true → bahu terguncang tertawa
+let MBAH = null;
+if (NASKAH.mbah) {
+  const ch = makeCharUmum({ kulit: '#a8714a', baju: '#6b4f3a', celana: '#3a5a40', rambut: '#e8e8e8', kumis: true }, { peci: true });
+  ch.traverse(o => { if (o.isMesh && o.material && o.material.color && o.material.color.getHexString() === '2a1a10') { o.material = o.material.clone(); o.material.color.set('#eeeeee'); } });
+  const senter = new THREE.Group();
+  senter.add(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.36, 10), new THREE.MeshStandardMaterial({ color: '#222', metalness: 0.4 })));
+  const kaca = new THREE.Mesh(new THREE.CircleGeometry(0.075, 12), new THREE.MeshBasicMaterial({ color: '#fff6c8' })); kaca.position.y = 0.181; kaca.rotation.x = -Math.PI / 2; senter.add(kaca);
+  const sorot = new THREE.SpotLight('#ffe9a8', 80, 22, 0.42, 0.5, 1.3); sorot.position.y = 0.2; senter.add(sorot);
+  const tgt = new THREE.Object3D(); tgt.position.set(0, 6, 0); senter.add(tgt); sorot.target = tgt;
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), new THREE.MeshBasicMaterial({ color: '#fff1b0', transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending })); glow.position.y = 0.2; senter.add(glow);
+  const muka = new THREE.PointLight('#ffd9a8', 7, 5, 1.6); muka.position.set(0, 2.2, 1.6); ch.add(muka);   // lampu muka (malam)
+  senter.position.set(0.42, 1.05, 0.38); senter.rotation.x = 1.25; ch.add(senter);
+  ch.position.set(NASKAH.mbah.x, 0, NASKAH.mbah.z); ch.rotation.y = NASKAH.mbah.ry || 0; ch.visible = false; scene.add(ch);
+  MBAH = { ch, senter, sorot, glow, kaca };
+}
+function aturMbah(t, s) {
+  if (!MBAH) return; MBAH.ch.visible = !!s.mbah; if (!s.mbah) return;
+  const u = Math.min(1, Math.max(0, (t - s.start) / s.dur)), J = s.mbahJalan;
+  if (J) { const k = Math.min(1, u / (s.mbahJalanLama ?? 1)); MBAH.ch.position.set(J[0][0] + (J[1][0] - J[0][0]) * k, Math.abs(Math.sin(t * 7)) * 0.05 * (k < 1), J[0][1] + (J[1][1] - J[0][1]) * k);
+    if (k < 1) MBAH.ch.rotation.y = Math.atan2(J[1][0] - J[0][0], J[1][1] - J[0][1]); }
+  if (s.mbahRy !== undefined) MBAH.ch.rotation.y = s.mbahRy;
+  const nyala = s.mbahSenter !== false; MBAH.sorot.visible = nyala; MBAH.glow.visible = nyala; MBAH.kaca.material.color.set(nyala ? '#fff6c8' : '#555');
+  MBAH.sorot.intensity = 80 * (0.85 + 0.15 * Math.sin(t * 19) * Math.sin(t * 5.3));
+  MBAH.senter.rotation.x = (s.mbahSorot ?? 1.25) + Math.sin(t * 1.7) * 0.06;
+  const anim = MBAH.ch.userData.anim; if (anim && anim.head) anim.head.rotation.x = s.mbahTawa ? Math.sin(t * 16) * 0.06 : Math.sin(t * 1.3) * 0.03;
+  if (s.mbahTawa) MBAH.ch.position.y = Math.abs(Math.sin(t * 16)) * 0.03;
+  if (MBAH.ch.userData.ekspresi) MBAH.ch.userData.ekspresi(s.mbahEkspresi || 'senang');
+}
+// kunang-kunang (naskah "kunang": [{x, z, r, n, y}]); baris "kunang": true → tampil, berkelip & melayang
+const KUNANG = [];
+{ const tex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,255,220,1)'); gr.addColorStop(0.25, 'rgba(220,255,120,0.9)'); gr.addColorStop(1, 'rgba(160,255,80,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+  for (const K of NASKAH.kunang || []) { const r = rng('kunang' + K.x + K.z);
+    for (let j = 0; j < (K.n || 60); j++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: '#d8ff7a', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+      const a = r() * 6.28, rr = Math.sqrt(r()) * (K.r || 10); sp.userData = { x: K.x + Math.cos(a) * rr, z: K.z + Math.sin(a) * rr, y: (K.y ?? 0.6) + r() * 2.6, ph: r() * 6.28, sp: 0.4 + r() * 0.8, uk: 0.18 + r() * 0.16 };
+      sp.visible = false; scene.add(sp); KUNANG.push(sp); } } }
+const LAMPU_KUNANG = (NASKAH.kunang || []).map(K => { const l = new THREE.PointLight('#f3e9b0', 0, (K.r || 10) * 2.2, 1.2); l.position.set(K.x, 2.2, K.z); scene.add(l); return l; });
+function aturKunang(t, s) {
+  LAMPU_KUNANG.forEach((l, i) => l.intensity = s.kunang ? 9 * (0.85 + 0.15 * Math.sin(t * 2 + i)) : 0);
+  for (const k of KUNANG) { k.visible = !!s.kunang; if (!k.visible) continue; const d = k.userData;
+    k.position.set(d.x + Math.sin(t * d.sp + d.ph) * 0.8, d.y + Math.sin(t * d.sp * 1.3 + d.ph * 2) * 0.35, d.z + Math.cos(t * d.sp * 0.8 + d.ph) * 0.8);
+    const kedip = Math.max(0, Math.sin(t * (1.5 + d.sp) + d.ph)); k.material.opacity = 0.15 + 0.85 * kedip; k.scale.setScalar(d.uk * (0.6 + 0.6 * kedip)); }
 }
 function aturHantu(t, s) {
   const h = s.hantu; if (!h) { hantu.visible = false; return; }
@@ -1101,8 +1146,8 @@ window.video = {
       const u = t - (s.start + s.dur * s.getar);
       if (u > 0 && u < 1.1) { const a = 0.35 * (1 - u / 1.1); camera.position.x += Math.sin(t * 91) * a; camera.position.y += Math.sin(t * 73) * a * 0.7; }
     }
-    aturHantu(t, s); aturCahaya(t, s); aturRumah(t, i); aturKerumunan(t, s);
-    { const jm = NASKAH.jam ?? 9.3, gelap = (jm > 18.5 || jm < 5.5) && s.darjo !== 'pojok'; lampuDarjo.intensity = gelap && !s.footage ? 16 : 0; }
+    aturHantu(t, s); aturCahaya(t, s); aturMbah(t, s); aturKunang(t, s); aturRumah(t, i); aturKerumunan(t, s);
+    { const jm = NASKAH.jam ?? 9.3, gelap = (jm > 18.5 || jm < 5.5) && s.darjo !== 'pojok'; lampuDarjo.intensity = gelap && !s.footage ? 16 : 0; lampuDarjo.position.set(0.9, 2.7, 3.4); }
     senter.intensity = s.footage ? 40 : 0;
     if (!s.footage) { const a = darjo.userData.anim; a.legs[0].rotation.x = a.legs[1].rotation.x = 0; }
     const pj = s.darjo === 'pojok';
@@ -1126,7 +1171,7 @@ window.video = {
       a.legs[0].rotation.x = sw; a.legs[1].rotation.x = -sw;
       if (lari) { tangan.rotation.set(-sw, 0, 0.3); if (tanganKiri) tanganKiri.rotation.set(sw, 0, -0.3); }
     }
-    else if (s.darjoDi) { scene.add(darjo); const [dx, dz, dry, dy] = s.darjoDi; darjo.position.set(dx, (dy || 0) + darjo.position.y, dz); darjo.rotation.y = dry || 0; }   // Cak Darjo berdiri di lokasi mana pun (mis. vlog selfie)
+    else if (s.darjoDi) { scene.add(darjo); const [dx, dz, dry, dy] = s.darjoDi; darjo.position.set(dx, (dy || 0) + darjo.position.y, dz); darjo.rotation.y = dry || 0; const c = Math.cos(dry || 0), sn = Math.sin(dry || 0); lampuDarjo.position.set(dx + 0.5 * c + 2.4 * sn, (dy || 0) + 2.7, dz - 0.5 * sn + 2.4 * c); }   // Cak Darjo berdiri di lokasi mana pun (mis. vlog selfie)
     else if (diDalam) { DALAM.scene.add(darjo); darjo.position.set(-1.75, darjo.position.y, 2.9); darjo.rotation.y = 0.3; }
     else { scene.add(darjo); darjo.position.set(0, darjo.position.y, 0.6); darjo.rotation.y = 0; }
     // siang → malam (naskah "malam": true)
