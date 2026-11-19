@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}
+body{width:1080px;height:1920px;overflow:hidden;font-family:'Inter','Segoe UI',system-ui,sans-serif;background:#123}
+.bg{position:absolute;inset:0;width:1080px;height:1920px;object-fit:cover}
+.gelap{position:absolute;left:0;right:0;bottom:0;height:1000px;background:linear-gradient(rgba(10,22,40,0),rgba(10,22,40,.82) 45%,rgba(10,22,40,.96))}
+.atas{position:absolute;left:0;right:0;top:0;height:300px;background:linear-gradient(rgba(10,22,40,.55),rgba(10,22,40,0))}
+.badge{position:absolute;left:44px;top:70px;transform:rotate(-4deg);background:#ffd166;border:6px solid #3d2a00;border-radius:22px;padding:12px 26px 14px;box-shadow:0 10px 0 #b8860b;font-weight:900;color:#3d2a00;line-height:1}
+.badge small{display:block;font-size:30px;letter-spacing:1px}
+.badge b{display:block;font-size:66px;margin-top:4px}
+.chips{position:absolute;left:56px;right:56px;bottom:560px;display:flex;gap:14px;flex-wrap:wrap}
+.chip{background:#ffd166;color:#3d2a00;font-weight:900;font-size:34px;padding:10px 22px;border-radius:40px;border:4px solid #3d2a00}
+.chip.b{background:#8ecae6;color:#06364a;border-color:#06364a}
+h1{position:absolute;left:56px;right:56px;bottom:170px;font-size:128px;line-height:.98;font-weight:900;color:#fff;text-shadow:0 8px 0 rgba(0,0,0,.45);letter-spacing:-1px}
+h1 span{color:#ffd166}
+.brand{position:absolute;right:50px;top:84px;font-weight:900;font-size:40px;color:#fff;text-shadow:0 4px 0 rgba(0,0,0,.5)}
+.brand b{color:#ffd166}
+.kaki{position:absolute;left:56px;bottom:90px;font-size:34px;font-weight:800;color:#cfe6ef}
+</style></head><body>
+<img class="bg" id="bg"><div class="atas"></div><div class="gelap"></div>
+<div class="badge"><small id="b1"></small><b id="b2"></b></div>
+<div class="brand">Sidoarjo<b>Verse</b></div>
+<div class="chips" id="chips"></div>
+<h1 id="judul"></h1>
+<div class="kaki">🌐 sidoarjoverse.github.io</div>
+<script>
+const q = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+document.getElementById('bg').src = q.bg;
+document.getElementById('b1').textContent = q.badgeAtas || 'SIDOARJOVERSE';
+document.getElementById('b2').textContent = q.badge || '';
+document.getElementById('chips').innerHTML = (q.chips || []).map((c, i) => `<span class="chip ${i % 2 ? 'b' : ''}">${c}</span>`).join('');
+document.getElementById('judul').innerHTML = q.judul;   // pakai <span> untuk kata kuning, <br> untuk baris baru
+</script></body></html>

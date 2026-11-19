@@ -54,6 +54,11 @@ Contoh satu baris naskah:
 Setiap video memakai musik latar `video/_musik/latar.mp3` (ambient piano, dari pemilik; folder video/ tidak di-commit), otomatis dicampur oleh `alat/audio.py`:
 pelan ±22% dan turun ke ±11% saat ada suara VO, supaya tidak mengganggu VO/sfx. Matikan dengan `"musik": false` di naskah.json.
 
+## Aturan video: cover/thumbnail
+Setiap video diberi cover 1080×1920 gaya "episode" (label kuning miring di kiri atas, chip tag, judul besar putih+kuning di bawah, latar adegan 3D dari video):
+`node alat/sampul.js video/<nama> '{"bg":"frame.jpg","badgeAtas":"SIDOARJOVERSE","badge":"EPISODE 14","chips":["…"],"judul":"Baris<br><span>KUNING</span>"}'` → `video/<nama>/sampul.jpg`.
+Saat unggah lewat Tebar: IG `cover_media_id`, TikTok `cover_media_id` (akun bisnis). YouTube Shorts tidak bisa custom thumbnail.
+
 ## Aturan video: keterangan episode
 Setiap video WAJIB dibuka dengan keterangan episode. Isi `"episode": N` (dan opsional `"seri": "..."`) di `naskah.json`: video.js menampilkan kartu "EPISODE N" di 2,6 detik pertama + lencana "EPS N" di samping DAY. Baris kedua naskah menyebut "Sidoarjo Vers, episode …". Video peluncuran = Episode 4.
 
