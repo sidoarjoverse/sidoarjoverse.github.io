@@ -38,6 +38,7 @@ async function rest(path, opt = {}, token) {
   if (!r.ok) {
     let msg = r.status + '';
     try { const j = await r.json(); msg = j.message || j.error_description || j.msg || msg; } catch (_) {}
+    if (r.status === 402 || /restricted|quota|exceed_/i.test(msg)) msg = 'Server kota lagi perbaikan sebentar, rek. Coba maneh mengko yo 🙏';   // jangan tampilkan pesan teknis berbahasa Inggris
     throw new Error(msg);
   }
   if (r.status === 204) return null;
