@@ -1331,15 +1331,15 @@ function makeChar(look, opt = {}) {
   }
   tempel(mesh(GEO.bolaKecil, gelap(look.kulit), 0.06, 0.05, 0.05, 0, 0, 0, muka), 0, -0.07, -0.012);     // hidung
   const yM = (look.kumis || opt.kumis) ? -0.2 : -0.16;
-  if (look.kumis || opt.kumis) for (const s of [-1, 1]) { const k = tempel(mesh(GEO.kapsul, '#2a1a10', 0.04, 0.05, 0.035, 0, 0, 0, muka), s * 0.065, -0.135, -0.004); k.rotateZ(Math.PI / 2 + s * 0.3); }
+  if (look.kumis || opt.kumis) { const tb = look.kumisTebal ? 1.7 : 1; for (const s of [-1, 1]) { const k = tempel(mesh(GEO.kapsul, '#2a1a10', 0.04 * tb, 0.05 * tb, 0.035 * tb, 0, 0, 0, muka), s * 0.065 * (look.kumisTebal ? 1.25 : 1), -0.135, -0.004); k.rotateZ(Math.PI / 2 + s * 0.3); } }
   if (look.kacamata) {
-    const bingkai = M('#2b2622'), lensa = new THREE.MeshStandardMaterial({ color: '#dff1f7', roughness: 0.05, transparent: true, opacity: 0.18, depthWrite: false });
+    const bingkai = M(look.bingkai || '#2b2622'), lensa = new THREE.MeshStandardMaterial({ color: '#dff1f7', roughness: 0.05, transparent: true, opacity: 0.18, depthWrite: false });
     for (const s of [-1, 1]) {
       muka.add(tempel(new THREE.Mesh(new THREE.TorusGeometry(0.098, 0.012, 8, 28), bingkai), s * 0.145, 0.025, 0.03));
       muka.add(tempel(new THREE.Mesh(new THREE.CircleGeometry(0.094, 28), lensa), s * 0.145, 0.025, 0.026));
-      const tg = mesh(GEO.kapsul, '#2b2622', 0.016, 0.16, 0.016, s * (RX - 0.02), 0.03, 0.12, head); tg.rotation.x = Math.PI / 2;   // gagang
+      const tg = mesh(GEO.kapsul, look.bingkai || '#2b2622', 0.016, 0.16, 0.016, s * (RX - 0.02), 0.03, 0.12, head); tg.rotation.x = Math.PI / 2;   // gagang
     }
-    const jb = tempel(mesh(GEO.kapsul, '#2b2622', 0.014, 0.022, 0.014, 0, 0, 0, muka), 0, 0.045, 0.034); jb.rotateZ(Math.PI / 2); // jembatan
+    const jb = tempel(mesh(GEO.kapsul, look.bingkai || '#2b2622', 0.014, 0.022, 0.014, 0, 0, 0, muka), 0, 0.045, 0.034); jb.rotateZ(Math.PI / 2); // jembatan
   }
   const MR = '#5a1f1f';
   const mulut = {
@@ -1399,6 +1399,7 @@ export const PALET_BATIK = {
   biru:   ['#a9c3d8', 'rgba(50,80,110,.2)', '#fffaf0', '#e08a5f', 'rgba(255,250,240,.8)'],
   navy:   ['#2f3f5c', 'rgba(255,255,255,.08)', '#f4ecd8', '#f2a65a', 'rgba(244,236,216,.6)'],
   teal:   ['#0f7c8c', 'rgba(8,70,80,.3)', '#f4ecd8', '#f28c28', 'rgba(244,236,216,.75)'],
+  kepsek: ['#3a4a8f', 'rgba(255,255,255,.06)', '#f5c518', '#f5c518', 'rgba(245,197,24,.85)'],
 };
 const _batik = {};
 function matBatik(nama = 'teal') {

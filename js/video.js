@@ -413,6 +413,29 @@ function aturMbah(t, s) {
   if (s.mbahTawa) MBAH.ch.position.y = Math.abs(Math.sin(t * 16)) * 0.03;
   if (MBAH.ch.userData.ekspresi) MBAH.ch.userData.ekspresi(s.mbahEkspresi || 'senang');
 }
+// Kepala Sekolah Bebaz (collab resmi): peci, rambut samping abu-abu, kacamata emas, kumis tebal, batik biru-kuning, lanyard KEPSEK.
+// baris "kepsekDi": [x, z, ry] → berdiri di kota; "kepsekKelas": [x, z, ry] → di ruang kelas; "kepsekLambai": true → melambai
+function buatKepsek() {
+  const ch = makeCharUmum({ kulit: '#e9a46b', baju: '#3a4a8f', celana: '#2f3550', rambut: '#9a9a9a', kacamata: true, bingkai: '#e0b323', kumis: true, kumisTebal: true }, { peci: true, batik: 'kepsek', jam: true });
+  const tali = new THREE.MeshStandardMaterial({ color: '#d62828' });
+  for (const sx of [-1, 1]) { const t = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.42, 0.02), tali); t.position.set(sx * 0.09, 1.5, 0.245); t.rotation.z = -sx * 0.32; ch.add(t); }
+  const cv = document.createElement('canvas'); cv.width = 128; cv.height = 150; const g = cv.getContext('2d');
+  g.fillStyle = '#111'; g.fillRect(0, 0, 128, 150); g.fillStyle = '#f5b700'; g.fillRect(6, 6, 116, 138);
+  g.fillStyle = '#d98a2b'; g.beginPath(); g.arc(64, 58, 30, 0, 7); g.fill(); g.fillStyle = '#111'; g.font = '900 22px system-ui'; g.textAlign = 'center'; g.fillText('KEPSEK', 64, 126);
+  const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+  const kartu = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.235), new THREE.MeshBasicMaterial({ map: tx })); kartu.position.set(0, 1.2, 0.27); ch.add(kartu);
+  ch.userData.ekspresi && ch.userData.ekspresi('normal'); ch.visible = false; return ch;
+}
+let KEPSEK = null, KEPSEK2 = null;
+function aturKepsek(t, s) {
+  for (const [k, pos] of [[KEPSEK, s.kepsekDi], [KEPSEK2, s.kepsekKelas]]) {
+    if (!k) continue; k.visible = !!pos; if (!pos) continue;
+    k.position.set(pos[0], Math.abs(Math.sin(t * 2)) * 0.01, pos[1]); k.rotation.y = pos[2] || 0;
+    const a = k.userData.anim; if (a && a.arms && a.arms[1]) a.arms[1].rotation.z = s.kepsekLambai ? -(2.5 + Math.sin(t * 8) * 0.35) : 0;
+    if (a && a.head) a.head.rotation.y = Math.sin(t * 0.9) * 0.08;
+    k.userData.ekspresi && k.userData.ekspresi(s.kepsekEkspresi || 'senang');
+  }
+}
 // kunang-kunang (naskah "kunang": [{x, z, r, n, y}]); baris "kunang": true → tampil, berkelip & melayang
 const KUNANG = [];
 { const tex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -464,6 +487,8 @@ if (NASKAH.kelas && !DALAM) {
   const K = NASKAH.kelas; DALAM = adeganSekolah(K.sekolah, Object.assign({ pekerjaan: K.peran === 'guru' ? 'Guru' : 'Pelajar', kode: 'SDA-GURU01' }, K.saya), K.peran || 'guru');
   DALAM.cam = new THREE.PerspectiveCamera(58, W / H, 0.1, 60); DALAM.kelas = true;
 }
+KEPSEK = NASKAH.kepsek ? buatKepsek() : null; KEPSEK2 = NASKAH.kepsek && DALAM && DALAM.kelas ? buatKepsek() : null;
+if (KEPSEK) scene.add(KEPSEK); if (KEPSEK2) DALAM.scene.add(KEPSEK2);
 function aturKelas(t, s) {
   if (!DALAM || !DALAM.kelas) return;
   for (const m of DALAM.murid) { m.ch.position.y = Math.abs(Math.sin(t * 1.7 + m.ph)) * 0.015;
@@ -1165,7 +1190,7 @@ window.video = {
       const u = t - (s.start + s.dur * s.getar);
       if (u > 0 && u < 1.1) { const a = 0.35 * (1 - u / 1.1); camera.position.x += Math.sin(t * 91) * a; camera.position.y += Math.sin(t * 73) * a * 0.7; }
     }
-    aturHantu(t, s); aturCahaya(t, s); aturMbah(t, s); aturKunang(t, s); aturRumah(t, i); aturKerumunan(t, s);
+    aturHantu(t, s); aturCahaya(t, s); aturMbah(t, s); aturKunang(t, s); aturKepsek(t, s); aturRumah(t, i); aturKerumunan(t, s);
     { const jm = NASKAH.jam ?? 9.3, gelap = (jm > 18.5 || jm < 5.5) && s.darjo !== 'pojok'; lampuDarjo.intensity = gelap && !s.footage ? 16 : 0; lampuDarjo.position.set(0.9, 2.7, 3.4); }
     senter.intensity = s.footage ? 40 : 0;
     if (!s.footage) { const a = darjo.userData.anim; a.legs[0].rotation.x = a.legs[1].rotation.x = 0; }
