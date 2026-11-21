@@ -2375,4 +2375,4 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
     bisaDi,
   };
 }
-export { VB, mat };
+export { VB, mat, signMesh };

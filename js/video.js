@@ -2,7 +2,7 @@
 // Semua adegan dibaca dari naskah.json (kamera, pose, stiker, efek suara per baris).
 // Pakai: video.html?dir=video/<nama>&skala=1.5
 import * as THREE from 'three';
-import { createWorld, OPSI_DUNIA, WISATA_LUMPUR, makeCakDarjo, makeAyam, buatAkuarium, makeCharUmum, rng } from './world.js';
+import { VB, signMesh, createWorld, OPSI_DUNIA, WISATA_LUMPUR, makeCakDarjo, makeAyam, buatAkuarium, makeCharUmum, rng } from './world.js';
 import { adeganRumah } from './rumah.js';
 import { adeganSekolah } from './sekolah.js';
 
@@ -412,6 +412,52 @@ function aturMbah(t, s) {
   const anim = MBAH.ch.userData.anim; if (anim && anim.head) anim.head.rotation.x = s.mbahTawa ? Math.sin(t * 16) * 0.06 : Math.sin(t * 1.3) * 0.03;
   if (s.mbahTawa) MBAH.ch.position.y = Math.abs(Math.sin(t * 16)) * 0.03;
   if (MBAH.ch.userData.ekspresi) MBAH.ch.userData.ekspresi(s.mbahEkspresi || 'senang');
+}
+// kampus sekolah megah (naskah "sekolahMegah": {x, z, ry, nama}) — gedung 3 lantai, menara jam berkubah emas, pilar putih, gapura, air mancur
+if (NASKAH.sekolahMegah) {
+  const K = NASKAH.sekolahMegah, v = new VB(), g = new THREE.Group(); g.position.set(K.x, 0, K.z); g.rotation.y = K.ry || 0;
+  const KRIM = '#f6f1e7', NAVY = '#1f3b73', EMAS = '#d9aa2b', PUTIH = '#ffffff';
+  v.box(0, 0, -2, 72, 0.1, 54, '#e7e1d2');                                   // pelataran
+  for (let z = 6; z < 26; z += 2) v.box(0, 0.1, z, 6, 0.04, 1.8, '#cfc6b2');   // jalan masuk
+  // gedung utama 3 lantai
+  v.box(0, 0, -16, 46, 1.2, 11, '#c9b99a').box(0, 1.2, -16, 44, 11, 10, KRIM);
+  for (const y of [4.6, 8.4, 12.2]) v.box(0, y, -16, 44.6, 0.45, 10.6, NAVY);
+  v.box(0, 12.6, -16, 45.4, 0.8, 11.4, EMAS);
+  for (const fy of [1.9, 5.6, 9.4]) for (let x = -20; x <= 20; x += 2.6) if (Math.abs(x) > 8) v.box(x, fy, -10.94, 1.5, 2.2, 0.12, 'win');
+  // sayap kiri-kanan
+  for (const sx of [-1, 1]) {
+    v.box(sx * 27, 0, -6, 11, 1, 24, '#c9b99a').box(sx * 27, 1, -6, 10, 8.4, 23, KRIM);
+    for (const y of [4.6, 8.4]) v.box(sx * 27, y, -6, 10.6, 0.4, 23.6, NAVY);
+    v.box(sx * 27, 9.4, -6, 10.8, 0.6, 23.8, EMAS);
+    for (const fy of [1.9, 5.6]) for (let z = -15; z <= 4; z += 2.6) v.box(sx * (27 - 5.06), fy, z, 0.12, 2.2, 1.5, 'win');
+    for (const fy of [1.9, 5.6]) for (let x = -3; x <= 3; x += 2.6) v.box(sx * 27 + x, fy, 5.56, 1.5, 2.2, 0.12, 'win');
+  }
+  // portiko berpilar + tangga
+  for (let k = 0; k < 4; k++) v.box(0, k * 0.3, -8.6 + 1.4 - k * 0.35, 18 - k * 0.6, 0.3, 2.2, '#e9e2d2');
+  for (let x = -7.5; x <= 7.5; x += 3) v.box(x, 1.2, -9.4, 1, 9.2, 1, PUTIH).box(x, 1.2, -9.4, 1.3, 0.5, 1.3, '#e9e2d2').box(x, 9.9, -9.4, 1.3, 0.5, 1.3, '#e9e2d2');
+  v.box(0, 10.4, -10.4, 19, 1.4, 3.6, PUTIH).box(0, 11.8, -10.4, 15, 0.9, 3.2, PUTIH).box(0, 12.7, -10.4, 10, 0.7, 2.8, PUTIH).box(0, 10.4, -8.56, 19.2, 0.25, 0.1, EMAS);
+  // menara jam berkubah emas
+  v.box(0, 12.6, -16, 8, 9, 8, KRIM).box(0, 21.6, -16, 8.8, 0.6, 8.8, EMAS).box(0, 22.2, -16, 6, 2.6, 6, KRIM);
+  v.bola(0, 24.4, -16, 6.4, 6, 6.4, EMAS).box(0, 29.8, -16, 0.25, 3.2, 0.25, EMAS).bola(0, 32.8, -16, 0.7, 0.7, 0.7, EMAS);
+  // gapura + pagar
+  for (const sx of [-1, 1]) {
+    v.box(sx * 5, 0, 25, 2.2, 7.5, 2.2, NAVY).box(sx * 5, 7.5, 25, 2.8, 0.6, 2.8, EMAS).bola(sx * 5, 8.1, 25, 1.4, 1.4, 1.4, EMAS);
+    v.box(sx * 20.5, 0, 25.6, 29, 1.3, 0.6, PUTIH); for (let x = 7; x <= 34; x += 3) v.box(sx * x, 0, 25.6, 0.5, 2.3, 0.7, EMAS);
+  }
+  v.box(0, 7.0, 25, 12.4, 1.6, 1.4, NAVY).box(0, 8.6, 25, 9, 0.4, 1.2, EMAS);
+  // air mancur
+  v.bola(0, 0.1, 14, 7, 1.2, 7, '#e9e2d2').bola(0, 0.6, 14, 6, 0.5, 6, '#5fb6d9').box(0, 0.6, 14, 1, 2.2, 1, PUTIH).bola(0, 2.8, 14, 2.4, 0.8, 2.4, '#e9e2d2').bola(0, 3.3, 14, 1.4, 1.6, 1.4, '#9fd8ee');
+  // pohon palem sepanjang jalan + tiang bendera
+  for (const sx of [-1, 1]) for (let z = 4; z <= 22; z += 4.5) { v.box(sx * 5, 0.1, z, 0.45, 6.5, 0.45, '#8a6a46'); v.bola(sx * 5, 6.2, z, 3.6, 1.4, 3.6, '#2f7a3a').bola(sx * 5, 6.8, z, 2.2, 1.3, 2.2, '#3f8f45'); }
+  v.box(10, 0.1, 14, 0.25, 13, 0.25, '#dddddd').box(11.2, 11.6, 14, 2.2, 0.7, 0.06, '#e63946').box(11.2, 10.9, 14, 2.2, 0.7, 0.06, PUTIH);
+  for (const sx of [-1, 1]) for (let z = 2; z <= 22; z += 6.5) v.box(sx * 9, 0.1, z, 0.2, 4, 0.2, '#333').box(sx * 9, 4.1, z, 0.6, 0.4, 0.6, 'lamp');
+  const m = v.build(); g.add(m);
+  const nama = (K.nama || 'SEKOLAH BEBAZ').toUpperCase();
+  const s1 = signMesh(nama, 14, 1.6, NAVY, '#f5c518'); s1.position.set(0, 11.1, -8.5); g.add(s1);
+  const s2 = signMesh(nama, 10.8, 1.25, NAVY, '#f5c518'); s2.position.set(0, 7.8, 25.75); g.add(s2);
+  const s3 = signMesh(nama, 10.8, 1.25, NAVY, '#f5c518'); s3.position.set(0, 7.8, 24.25); s3.rotation.y = Math.PI; g.add(s3);
+  const jam = signMesh('🕒', 3.4, 3.4, '#fffaf0', NAVY); jam.position.set(0, 18.2, -11.95); g.add(jam);
+  world.scene.add(g);
 }
 // Kepala Sekolah Bebaz (collab resmi): peci, rambut samping abu-abu, kacamata emas, kumis tebal, batik biru-kuning, lanyard KEPSEK.
 // baris "kepsekDi": [x, z, ry] → berdiri di kota; "kepsekKelas": [x, z, ry] → di ruang kelas; "kepsekLambai": true → melambai
