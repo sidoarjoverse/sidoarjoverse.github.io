@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { createWorld, makeCakDarjo, makeAyam, buatAkuarium, makeCharUmum, rng } from './world.js';
 import { adeganRumah } from './rumah.js';
+import { adeganSekolah } from './sekolah.js';
 
 const W = 720, H = 1280;
 const q = new URLSearchParams(location.search);
@@ -450,6 +451,17 @@ if (NASKAH.dalam) {
   DALAM.cam = new THREE.PerspectiveCamera(58, W / H, 0.1, 60);
   if (DALAM.ch) { DALAM.ch.position.set(1.0, 0, 1.7); DALAM.ch.rotation.y = -0.3; }
 }
+// ruang kelas sekolah (naskah "kelas": {sekolah: {nama}, saya: {nama, gender}, peran: 'guru'|'murid'}); baris "kelas": true + "kam" → kamera di dalam kelas
+// baris "angkatTangan": true → murid-murid angkat tangan bergantian; "darjoKelas": [x, z, ry] → Cak Darjo ikut di kelas
+if (NASKAH.kelas && !DALAM) {
+  const K = NASKAH.kelas; DALAM = adeganSekolah(K.sekolah, Object.assign({ pekerjaan: K.peran === 'guru' ? 'Guru' : 'Pelajar', kode: 'SDA-GURU01' }, K.saya), K.peran || 'guru');
+  DALAM.cam = new THREE.PerspectiveCamera(58, W / H, 0.1, 60); DALAM.kelas = true;
+}
+function aturKelas(t, s) {
+  if (!DALAM || !DALAM.kelas) return;
+  for (const m of DALAM.murid) { m.ch.position.y = Math.abs(Math.sin(t * 1.7 + m.ph)) * 0.015;
+    if (m.tangan) m.tangan.rotation.z = s.angkatTangan && Math.sin(t * 1.3 + m.ph) > 0.1 ? Math.sign(m.tangan.position.x || 1) * (2.6 + Math.sin(t * 9 + m.ph) * 0.2) : 0; }
+}
 function aturTamu(t) {
   for (const d of TAMU) {
     const sg = SEG[d.baris]; if (!sg) continue;
@@ -522,7 +534,7 @@ function kamBebas(k) {
   const [bx, bz, R, h, a0, a1] = k.putar, L = V(...(k.lihat || [bx, 1.4, bz]));
   return { a: { pos: V(bx, h, bz + R), look: L }, b: { pos: V(bx, h, bz + R), look: L.clone() }, e: ease, putar: { bx, bz, R, h, a0, a1 } };
 }
-const SHOT = []; { let prev = null; for (const s of SEG) { const b = s.jalur ? { jalur: buatJalur(s.jalur), a: { pos: V(0, 2, 0), look: V(0, 2, 1) }, b: { pos: V(0, 2, 0), look: V(0, 2, 1) }, e: ease } : s.kam ? Object.assign(kamBebas(s.kam), { cctv: /^cctv/.test(String(s.kamera)) }) : bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
+const SHOT = []; { let prev = null; for (const s of SEG) { const b = s.jalur ? { jalur: buatJalur(s.jalur), a: { pos: V(0, 2, 0), look: V(0, 2, 1) }, b: { pos: V(0, 2, 0), look: V(0, 2, 1) }, e: ease } : s.kam ? Object.assign(kamBebas(s.kam), { cctv: /^cctv/.test(String(s.kamera)), dalam: !!s.kelas }) : bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
 // ---- kamera jalan kaki orang pertama (found footage): "jalur": [[x,z],...], "tinggi", "lihat": [x,y,z], "lihatDari": fraksi, "toleh": [[fraksi, derajat]...], "jalanSampai": fraksi, "goyang", "fov"
 function buatJalur(pts) { const cum = [0]; for (let k = 1; k < pts.length; k++) cum.push(cum[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1])); return { pts, cum, total: cum[cum.length - 1] || 0.001 }; }
 function titikJalur(J, d) {
@@ -1172,6 +1184,7 @@ window.video = {
       if (lari) { tangan.rotation.set(-sw, 0, 0.3); if (tanganKiri) tanganKiri.rotation.set(sw, 0, -0.3); }
     }
     else if (s.darjoDi) { scene.add(darjo); const [dx, dz, dry, dy] = s.darjoDi; darjo.position.set(dx, (dy || 0) + darjo.position.y, dz); darjo.rotation.y = dry || 0; const c = Math.cos(dry || 0), sn = Math.sin(dry || 0); lampuDarjo.position.set(dx + 0.5 * c + 2.4 * sn, (dy || 0) + 2.7, dz - 0.5 * sn + 2.4 * c); }   // Cak Darjo berdiri di lokasi mana pun (mis. vlog selfie)
+    else if (diDalam && s.darjoKelas) { DALAM.scene.add(darjo); const [dx, dz, dry] = s.darjoKelas; darjo.position.set(dx, darjo.position.y, dz); darjo.rotation.y = dry || 0; }
     else if (diDalam) { DALAM.scene.add(darjo); darjo.position.set(-1.75, darjo.position.y, 2.9); darjo.rotation.y = 0.3; }
     else { scene.add(darjo); darjo.position.set(0, darjo.position.y, 0.6); darjo.rotation.y = 0; }
     // siang → malam (naskah "malam": true)
@@ -1205,7 +1218,7 @@ window.video = {
     world.setLampuMati(!!s.lampuMati || (s.kedip && (Math.sin(t * 29) + Math.sin(t * 13.7) > 0.4 || (t * 7) % 3 < 0.5)));
     const nIsi = aturPenghuni(t); window._nIsi = nIsi;
     if (NASKAH.tanpaPapan && !s.papanRumah) scene.traverse(o => { if (o.userData && o.userData.papanRumah) o.userData.papanRumah.visible = false; });
-    aturIwak(t); aturPemancing(t, s); aturPenonton(t, s); aturHiu(t);
+    aturIwak(t); aturKelas(t, s); aturPemancing(t, s); aturPenonton(t, s); aturHiu(t);
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     if (diDalam) {
       if (DALAM.ch) { DALAM.ch.position.y = Math.abs(Math.sin(t * 2.2)) * 0.02; if (DALAM.tangan) DALAM.tangan.rotation.z = t % 5 < 1.8 ? 2.4 + Math.sin(t * 12) * 0.35 : 0; }
