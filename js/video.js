@@ -2,7 +2,7 @@
 // Semua adegan dibaca dari naskah.json (kamera, pose, stiker, efek suara per baris).
 // Pakai: video.html?dir=video/<nama>&skala=1.5
 import * as THREE from 'three';
-import { createWorld, makeCakDarjo, makeAyam, buatAkuarium, makeCharUmum, rng } from './world.js';
+import { createWorld, OPSI_DUNIA, WISATA_LUMPUR, makeCakDarjo, makeAyam, buatAkuarium, makeCharUmum, rng } from './world.js';
 import { adeganRumah } from './rumah.js';
 import { adeganSekolah } from './sekolah.js';
 
@@ -39,7 +39,14 @@ const kota = await (await fetch('data/kota.json', { cache: 'no-store' })).json()
 Object.assign(kota, { day: 0, jalan: false, ayam: 0 }, NASKAH.kota || {});
 if (!NASKAH.kota || !NASKAH.kota.bangunan) kota.bangunan = [{ id: 'lahan1', nama: '???', tipe: 'lapangan', x: -8, z: -8, rot: 0, status: 'lahan', progres: 0 }];
 const gl = document.getElementById('gl');
+OPSI_DUNIA.lumpurBuka = !!NASKAH.lumpurBuka;
 const world = createWorld(gl, { manual: true });
+// gelembung lumpur "mbleduk-mbleduk" (naskah "lumpurBuka": true) — gelembung membesar lalu pecah
+const BLEDUK = [];
+if (NASKAH.lumpurBuka && WISATA_LUMPUR) { const L = WISATA_LUMPUR, r = rng('bleduk'), m = new THREE.MeshStandardMaterial({ color: '#6e655a', roughness: 0.35 });
+  for (let k = 0; k < 40; k++) { const a = r() * 6.28, d = Math.sqrt(r()) * 0.8, b = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10, 0, 6.29, 0, Math.PI / 2), m);
+    b.position.set(L.x + Math.cos(a) * L.w / 2 * d, 0.16, L.z + Math.sin(a) * L.d / 2 * d); b.userData = { ph: r() * 3, per: 1.6 + r() * 2.2, uk: 0.4 + r() * 1.1 }; world.scene.add(b); BLEDUK.push(b); } }
+function aturBleduk(t) { for (const b of BLEDUK) { const d = b.userData, u = ((t + d.ph) % d.per) / d.per, s = u < 0.85 ? d.uk * u / 0.85 : 0.001; b.scale.set(s, s * 0.7, s); } }
 world.setKota(kota);
 world.setWarga(NASKAH.warga || [], NASKAH.kamu || '');
 world.maskot().g.visible = false;
@@ -1218,7 +1225,7 @@ window.video = {
     world.setLampuMati(!!s.lampuMati || (s.kedip && (Math.sin(t * 29) + Math.sin(t * 13.7) > 0.4 || (t * 7) % 3 < 0.5)));
     const nIsi = aturPenghuni(t); window._nIsi = nIsi;
     if (NASKAH.tanpaPapan && !s.papanRumah) scene.traverse(o => { if (o.userData && o.userData.papanRumah) o.userData.papanRumah.visible = false; });
-    aturIwak(t); aturKelas(t, s); aturPemancing(t, s); aturPenonton(t, s); aturHiu(t);
+    aturIwak(t); aturBleduk(t); aturKelas(t, s); aturPemancing(t, s); aturPenonton(t, s); aturHiu(t);
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     if (diDalam) {
       if (DALAM.ch) { DALAM.ch.position.y = Math.abs(Math.sin(t * 2.2)) * 0.02; if (DALAM.tangan) DALAM.tangan.rotation.z = t % 5 < 1.8 ? 2.4 + Math.sin(t * 12) * 0.35 : 0; }

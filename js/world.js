@@ -637,6 +637,7 @@ function warnaGunung(kabut, malam) {
 // ---------------------------------------------------------------- daerah: sawah, tambak, sungai, jalan asli, jembatan, rel rencana, bandara rencana, lahan rencana
 function kenaRencana(x, z, m = 0) { return LAHAN_RENCANA.some(L => Math.abs(x - L.x) < L.w / 2 + m && Math.abs(z - L.z) < L.d / 2 + m); }
 const PETAK_SAWAH = [];
+export const OPSI_DUNIA = { lumpurBuka: false };   // diubah video sebelum createWorld (mis. wisata lumpur sudah dibuka)
 function bangunLumpur(statik, L, r, papanRencana) {
   const { x: cx, z: cz, w: W, d: D } = L, g = new THREE.Group(); g.position.set(cx, 0, cz);
   // danau lumpur: bentuk lonjong tak beraturan, abu-abu kecoklatan, bagian tengah lebih basah
@@ -678,9 +679,9 @@ function bangunLumpur(statik, L, r, papanRencana) {
   for (let i = -3; i <= 3; i++) v.box(i * 3, 0.05, gz + 6, 0.15, 0.02, 7, '#f2efe6');
   g.add(v.build());
   const s = signMesh('WISATA LUMPUR SIDOARJO', 9.4, 1.3, '#5a3e24', '#ffd166'); s.position.set(0, 4.6, gz + 0.5); g.add(s);
-  const s2 = signMesh('🚧 SEGERA DIBUKA', 5, 0.8, '#ffd166', '#3d2a00'); s2.position.set(0, 3.5, gz + 0.5); g.add(s2);
+  const s2 = OPSI_DUNIA.lumpurBuka ? signMesh('🎉 RESMI DIBUKA', 5, 0.8, '#2a9d8f', '#ffffff') : signMesh('🚧 SEGERA DIBUKA', 5, 0.8, '#ffd166', '#3d2a00'); s2.position.set(0, 3.5, gz + 0.5); g.add(s2);
   statik.add(g);
-  papanRencana(cx + 15, cz + gz + 3, 0, 'WISATA LUMPUR', 'rencana wisata · tanggul lumpur Porong', 7);
+  if (!OPSI_DUNIA.lumpurBuka) papanRencana(cx + 15, cz + gz + 3, 0, 'WISATA LUMPUR', 'rencana wisata · tanggul lumpur Porong', 7);
 }
 
 function bangunDaerah(statik, r, footprints, ringan) {
