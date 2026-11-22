@@ -135,7 +135,7 @@ function kartuToko(b) {
 }
 function kartuBangunan(b) {
   if (b.tipe === 'toko' && b.status === 'selesai') return kartuToko(b);
-  if (b.tipe === 'sekolah' && b.status === 'selesai') {
+  if (/^sekolah/.test(b.tipe) && b.status === 'selesai') {
     const peran = saya && PERAN_SEKOLAH[saya.pekerjaan];
     return `<div class="lab" style="color:var(--teal2);font-weight:800;font-size:12px">🏫 SEKOLAH</div><h3>${esc(b.nama)}</h3>
     ${b.ket ? `<p style="white-space:pre-line;font-size:15px;line-height:1.5">${esc(b.ket)}</p>` : ''}
@@ -522,10 +522,10 @@ function onDekat(b) {
   dekatB = b;
   const el = $('dekat');
   if (!b) { el.hidden = true; return; }
-  el.innerHTML = b.tipe === 'sekolah' && saya && PERAN_SEKOLAH[saya.pekerjaan] ? `🏫 Mlebu ${esc(b.nama)}<small>Ketuk gawe mlebu kelas</small>` : b.tipe === 'kolampancing' ? `🎣 Mancing nang ${esc(b.nama)}<small>Ketuk gawe mancing!</small>` : `📍 ${esc(b.nama)}<small>Ketuk untuk lihat info</small>`;
+  el.innerHTML = /^sekolah/.test(b.tipe) && saya && PERAN_SEKOLAH[saya.pekerjaan] ? `🏫 Mlebu ${esc(b.nama)}<small>Ketuk gawe mlebu kelas</small>` : b.tipe === 'kolampancing' ? `🎣 Mancing nang ${esc(b.nama)}<small>Ketuk gawe mancing!</small>` : `📍 ${esc(b.nama)}<small>Ketuk untuk lihat info</small>`;
   el.hidden = false;
 }
-$('dekat').onclick = () => { if (!dekatB) return; if (dekatB.tipe === 'kolampancing') bukaMancing({ nama: saya && saya.nama }); else if (dekatB.tipe === 'sekolah' && saya && PERAN_SEKOLAH[saya.pekerjaan]) bukaSekolah({ sekolah: dekatB, saya }); else onPick({ jenis: 'bangunan', data: dekatB }); };
+$('dekat').onclick = () => { if (!dekatB) return; if (dekatB.tipe === 'kolampancing') bukaMancing({ nama: saya && saya.nama }); else if (/^sekolah/.test(dekatB.tipe) && saya && PERAN_SEKOLAH[saya.pekerjaan]) bukaSekolah({ sekolah: dekatB, saya }); else onPick({ jenis: 'bangunan', data: dekatB }); };
 
 async function mulaiMain() {
   if (!saya || !world) { buka('ktp'); return; }
