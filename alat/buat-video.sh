@@ -4,7 +4,8 @@
 set -e
 DIR=${1%/}; NAMA=$(basename "$DIR")
 cd "$(dirname "$0")/.."
-if [ -f "$DIR/baris.json" ]; then python3 alat/rekaman.py "$DIR"; else python3 alat/suara.py "$DIR" ${SUARA_OPSI:-}; fi
+# naskah "tanpaSuara": true → video sinematik tanpa VO (timeline.json & vo_track.wav sunyi dibuat sendiri)
+if grep -q '"tanpaSuara": true' "$DIR/naskah.json"; then :; elif [ -f "$DIR/baris.json" ]; then python3 alat/rekaman.py "$DIR"; else python3 alat/suara.py "$DIR" ${SUARA_OPSI:-}; fi
 pgrep -f "http.server 8080" >/dev/null || (timeout 3600 python3 -m http.server 8080 >/dev/null 2>&1 &); sleep 1
 node alat/render.js "$DIR"
 python3 alat/audio.py "$DIR"
