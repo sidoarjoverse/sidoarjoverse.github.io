@@ -1,0 +1,38 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}
+body{width:1080px;height:1920px;overflow:hidden;background:#efe6d6;font-family:'Inter',system-ui,sans-serif;position:relative}
+#sapuan{position:absolute;inset:0}
+.logo{position:absolute;left:50%;top:26px;width:400px;transform:translateX(-50%);}
+.foto{position:absolute;left:70px;top:430px;width:940px;height:800px;object-fit:cover;border:12px solid #1d1d1d;transform:rotate(-1.6deg);box-shadow:0 18px 0 rgba(29,29,29,.12)}
+.selotip{position:absolute;width:190px;height:54px;background:rgba(232,184,74,.85);top:404px}
+.badge{position:absolute;right:80px;top:380px;z-index:3;background:#c8321f;color:#efe6d6;font-weight:900;font-size:36px;padding:10px 22px;border-radius:10px;transform:rotate(-3deg);letter-spacing:1px}
+.isi{position:absolute;left:70px;bottom:90px;display:flex;flex-direction:column;gap:20px}
+h1{font-weight:900;font-size:90px;line-height:.95;color:#1d1d1d;text-transform:uppercase;letter-spacing:-3px}
+h1 span{display:block;font-family:'Liberation Serif',Georgia,serif;font-style:italic;text-transform:none;color:#c8321f;font-weight:700;letter-spacing:-2px;font-size:.9em}
+.poin{display:flex;flex-direction:column;gap:10px}
+.poin div{background:#fbf7ef;color:#1d1d1d;font-weight:800;font-size:31px;padding:11px 20px;border-radius:12px;border-left:10px solid #c8321f}
+.cta{background:#1d1d1d;color:#e8b84a;font-weight:900;font-size:38px;padding:16px 24px;border-radius:16px;text-align:center}
+.maskot{position:absolute;right:14px;bottom:60px;height:560px;}
+.kaki{position:absolute;left:0;right:0;bottom:28px;text-align:center;font-weight:800;letter-spacing:4px;font-size:24px;color:#1d1d1d}
+svg{position:absolute;inset:0}
+</style></head><body>
+<canvas id="sapuan" width="1080" height="1920"></canvas>
+<svg width="1080" height="1920"><path d="M120 300 C 30 520, 40 900, 60 1160 S 200 1290, 420 1250" stroke="#c8321f" stroke-width="7" fill="none" stroke-linecap="round"/></svg>
+<img class="logo" src="/aset/benang-merah/logo.png">
+<img class="foto" id="bg">
+<div class="selotip" style="left:110px;transform:rotate(-8deg)"></div><div class="selotip" style="right:110px;transform:rotate(6deg)"></div>
+<div class="badge" id="badge"></div>
+<img class="maskot" id="maskot">
+<div class="isi" id="isi"><h1 id="judul"></h1><div class="poin" id="poin"></div><div class="cta" id="cta"></div></div>
+<div class="kaki">@PENERBITBENANGMERAH × SIDOARJOVERSE</div>
+<script>
+const g = document.getElementById('sapuan').getContext('2d'); let s = 7; const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+for (let i = 0; i < 160; i++) { g.fillStyle = `rgba(214,200,172,${0.18 + r() * 0.22})`; const x = r() * 1180 - 50, y = r() * 1980, w = 80 + r() * 260; g.beginPath(); g.ellipse(x, y, w / 2, 9 + r() * 8, (r() - 0.5) * 0.1, 0, 7); g.fill(); }
+const q = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+document.getElementById('bg').src = q.bg; if (q.pos) document.getElementById('bg').style.objectPosition = q.pos;
+document.getElementById('badge').textContent = q.badge || '';
+document.getElementById('judul').innerHTML = q.judul;
+document.getElementById('poin').innerHTML = (q.poin || []).map(p => `<div>${p}</div>`).join('');
+const c = document.getElementById('cta'); if (q.cta) c.innerHTML = q.cta; else c.remove();
+const m = document.getElementById('maskot'); if (q.maskot) { m.src = '/aset/benang-merah/' + q.maskot + '.png'; document.getElementById('isi').style.right = '330px'; } else { m.remove(); document.getElementById('isi').style.right = '70px'; }
+</script></body></html>

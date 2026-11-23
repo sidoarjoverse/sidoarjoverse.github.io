@@ -1120,35 +1120,52 @@ export const TIPE = {
     const s3 = signMesh(nama, 10.8, 1.25, NAVY, '#f5c518'); s3.position.set(0, 7.8, 24.25 + o); s3.rotation.y = Math.PI; ex.push(s3);
     const jam = signMesh('🕒', 3.4, 3.4, '#fffaf0', NAVY); jam.position.set(0, 18.2, -11.95 + o); ex.push(jam);
   } },
-  museum: { label: 'Museum', w: 60, d: 50, build(v, b, ex) {   // Museum Benang Merah: aula berpilar, kubah merah, patung simpul benang merah, tugu Buku Puisi Netizen (depan = +z)
-    const KRIM = '#f3ead8', MERAH = '#8b1a2b', MERAH2 = '#6e1222', EMAS = '#d9aa2b', BATU = '#d8cfbd', PUTIH = '#fbf8f1';
-    v.box(0, 0, 0, 60, 0.1, 50, '#e3dccb');
-    v.box(0, 0.1, 13, 4.2, 0.04, 22, MERAH);                                             // karpet merah jalan masuk
-    v.box(0, 0, -11, 42, 1.6, 24, BATU);                                                 // podium
-    for (let k = 0; k < 5; k++) v.box(0, k * 0.32, 2.4 - k * 0.45, 30 - k * 0.8, 0.32, 1.4, BATU);
-    v.box(0, 1.6, -13, 34, 10.4, 18, KRIM);                                              // aula utama
-    for (const y of [1.6, 11.2]) v.box(0, y, -13, 34.4, 0.6, 18.4, MERAH);
-    for (const sx of [-1, 1]) for (let z = -20; z <= -6; z += 3.5) v.box(sx * 17.06, 4, z, 0.12, 5, 1.6, 'win');
-    for (let x = -12; x <= 12; x += 4) v.box(x, 1.6, 0.6, 1.1, 9.4, 1.1, PUTIH).box(x, 1.6, 0.6, 1.5, 0.5, 1.5, BATU).box(x, 10.5, 0.6, 1.5, 0.5, 1.5, EMAS);   // 7 pilar
-    v.box(0, 11, -1.5, 34, 1.4, 5.6, MERAH2).box(0, 12.4, -1.8, 28, 1.0, 5, MERAH).box(0, 13.4, -2.1, 20, 0.9, 4.4, MERAH2).box(0, 14.3, -2.4, 11, 0.8, 3.8, MERAH);
-    v.box(0, 12.35, 1.26, 34.2, 0.12, 0.12, EMAS).box(0, 13.4, 0.12, 28.2, 0.12, 0.12, EMAS);
-    for (const x of [-6, 6]) v.box(x, 3.4, 1.4, 1.4, 6.6, 0.08, MERAH).box(x, 3.4, 1.45, 0.12, 6.6, 0.05, EMAS);    // spanduk merah
-    v.box(0, 12, -13, 13, 3.4, 13, KRIM).box(0, 15.4, -13, 13.6, 0.5, 13.6, EMAS);   // tambur kubah
-    v.bola(0, 15.9, -13, 12.4, 9, 12.4, MERAH).box(0, 24.6, -13, 1.4, 1.8, 1.4, EMAS).bola(0, 26.4, -13, 1, 1, 1, EMAS);
-    for (const sx of [-1, 1]) { v.box(sx * 24, 0, -14, 11, 8.2, 17, KRIM).box(sx * 24, 8.2, -14, 11.6, 0.9, 17.6, MERAH); for (let z = -20; z <= -8; z += 3.2) v.box(sx * 29.56, 2.4, z, 0.12, 3.6, 1.4, 'win'); for (let x = -3; x <= 3; x += 3) v.box(sx * 24 + x, 2.4, -5.44, 1.4, 3.6, 0.12, 'win'); }
-    v.box(0, 0.1, 14, 3.4, 1.4, 3.4, BATU).box(0, 1.5, 14, 2.6, 0.3, 2.6, EMAS);     // alas patung benang merah
-    v.box(-13, 0.1, 17, 3.4, 0.7, 3.4, BATU).box(-13, 0.8, 17, 1.6, 4.6, 1.6, PUTIH).box(-13, 5.4, 17, 2.4, 0.4, 2.4, EMAS);   // tugu buku puisi
-    for (const sx of [-1, 1]) for (let z = 6; z <= 22; z += 5.3) v.box(sx * 4.2, 0.1, z, 0.2, 4.2, 0.2, '#2b2b2b').box(sx * 4.2, 4.3, z, 0.7, 0.5, 0.7, 'lamp');
-    for (let x = -28; x <= 28; x += 3.5) if (Math.abs(x) > 4) v.bola(x, 0.1, 24, 2.6, 1.3, 1.4, '#3f6f3a');
-    for (const sx of [-1, 1]) v.box(sx * 13, 0.1, 9, 3, 0.5, 0.9, '#7a5a3a').box(sx * 13, 0.6, 8.7, 3, 0.7, 0.15, '#7a5a3a');   // bangku
-    const knot = new THREE.Mesh(new THREE.TorusKnotGeometry(1.7, 0.36, 160, 18, 2, 3), new THREE.MeshStandardMaterial({ color: '#c1121f', roughness: 0.3, metalness: 0.15 }));
-    knot.position.set(0, 4.3, 14); knot.castShadow = true; ex.push(knot);
+  museum: { label: 'Penerbit Benang Merah', w: 60, d: 50, build(v, b, ex) {   // Gedung Penerbit Benang Merah (mitra pertama): tumpukan buku raksasa + gulungan benang merah, galeri karya, tugu Buku Puisi Netizen (depan = +z)
+    const KRIM = '#efe6d6', HITAM = '#1d1d1d', MERAH = '#c8321f', MUSTARD = '#e8b84a', SAGE = '#8a9e7e', TEAL = '#1f5a4e';
+    v.box(0, 0, 0, 60, 0.1, 50, '#e6dccb');
+    v.box(0, 0.1, 12, 4.2, 0.04, 24, '#d8cbb4');                                        // jalan setapak
+    // gedung = tumpukan buku raksasa (sampul + halaman krem bergaris)
+    const buku = [[TEAL, 34, 18, 0, 0], [KRIM, 32, 17, 0.8, -0.4], [MUSTARD, 33, 17.4, -0.6, 0.2], [MERAH, 31, 16.4, 0.5, -0.3]];
+    let y = 0.1;
+    for (const [c, w, d, dx, dz] of buku) {
+      const h = 3.6;
+      v.box(dx, y, -13 + dz, w, h, d, c);                                                  // sampul buku
+      v.box(dx - 0.6, y + 0.35, -13 + dz + 0.3, w - 0.4, h - 0.7, d, '#f7f0e2');          // halaman (sisi depan)
+      for (let k = 1; k < 4; k++) v.box(dx - 0.6, y + 0.35 + k * 0.72, -13 + dz + d / 2 + 0.31, w - 0.6, 0.05, 0.03, '#cbbfa8');
+      y += h;
+    }
+    for (const x of [-11, -3.5, 3.5, 11]) v.box(x, 0.1 + 3.6 * 1 + 1.2, -4.6, 2.2, 1.4, 0.12, 'win');
+    v.box(0, 0.1, -4.2, 4.4, 3.2, 0.3, HITAM).box(0, 3.3, -3.8, 6.4, 0.35, 1.4, MUSTARD);   // pintu + kanopi
+    v.box(0, 0.1, -3.2, 7, 0.3, 1.8, '#d8cbb4');
+    // gulungan benang merah raksasa nang puncak
+    v.bola(0, y, -13, 11, 10, 11, MERAH);
+    // sayap sage (buku sing diselehno)
+    for (const sx of [-1, 1]) v.box(sx * 24, 0.1, -14, 11, 5, 17, SAGE).box(sx * 24, 0.6, -5.4, 10.4, 3.8, 0.12, '#f7f0e2').box(sx * 24, 5.1, -14, 11.4, 0.5, 17.4, TEAL);
+    // tugu Buku Puisi Netizen
+    v.box(-13, 0.1, 17, 3.4, 0.7, 3.4, '#d8cbb4').box(-13, 0.8, 17, 1.6, 4.6, 1.6, KRIM).box(-13, 5.4, 17, 2.4, 0.4, 2.4, MUSTARD);
+    for (const sx of [-1, 1]) for (let z = 6; z <= 22; z += 5.3) v.box(sx * 4.2, 0.1, z, 0.2, 4.2, 0.2, HITAM).box(sx * 4.2, 4.3, z, 0.7, 0.5, 0.7, 'lamp');
+    for (let x = -28; x <= 28; x += 3.5) if (Math.abs(x) > 4) v.bola(x, 0.1, 24, 2.6, 1.3, 1.4, '#6f8a5e');
+    for (const sx of [-1, 1]) v.box(sx * 13, 0.1, 9, 3, 0.5, 0.9, '#7a5a3a').box(sx * 13, 0.6, 8.7, 3, 0.7, 0.15, '#7a5a3a');
+    // garis gulungan benang + benang sing njuntai teko gulungan nganti plaza (melewati tugu)
+    const mBenang = new THREE.MeshStandardMaterial({ color: '#a82614', roughness: 0.6 });
+    for (let k = 0; k < 7; k++) { const t = new THREE.Mesh(new THREE.TorusGeometry(5.45, 0.08, 6, 48), mBenang); t.position.set(0, y + 5, -13); t.rotation.set(k * 0.45, k * 0.8, k * 0.3); t.scale.set(1, 0.92, 1); ex.push(t); }
+    const jalur = new THREE.CatmullRomCurve3([[5, y + 4, -9], [9, y - 2, -5], [12, 6, -3.6], [14, 1.2, 2], [11, 0.25, 9], [3, 0.25, 13], [-6, 0.25, 15], [-11, 0.25, 19], [-14.5, 0.25, 21], [-16, 0.25, 18]].map(p => new THREE.Vector3(...p)));
+    const tali = new THREE.Mesh(new THREE.TubeGeometry(jalur, 120, 0.14, 8, false), new THREE.MeshStandardMaterial({ color: MERAH, roughness: 0.55 })); ex.push(tali);
+    // buku terbuka nang puncak tugu
     const putihM = new THREE.MeshStandardMaterial({ color: '#fffaf0', roughness: 0.8 }), sampul = new THREE.MeshStandardMaterial({ color: MERAH, roughness: 0.6 });
     for (const s of [-1, 1]) { const hal = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 2.1), putihM); hal.position.set(-13 + s * 0.78, 6.05, 17); hal.rotation.z = -s * 0.22; ex.push(hal);
       const cv = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.06, 2.2), sampul); cv.position.set(-13 + s * 0.8, 5.98, 17); cv.rotation.z = -s * 0.22; ex.push(cv); }
-    const s1 = signMesh((b.nama || 'MUSEUM BENANG MERAH').toUpperCase(), 22, 1.7, MERAH2, '#f5c518'); s1.position.set(0, 11.45, 1.32); ex.push(s1);
-    const s2 = signMesh('PENERBIT BENANG MERAH · MITRA PERTAMA SIDOARJOVERSE', 16, 0.9, '#fbf8f1', MERAH2); s2.position.set(0, 9.55, 1.3); ex.push(s2);
-    const s3 = signMesh('📖 BUKU PUISI NETIZEN', 3.4, 0.6, MERAH2, '#f5c518'); s3.position.set(-13, 0.45, 18.72); ex.push(s3);
+    // papan logo asli (bingkai hitam) nang ngarep gedung + papan jeneng
+    const logo = new THREE.Mesh(new THREE.PlaneGeometry(12, 8.53), new THREE.MeshBasicMaterial({ map: (() => { const t = new THREE.TextureLoader().load('aset/benang-merah/logo-papan.jpg'); t.colorSpace = THREE.SRGBColorSpace; return t; })() }));
+    logo.position.set(13.5, 6.4, 15.06); ex.push(logo);
+    const fr = new THREE.Mesh(new THREE.BoxGeometry(12.6, 9.1, 0.3), new THREE.MeshStandardMaterial({ color: HITAM })); fr.position.set(13.5, 6.4, 14.85); ex.push(fr);
+    for (const x of [9, 18]) { const k = new THREE.Mesh(new THREE.BoxGeometry(0.35, 2, 0.35), new THREE.MeshStandardMaterial({ color: HITAM })); k.position.set(x, 1, 14.8); ex.push(k); }
+    const s1 = signMesh((b.nama || 'PENERBIT BENANG MERAH').toUpperCase(), 14, 1.5, KRIM, HITAM); s1.position.set(0, 4.4, -3.06); ex.push(s1);
+    const s2 = signMesh('MITRA PERTAMA SIDOARJOVERSE', 9, 0.8, MERAH, KRIM); s2.position.set(0, 0.6 + 3.6 * 3 + 1.8, -13 + 8.4 + 0.02); ex.push(s2);
+    const s3 = signMesh('📖 BUKU PUISI NETIZEN', 3.4, 0.6, HITAM, MUSTARD); s3.position.set(-13, 0.45, 18.72); ex.push(s3);
+    // maskot Utas & Sulam nyambut nang ngarep lawang
+    const u = makeUtas(); u.position.set(-2.6, 0.1, -1.2); u.rotation.y = 0.15; u.scale.setScalar(1.15); ex.push(u);
+    const sl = makeSulam(); sl.position.set(2.6, 0.1, -1.2); sl.rotation.y = -0.15; sl.scale.setScalar(1.15); ex.push(sl);
   } },
   puskesmas: { label: 'Puskesmas', w: 8, d: 6, build(vb) {
     vb.box(0, 0, 0, 8, 0.12, 6, '#cfc6b4');
@@ -1591,6 +1608,35 @@ export function potretWarga(w, ukuran = 256, latar = '#cfe8ef') {
   cv.getContext('2d').drawImage(r.domElement, 0, 0);
   sc.remove(ch);
   return cv;
+}
+// Maskot Penerbit Benang Merah (mitra pertama): Utas si penulis & Sulam si editor
+const MB = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.75 });
+export function makeUtas() {
+  const g = makeChar({ kulit: '#f1c9a5', baju: '#7f9a6e', celana: '#a9c7dc', rambut: '#6b4a2e' }, {});
+  const h = g.userData.anim.head;
+  const pita = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.025, 8, 16), MB('#c8321f')); pita.position.set(0.18, 0.42, 0.1); h.add(pita);   // pita merah nang rambut
+  const pensil = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.34, 8), MB('#e8b84a')); pensil.position.set(0.44, 0.05, 0.05); pensil.rotation.z = 0.9; h.add(pensil);
+  for (const [s, rr] of [[-1, 0], [1, 0]]) { const pipi = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), MB('#b8734f')); pipi.position.set(s * 0.2, -0.1, 0.4); pipi.scale.set(1, 0.6, 0.3); h.add(pipi); }
+  const tumpuk = [['#1f5a4e', 0], ['#f3ead8', 0.075], ['#e8b84a', 0.15], ['#c8321f', 0.225]];   // tumpukan buku nang tangan
+  for (const [c, y] of tumpuk) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.07, 0.3), MB(c)); b.position.set(0, 1.08 + y, 0.3); g.add(b); }
+  const tas = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.4, 0.08), MB('#e7dcc6')); tas.position.set(0.46, 0.95, 0.05); g.add(tas);
+  const st = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.42, 0.04), MB('#e7dcc6')); st.position.set(0.42, 1.3, 0.05); st.rotation.z = 0.25; g.add(st);
+  for (const l of g.userData.anim.arms) l.rotation.x = -0.9;   // tangan nyekel buku
+  g.userData.maskot = 'utas'; return g;
+}
+export function makeSulam() {
+  const g = makeChar({ kulit: '#f3d2b5', baju: '#1f5a4e', celana: '#1b1b24', rambut: '#141414', rambutPanjang: true }, {});
+  const h = g.userData.anim.head;
+  const baret = new THREE.Mesh(new THREE.SphereGeometry(0.52, 20, 12), MB('#c8321f')); baret.scale.set(1, 0.38, 1); baret.position.set(0.04, 0.38, -0.02); baret.rotation.z = -0.12; h.add(baret);
+  const jarum = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.36, 6), MB('#c9c9c9')); jarum.position.set(0.22, 0.6, 0); jarum.rotation.z = -0.8; h.add(jarum);
+  const syal = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.09, 10, 20), MB('#e8b84a')); syal.rotation.x = Math.PI / 2; syal.position.set(0, 1.72, 0); g.add(syal);
+  const syal2 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.5, 0.06), MB('#e8b84a')); syal2.position.set(0.08, 1.42, 0.21); g.add(syal2);
+  for (const y of [1.55, 1.35]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.03, 0.065), MB('#c8321f')); r.position.set(0.08, y, 0.215); g.add(r); }
+  const mantel = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.44, 0.6, 16), MB('#1f5a4e')); mantel.position.set(0, 0.62, 0); g.add(mantel);   // mantel dawa
+  for (const s of [-0.14, 0.14]) { const bot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.26, 0.3), MB('#a3402a')); bot.position.set(s, 0.13, 0.05); g.add(bot); }
+  const tas = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.3, 0.12), MB('#a3402a')); tas.position.set(-0.4, 0.95, 0.08); g.add(tas);
+  const tali = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.9, 0.03), MB('#6e2a1a')); tali.position.set(-0.12, 1.4, 0.2); tali.rotation.z = -0.55; g.add(tali);
+  g.userData.maskot = 'sulam'; return g;
 }
 export function makeCakDarjo(extra = {}) { return makeChar(LOOK_DARJO, Object.assign({}, OPT_DARJO, extra)); }
 
