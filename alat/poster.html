@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}
+body{width:1080px;height:1920px;overflow:hidden;font-family:'Inter','Segoe UI',system-ui,sans-serif;background:#2a0c12}
+.bg{position:absolute;inset:0;width:1080px;height:1920px;object-fit:cover}
+.atas{position:absolute;left:0;right:0;top:0;height:320px;background:linear-gradient(rgba(42,8,16,.7),rgba(42,8,16,0))}
+.gelap{position:absolute;left:0;right:0;bottom:0;height:1180px;background:linear-gradient(rgba(42,8,16,0),rgba(42,8,16,.86) 34%,rgba(30,6,12,.97))}
+.badge{position:absolute;left:44px;top:70px;transform:rotate(-4deg);background:#f5c518;border:6px solid #4a0f1c;border-radius:22px;padding:12px 26px 14px;box-shadow:0 10px 0 #8b1a2b;font-weight:900;color:#4a0f1c;line-height:1}
+.badge small{display:block;font-size:28px;letter-spacing:1px}.badge b{display:block;font-size:62px;margin-top:4px}
+.brand{position:absolute;right:50px;top:84px;font-weight:900;font-size:40px;color:#fff;text-shadow:0 4px 0 rgba(0,0,0,.5)}.brand b{color:#f5c518}
+.isi{position:absolute;left:56px;right:56px;bottom:120px;display:flex;flex-direction:column;gap:26px}
+h1{font-size:112px;line-height:1;font-weight:900;color:#fff;text-shadow:0 8px 0 rgba(0,0,0,.45);letter-spacing:-1px;font-family:Georgia,'Times New Roman',serif}
+h1 span{color:#f5c518;font-style:italic}
+.poin{display:flex;flex-direction:column;gap:14px}
+.poin div{background:rgba(255,248,236,.95);color:#4a0f1c;font-weight:800;font-size:38px;padding:16px 24px;border-radius:18px;border-left:12px solid #c1121f}
+.cta{background:#f5c518;color:#4a0f1c;font-weight:900;font-size:42px;padding:20px 26px;border-radius:22px;border:5px solid #4a0f1c;text-align:center}
+.benang{position:absolute;left:0;right:0;top:300px;height:8px;background:repeating-linear-gradient(90deg,#c1121f 0 40px,transparent 40px 56px);opacity:.0}
+</style></head><body>
+<img class="bg" id="bg"><div class="atas"></div><div class="gelap"></div>
+<div class="badge"><small id="b1"></small><b id="b2"></b></div>
+<div class="brand">Sidoarjo<b>Verse</b></div>
+<div class="isi"><h1 id="judul"></h1><div class="poin" id="poin"></div><div class="cta" id="cta"></div></div>
+<script>
+const q = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+document.getElementById('bg').src = q.bg;
+document.getElementById('b1').textContent = q.badgeAtas || 'SIDOARJOVERSE';
+document.getElementById('b2').textContent = q.badge || '';
+document.getElementById('judul').innerHTML = q.judul;
+document.getElementById('poin').innerHTML = (q.poin || []).map(p => `<div>${p}</div>`).join('');
+const c = document.getElementById('cta'); if (q.cta) c.innerHTML = q.cta; else c.remove();
+const j = document.getElementById('judul'); let fs = 112; while (j.scrollWidth > j.clientWidth + 2 && fs > 60) { fs -= 4; j.style.fontSize = fs + 'px'; }
+</script></body></html>

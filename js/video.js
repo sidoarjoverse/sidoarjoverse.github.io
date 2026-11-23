@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { VB, signMesh, createWorld, OPSI_DUNIA, WISATA_LUMPUR, makeCakDarjo, makeAyam, buatAkuarium, makeCharUmum, rng } from './world.js';
 import { adeganRumah } from './rumah.js';
 import { adeganSekolah } from './sekolah.js';
+import { adeganMuseum } from './museum.js';
 
 const W = 720, H = 1280;
 const q = new URLSearchParams(location.search);
@@ -535,6 +536,11 @@ if (NASKAH.kelas && !DALAM) {
 }
 KEPSEK = NASKAH.kepsek ? buatKepsek() : null; KEPSEK2 = NASKAH.kepsek && DALAM && DALAM.kelas ? buatKepsek() : null;
 if (KEPSEK) scene.add(KEPSEK); if (KEPSEK2) DALAM.scene.add(KEPSEK2);
+// galeri Museum Benang Merah (naskah "museumDalam": {nama, karya: [{nama, judul, isi}]}); baris "museumDalam": true + "kam" → kamera di dalam galeri
+if (NASKAH.museumDalam && !DALAM) {
+  const M = NASKAH.museumDalam, a = adeganMuseum({ nama: M.nama }, M.karya || []);
+  DALAM = { scene: a.scene, cam: new THREE.PerspectiveCamera(58, W / H, 0.1, 80), knot: a.knot };
+}
 function aturKelas(t, s) {
   if (!DALAM || !DALAM.kelas) return;
   for (const m of DALAM.murid) { m.ch.position.y = Math.abs(Math.sin(t * 1.7 + m.ph)) * 0.015;
@@ -612,7 +618,7 @@ function kamBebas(k) {
   const [bx, bz, R, h, a0, a1] = k.putar, L = V(...(k.lihat || [bx, 1.4, bz]));
   return { a: { pos: V(bx, h, bz + R), look: L }, b: { pos: V(bx, h, bz + R), look: L.clone() }, e: ease, putar: { bx, bz, R, h, a0, a1 } };
 }
-const SHOT = []; { let prev = null; for (const s of SEG) { const b = s.jalur ? { jalur: buatJalur(s.jalur), a: { pos: V(0, 2, 0), look: V(0, 2, 1) }, b: { pos: V(0, 2, 0), look: V(0, 2, 1) }, e: ease } : s.kam ? Object.assign(kamBebas(s.kam), { cctv: /^cctv/.test(String(s.kamera)), dalam: !!s.kelas }) : bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
+const SHOT = []; { let prev = null; for (const s of SEG) { const b = s.jalur ? { jalur: buatJalur(s.jalur), a: { pos: V(0, 2, 0), look: V(0, 2, 1) }, b: { pos: V(0, 2, 0), look: V(0, 2, 1) }, e: ease } : s.kam ? Object.assign(kamBebas(s.kam), { cctv: /^cctv/.test(String(s.kamera)), dalam: !!(s.kelas || s.museumDalam) }) : bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
 // ---- kamera jalan kaki orang pertama (found footage): "jalur": [[x,z],...], "tinggi", "lihat": [x,y,z], "lihatDari": fraksi, "toleh": [[fraksi, derajat]...], "jalanSampai": fraksi, "goyang", "fov"
 function buatJalur(pts) { const cum = [0]; for (let k = 1; k < pts.length; k++) cum.push(cum[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1])); return { pts, cum, total: cum[cum.length - 1] || 0.001 }; }
 function titikJalur(J, d) {
@@ -1299,6 +1305,7 @@ window.video = {
     aturIwak(t); aturBleduk(t); aturKelas(t, s); aturPemancing(t, s); aturPenonton(t, s); aturHiu(t);
     world.frame(Math.min(dt, 0.05) || 1 / FPS, t);
     if (diDalam) {
+      if (DALAM.knot) DALAM.knot.rotation.y = t * 0.4;
       if (DALAM.ch) { DALAM.ch.position.y = Math.abs(Math.sin(t * 2.2)) * 0.02; if (DALAM.tangan) DALAM.tangan.rotation.z = t % 5 < 1.8 ? 2.4 + Math.sin(t * 12) * 0.35 : 0; }
       renderer.render(DALAM.scene, DALAM.cam);
     }
