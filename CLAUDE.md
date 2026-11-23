@@ -71,3 +71,6 @@ Setiap video (episode maupun spesial) memuat kalimat perkenalan setelah hook / s
 > "Gawe sampeyan sing durung ngerti: iki Sidoarjo Vers, kota impian sing dibangun teko komen-komen kalian!"
 Visual baris ini **selalu shot sinematik indahnya kota** (siang/sore cerah, tanpa Cak Darjo, mis. drone di atas perumahan + sungai + sawah; `"darjo": "tidak"`, `"jam"`, `"kabut": 3`), **tidak mengikuti suasana video** (mis. walau adegan lain malam/lampu mati). Beri transisi `"fade"` (muncul dari gelap) bila baris sebelumnya bernada beda.
 Di naskah, baris itu diberi stiker `{"jenis": "kenalan"}` (kartu "🏙️ KENALAN SIK, REK! · SidoarjoVerse · kota impian sing dibangun teko komen kalian").
+
+**Visual kalimat perkenalan = MONTASE kota (wajib):** pakai `alat/intro-montase.json` → baris intro `"kamSeq": <kamSeq>`, `"darjo": "tidak"`, `"jam": [[0,10],[1,10]]`, `"kabut": 1.6`, stiker `kenalan`, dan naskah `"lumpurBuka": true`. Isinya: kompleks perumahan penuh rumah, perempatan lampu abang, Sekolah Bebaz, Wisata Lumpur, Penerbit Benang Merah. JANGAN lahan kosong.
+

@@ -6,6 +6,7 @@ import { VB, signMesh, createWorld, OPSI_DUNIA, WISATA_LUMPUR, makeCakDarjo, mak
 import { adeganRumah } from './rumah.js';
 import { adeganSekolah } from './sekolah.js';
 import { adeganMuseum } from './museum.js';
+import { lebarkanRumah } from './data.js';
 
 const W = 720, H = 1280;
 const q = new URLSearchParams(location.search);
@@ -38,6 +39,7 @@ const segPada = t => { for (let i = n - 1; i >= 0; i--) if (t >= mulai(i)) retur
 // ------------------------------------------------------------ dunia
 const kota = await (await fetch('data/kota.json', { cache: 'no-store' })).json();
 Object.assign(kota, { day: 0, jalan: false, ayam: 0 }, NASKAH.kota || {});
+lebarkanRumah(kota);   // data kota ringkas (rumahMassal) → 1000 rumah perumahan tampil
 if (!NASKAH.kota || !NASKAH.kota.bangunan) kota.bangunan = [{ id: 'lahan1', nama: '???', tipe: 'lapangan', x: -8, z: -8, rot: 0, status: 'lahan', progres: 0 }];
 const gl = document.getElementById('gl');
 OPSI_DUNIA.lumpurBuka = !!NASKAH.lumpurBuka;
@@ -618,7 +620,7 @@ function kamBebas(k) {
   const [bx, bz, R, h, a0, a1] = k.putar, L = V(...(k.lihat || [bx, 1.4, bz]));
   return { a: { pos: V(bx, h, bz + R), look: L }, b: { pos: V(bx, h, bz + R), look: L.clone() }, e: ease, putar: { bx, bz, R, h, a0, a1 } };
 }
-const SHOT = []; { let prev = null; for (const s of SEG) { const b = s.jalur ? { jalur: buatJalur(s.jalur), a: { pos: V(0, 2, 0), look: V(0, 2, 1) }, b: { pos: V(0, 2, 0), look: V(0, 2, 1) }, e: ease } : s.kam ? Object.assign(kamBebas(s.kam), { cctv: /^cctv/.test(String(s.kamera)), dalam: !!(s.kelas || s.museumDalam) }) : bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
+const SHOT = []; { let prev = null; for (const s of SEG) { if (s.kamSeq) { const q = s.kamSeq.map(kamBebas); SHOT.push(Object.assign({}, q[0], { seq: q })); prev = q[q.length - 1].b; continue; } const b = s.jalur ? { jalur: buatJalur(s.jalur), a: { pos: V(0, 2, 0), look: V(0, 2, 1) }, b: { pos: V(0, 2, 0), look: V(0, 2, 1) }, e: ease } : s.kam ? Object.assign(kamBebas(s.kam), { cctv: /^cctv/.test(String(s.kamera)), dalam: !!(s.kelas || s.museumDalam) }) : bidikan(s.kamera, prev); SHOT.push(b); prev = b.b; } }
 // ---- kamera jalan kaki orang pertama (found footage): "jalur": [[x,z],...], "tinggi", "lihat": [x,y,z], "lihatDari": fraksi, "toleh": [[fraksi, derajat]...], "jalanSampai": fraksi, "goyang", "fov"
 function buatJalur(pts) { const cum = [0]; for (let k = 1; k < pts.length; k++) cum.push(cum[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1])); return { pts, cum, total: cum[cum.length - 1] || 0.001 }; }
 function titikJalur(J, d) {
@@ -651,6 +653,11 @@ function kameraJalur(t, i, sh) {
 const jalurSeg = { i: -1, L: null, awal: null };
 function kamera(t) {
   const i = segPada(t), sh = SHOT[i];
+  if (sh.seq) {   // montase: baris "kamSeq": [[posA, lihatA, posB, lihatB], ...] → potongan kamera sama panjang dalam satu kalimat
+    const n = sh.seq.length, u = Math.min(0.9999, Math.max(0, (t - mulai(i)) / Math.max(0.01, selesai(i) - mulai(i)))), k = Math.floor(u * n), lu = u * n - k, q = sh.seq[k];
+    aturFov(SEG[i].fov ?? 46); camera.position.copy(q.a.pos).lerp(q.b.pos, lu);
+    const L = q.a.look.clone().lerp(q.b.look, lu); camera.lookAt(L); if (NASKAH.kabutIkut) world.ikutKamera(L.x, L.z); return;
+  }
   if (sh.jalur) { kameraJalur(t, i, sh); return; }
   aturFov(SEG[i].fov ?? 40);
   const d = Math.max(0.3, Math.min(selesai(i) - mulai(i), sh.e === easeOut ? 1.6 : 99));

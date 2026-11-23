@@ -66,7 +66,7 @@ const KUNCI_STD = new Set(['id', 'no', 'blok', 'huni', 'nama', 'tipe', 'status',
 const rumahStd = b => b && b.tipe === 'rumah' && b.kawasan === 'perumahan' && b.huni === true && b.status === 'selesai' && +b.progres === 100
   && b.tampil !== false && b.id === `rmh-${b.blok}${b.no}` && b.nama === `Rumah Blok ${b.blok} No. ${b.no}` && Object.keys(b).every(k => KUNCI_STD.has(k));
 const buatRumah = (blok, no) => ({ id: `rmh-${blok}${no}`, no, blok, huni: true, nama: `Rumah Blok ${blok} No. ${no}`, tipe: 'rumah', status: 'selesai', kawasan: 'perumahan', progres: 100 });
-function lebarkanRumah(k) {
+export function lebarkanRumah(k) {
   if (!k || !k.rumahMassal) return k;
   const ada = new Set((k.bangunan || []).map(b => b.id)), tambah = [];
   for (const [blok, n] of Object.entries(k.rumahMassal)) for (let no = 1; no <= n; no++) if (!ada.has(`rmh-${blok}${no}`)) tambah.push(buatRumah(blok, no));
