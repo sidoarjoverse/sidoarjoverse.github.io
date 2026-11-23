@@ -942,6 +942,19 @@ export const TIPE = {
     baris.forEach((t, i) => { g.fillStyle = i === 0 ? '#f5c518' : '#f6efe2'; g.font = `${i === 0 ? 900 : 700} ${i === 0 ? 64 : 48}px Georgia, serif`; g.fillText(t, 512, 110 + i * 90); });
     const papan = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 2.1), new THREE.MeshLambertMaterial({ map: canvasTex(cv) })); papan.position.set(0, 1.55, 6.66); ex.push(papan);
   } },
+  pohonbesar: { label: 'Pohon Besar', w: 14, d: 14, build(v, b, ex) {   // pohon trembesi raksasa + papan nama penyumbang (b.ket) nang ngarep; depan = +z
+    v.bola(0, 0, 0, 13, 0.5, 13, '#5f8a45');
+    v.box(0, 0.1, 0, 2.4, 7, 2.4, '#6b4a2e').box(0, 0.1, 0, 3.2, 1.2, 3.2, '#5a3e24');
+    for (const [x, z, ry] of [[1.6, 0, 0], [-1.6, 0, 0], [0, 1.6, 0], [0, -1.6, 0]]) v.box(x * 0.8, 0.1, z * 0.8, 1, 0.9, 1, '#5a3e24');   // akar
+    for (const [dx, dz, h] of [[2.6, 0.5, 6.2], [-2.4, -0.6, 6.5], [0.4, 2.5, 6.8], [-0.4, -2.4, 6.0]]) v.box(dx * 0.6, 5.2, dz * 0.6, 0.9, h * 0.5, 0.9, '#6b4a2e');
+    const DAUN = ['#2f6b2f', '#3b7d37', '#4a8f3f', '#356f33'];
+    [[0, 9.6, 0, 11, 6, 11], [3.6, 9, 1.5, 7, 4.6, 7], [-3.8, 9.2, -1, 7.5, 4.8, 7.5], [1, 9.4, -3.6, 7, 4.5, 7], [-1.2, 9.3, 3.8, 7, 4.4, 7], [0.5, 12.6, 0.4, 7.6, 4.2, 7.6]].forEach(([x, y, z, w, h, d], i) => v.bola(x, y, z, w, h, d, DAUN[i % 4]));
+    v.box(0, 0.15, 5.4, 3.8, 0.3, 1.2, '#cfc6b4').box(-1.4, 0.45, 5.4, 0.22, 1.4, 0.22, '#4a3420').box(1.4, 0.45, 5.4, 0.22, 1.4, 0.22, '#4a3420');
+    const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512; const g = cv.getContext('2d');
+    g.fillStyle = '#244a2a'; g.fillRect(0, 0, 1024, 512); g.strokeStyle = '#d9aa2b'; g.lineWidth = 14; g.strokeRect(14, 14, 996, 484);
+    g.textAlign = 'center'; String(b.ket || b.nama || '').split('\n').slice(0, 5).forEach((t, i) => { g.fillStyle = i === 0 ? '#f5c518' : '#f1f6ea'; g.font = `${i === 0 ? 900 : 700} ${i === 0 ? 64 : 48}px Georgia, serif`; g.fillText(t, 512, 110 + i * 90); });
+    const papan = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.8), new THREE.MeshLambertMaterial({ map: canvasTex(cv) })); papan.position.set(0, 1.45, 5.56); ex.push(papan);
+  } },
   alunalun: { label: 'Alun-alun', w: 12, d: 12, build(vb, b, ex, r) {
     vb.box(0, 0, 0, 12, 0.12, 12, '#d9cbb0');
     vb.box(0, 0.12, 0, 10, 0.08, 10, '#7cc46a');
@@ -1971,7 +1984,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
       const rot = ((+b.rot || 0) % 360) * Math.PI / 180;
       const quarter = Math.round((+b.rot || 0) / 90) % 2 !== 0;
       const w = quarter ? T.d : T.w, d = quarter ? T.w : T.d;
-      fps.push({ x: +b.x, z: +b.z, w, d, b, lewat: ['alunalun', 'lapangan', 'gapuramegah'].includes(b.tipe) && b.status !== 'lahan' });
+      fps.push({ x: +b.x, z: +b.z, w, d, b, lewat: ['alunalun', 'lapangan', 'gapuramegah', 'pohonbesar'].includes(b.tipe) && b.status !== 'lahan' });
       const holder = new THREE.Group();
       holder.position.set(+b.x, 0, +b.z);
       holder.userData.pick = { jenis: 'bangunan', data: b };
