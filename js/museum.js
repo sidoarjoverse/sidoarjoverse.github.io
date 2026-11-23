@@ -134,32 +134,33 @@ export async function bukaMuseum({ museum = {}, saya = null, pin = '' } = {}) {
 }
 
 export async function bukaBukuPuisi({ saya = null, pin = '' } = {}) {
-  const el = modal('📖 Buku Puisi Netizen', 'Tugu nang ngarep Penerbit Benang Merah · sopo ae oleh nulis');
+  const el = modal('📖 Buku Puisi Netizen', 'Tugu nang ngarep Penerbit Benang Merah · 1 KTP = 1 puisi · muat 40 puisi');
   const kotak = el.querySelector('.rumah-kotak');
   kotak.insertAdjacentHTML('beforeend', `<div class="mu-buku"><form class="mu-form">${saya ? `
       <div class="meta">✍️ Nulis dadi <b>${esc(saya.nama)}</b> (${esc(saya.kecamatan || '')})</div>
       <input name="judul" maxlength="60" placeholder="Judul puisimu" required>
-      <textarea name="isi" maxlength="1000" rows="5" placeholder="Tulis puisimu nang kene… (10–1000 huruf)" required></textarea>
+      <textarea name="isi" maxlength="1000" rows="5" placeholder="Tulis puisimu nang kene… (10–1000 huruf). Siji KTP mung oleh siji puisi, tulis sing apik yo!" required></textarea>
       <button class="btn oren" type="submit">📖 Tulis nang Buku</button><span class="meta mu-pesan"></span>`
     : '<div class="meta">🔒 Gawe KTP sik gawe iso nulis puisi. Moco tetep oleh!</div>'}</form>
-    <div class="mu-daftar"><p class="meta">Ngemot puisi…</p></div></div>`);
-  const daftar = kotak.querySelector('.mu-daftar');
+    <div class="meta mu-sisa"></div><div class="mu-daftar"><p class="meta">Ngemot puisi…</p></div></div>`);
+  const daftar = kotak.querySelector('.mu-daftar'), f = kotak.querySelector('form');
   const tutup = () => { el.remove(); aktif = null; };
   el.querySelector('.rumah-x').onclick = tutup; el.addEventListener('click', e => { if (e.target === el) tutup(); }); aktif = tutup;
   async function muat() {
     try {
-      const l = await D.puisiNetizen(40);
+      const l = await D.puisiNetizen(40), n = (l && l.length) || 0;
+      const sisa = kotak.querySelector('.mu-sisa'); if (sisa) sisa.textContent = `📖 ${n}/40 halaman keisi${n >= 40 ? ' · BUKU WIS KEBAK' : ''}`;
+      if (n >= 40 && f) { f.querySelectorAll('input,textarea,button').forEach(x => { x.disabled = true; }); }
       daftar.innerHTML = l && l.length ? l.map(p => `<article class="mu-puisi"><h4>${esc(p.judul)}</h4><p>${esc(p.isi)}</p><div class="mu-nama">— ${esc(p.nama)}${p.kecamatan ? ' · ' + esc(p.kecamatan) : ''}</div></article>`).join('')
         : '<p class="meta">Durung onok puisi. Dadio sing pertama! ✨</p>';
     } catch (e) { daftar.innerHTML = `<p class="meta">⚠️ ${esc(e.message)}</p>`; }
   }
   muat();
-  const f = kotak.querySelector('form');
   if (saya) f.onsubmit = async e => {
     e.preventDefault(); const ps = f.querySelector('.mu-pesan'), b = f.querySelector('button');
     if (!pin) { ps.textContent = '⚠️ Nulis puisi mung iso teko HP tempat KTP-mu digawe.'; return; }
     b.disabled = true; ps.textContent = 'Nulis…';
-    try { await D.tulisPuisi(saya.kode, pin, f.judul.value.trim(), f.isi.value.trim()); f.reset(); ps.textContent = '✅ Puisimu wis nang buku!'; muat(); }
+    try { await D.tulisPuisi(saya.kode, pin, f.judul.value.trim(), f.isi.value.trim()); f.reset(); ps.textContent = '✅ Puisimu wis nang buku! Matur nuwun 🙏'; f.querySelectorAll('input,textarea,button').forEach(x => { x.disabled = true; }); muat(); }
     catch (er) { ps.textContent = '⚠️ ' + er.message; }
     b.disabled = false;
   };

@@ -464,6 +464,8 @@ export async function tulisPuisi(kode, pin, judul, isi) {
   const w = wargaDemo().find(x => x.kode === kode);
   if (!w) throw new Error('KTP tidak dikenali.');
   const l = JSON.parse(localStorage.getItem(KEY_PUISI_DEMO) || '[]');
-  l.unshift({ id: String(Date.now()), nama: w.nama, kecamatan: w.kecamatan, judul, isi, created_at: new Date().toISOString() });
+  if (l.some(p => p.kode === kode)) throw new Error('Siji KTP mung oleh nulis siji puisi, rek.');
+  if (l.length >= 40) throw new Error('Buku Puisi Netizen wis kebak (40 puisi).');
+  l.unshift({ id: String(Date.now()), kode, nama: w.nama, kecamatan: w.kecamatan, judul, isi, created_at: new Date().toISOString() });
   localStorage.setItem(KEY_PUISI_DEMO, JSON.stringify(l)); return { ok: true };
 }
