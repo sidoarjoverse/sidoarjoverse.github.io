@@ -5,6 +5,7 @@ import { KENDARAAN, kendaraanRumah } from './tipe.js';
 import { lookFor, drawPortrait } from './avatar.js';
 import { bukaMancing } from './mancing.js';
 import { bukaSekolah, PERAN_SEKOLAH } from './sekolah.js';
+import { bukaMuseum, bukaBukuPuisi } from './museum.js';
 import { mulaiRamai, KALIMAT, EMOTE, teksChat } from './ramai.js';
 import { bukaRumah, tutupRumah } from './rumah.js';
 import { pasangPeta } from './peta2d.js';
@@ -142,6 +143,10 @@ function kartuBangunan(b) {
     <div class="meta">👩‍🏫 Guru mlebu dadi guru · 🎒 Pelajar, Mahasiswa, Santri mlebu dadi murid</div>
     <div class="ktp-acts" style="justify-content:flex-start">${peran ? `<button class="btn oren" id="btnSekolah">🏫 Mlebu sekolah (${peran})</button>` : saya ? '<span class="meta">🔒 Khusus guru & pelajar (pekerjaan nang KTP-mu)</span>' : '<button class="btn oren" id="btnBikinKtp">🪪 Bikin KTP dulu</button>'}</div>`;
   }
+  if (b.tipe === 'museum' && b.status === 'selesai') return `<div class="lab" style="color:#8b1a2b;font-weight:800;font-size:12px">🏛️ MUSEUM · MITRA PERTAMA</div><h3>${esc(b.nama)}</h3>
+    <p style="font-size:15px;line-height:1.5">Museum megah <b>Penerbit Benang Merah</b>. Nang njero dipajang puisi, surat lan tulisan eksklusif para penyawer 🖋️</p>
+    <div class="meta">📖 Nang ngarep onok tugu <b>Buku Puisi Netizen</b>: sopo ae sing duwe KTP oleh nulis puisi!</div>
+    <div class="ktp-acts" style="justify-content:flex-start"><button class="btn oren" id="btnMuseum">🏛️ Mlebu museum</button><button class="btn" id="btnBukuPuisi">📖 Buku Puisi Netizen</button></div>`;
   if (b.tipe === 'kolampancing' && b.status === 'selesai') return `<div class="lab" style="color:var(--teal2);font-weight:800;font-size:12px">🎣 KOLAM PANCING</div><h3>${esc(b.nama)}</h3>
     <p style="font-size:15px;line-height:1.5">Mancing gratis! Oleh iwak reno-reno: bandeng, lele, gurami, koi emas... sopo ngerti oleh <b>hiu</b> 😱</p>
     <div class="ktp-acts" style="justify-content:flex-start"><button class="btn oren" id="btnMancing">🎣 Mancing saiki</button></div>`;
@@ -188,6 +193,7 @@ function onPick(p, obj) {
   const bi = $('btnIkuti'); if (bi) bi.onclick = () => { world.ikuti(obj); bi.textContent = '🎥 Mengikuti…'; };
   const bk = $('btnKtpku'); if (bk) bk.onclick = () => buka('ktp');
   { const bs = $('btnSekolah'); if (bs) bs.onclick = () => { tutupCard(); bukaSekolah({ sekolah: p.data, saya }); }; const bk2 = $('btnBikinKtp'); if (bk2 && p.data.tipe === 'sekolah') bk2.onclick = () => buka('ktp'); }
+  { const bmu = $('btnMuseum'); if (bmu) bmu.onclick = () => { tutupCard(); bukaMuseum({ museum: p.data, saya, pin: pinSaya }); }; const bbp = $('btnBukuPuisi'); if (bbp) bbp.onclick = () => { tutupCard(); bukaBukuPuisi({ saya, pin: pinSaya }); }; }
   { const bmc = $('btnMancing'); if (bmc) bmc.onclick = () => { tutupCard(); bukaMancing({ nama: saya && saya.nama }); }; }
   if (p.jenis === 'bangunan' && p.data.huni) {
     const bm = $('btnMasuk'); if (bm) bm.onclick = () => masukRumah(p.data);
@@ -522,10 +528,10 @@ function onDekat(b) {
   dekatB = b;
   const el = $('dekat');
   if (!b) { el.hidden = true; return; }
-  el.innerHTML = /^sekolah/.test(b.tipe) && saya && PERAN_SEKOLAH[saya.pekerjaan] ? `🏫 Mlebu ${esc(b.nama)}<small>Ketuk gawe mlebu kelas</small>` : b.tipe === 'kolampancing' ? `🎣 Mancing nang ${esc(b.nama)}<small>Ketuk gawe mancing!</small>` : `📍 ${esc(b.nama)}<small>Ketuk untuk lihat info</small>`;
+  el.innerHTML = /^sekolah/.test(b.tipe) && saya && PERAN_SEKOLAH[saya.pekerjaan] ? `🏫 Mlebu ${esc(b.nama)}<small>Ketuk gawe mlebu kelas</small>` : b.tipe === 'museum' ? `🏛️ Mlebu ${esc(b.nama)}<small>Ketuk gawe ndelok karya & Buku Puisi</small>`: b.tipe === 'kolampancing' ? `🎣 Mancing nang ${esc(b.nama)}<small>Ketuk gawe mancing!</small>` : `📍 ${esc(b.nama)}<small>Ketuk untuk lihat info</small>`;
   el.hidden = false;
 }
-$('dekat').onclick = () => { if (!dekatB) return; if (dekatB.tipe === 'kolampancing') bukaMancing({ nama: saya && saya.nama }); else if (/^sekolah/.test(dekatB.tipe) && saya && PERAN_SEKOLAH[saya.pekerjaan]) bukaSekolah({ sekolah: dekatB, saya }); else onPick({ jenis: 'bangunan', data: dekatB }); };
+$('dekat').onclick = () => { if (!dekatB) return; if (dekatB.tipe === 'museum') bukaMuseum({ museum: dekatB, saya, pin: pinSaya }); else if (dekatB.tipe === 'kolampancing') bukaMancing({ nama: saya && saya.nama }); else if (/^sekolah/.test(dekatB.tipe) && saya && PERAN_SEKOLAH[saya.pekerjaan]) bukaSekolah({ sekolah: dekatB, saya }); else onPick({ jenis: 'bangunan', data: dekatB }); };
 
 async function mulaiMain() {
   if (!saya || !world) { buka('ktp'); return; }

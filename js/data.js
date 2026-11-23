@@ -443,3 +443,27 @@ export async function kosongkanRumah(rumahId) {
   if (DEMO) { const r = rumahDemo(); delete r[rumahId]; localStorage.setItem(KEY_RUMAH, JSON.stringify(r)); return; }
   return rest(`/rest/v1/rumah_warga?rumah_id=eq.${encodeURIComponent(rumahId)}`, { method: 'DELETE' }, (sesiAdmin() || {}).token);
 }
+
+// ---------- Museum Benang Merah ----------
+// Karya eksklusif (penyawer Saweria 15k) disimpan di GitHub (data/museum-benang-merah.json): tanpa kuota Supabase.
+let _karya = null;
+export async function karyaMuseum() {
+  if (_karya) return _karya;
+  try { _karya = await (await fetch('data/museum-benang-merah.json', { cache: 'no-cache' })).json(); } catch (_) { _karya = { karya: [] }; }
+  return _karya;
+}
+// Buku Puisi Netizen: semua warga ber-KTP boleh menulis (lewat fungsi tulis_puisi, cek KTP + PIN).
+const KEY_PUISI_DEMO = 'sv_puisi_' + CONFIG.KOTA_ID;
+export async function puisiNetizen(limit = 30) {
+  if (DEMO) return JSON.parse(localStorage.getItem(KEY_PUISI_DEMO) || '[]').slice(0, limit);
+  return rest(`/rest/v1/puisi?select=id,nama,kecamatan,judul,isi,created_at&order=created_at.desc&limit=${limit}`);
+}
+export async function tulisPuisi(kode, pin, judul, isi) {
+  kode = (kode || '').trim().toUpperCase(); pin = (pin || '').trim().toUpperCase();
+  if (!DEMO) return rest('/rest/v1/rpc/tulis_puisi', { method: 'POST', body: JSON.stringify({ p_kode: kode, p_pin: pin, p_judul: judul, p_isi: isi }) });
+  const w = wargaDemo().find(x => x.kode === kode);
+  if (!w) throw new Error('KTP tidak dikenali.');
+  const l = JSON.parse(localStorage.getItem(KEY_PUISI_DEMO) || '[]');
+  l.unshift({ id: String(Date.now()), nama: w.nama, kecamatan: w.kecamatan, judul, isi, created_at: new Date().toISOString() });
+  localStorage.setItem(KEY_PUISI_DEMO, JSON.stringify(l)); return { ok: true };
+}

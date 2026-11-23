@@ -1120,6 +1120,36 @@ export const TIPE = {
     const s3 = signMesh(nama, 10.8, 1.25, NAVY, '#f5c518'); s3.position.set(0, 7.8, 24.25 + o); s3.rotation.y = Math.PI; ex.push(s3);
     const jam = signMesh('🕒', 3.4, 3.4, '#fffaf0', NAVY); jam.position.set(0, 18.2, -11.95 + o); ex.push(jam);
   } },
+  museum: { label: 'Museum', w: 60, d: 50, build(v, b, ex) {   // Museum Benang Merah: aula berpilar, kubah merah, patung simpul benang merah, tugu Buku Puisi Netizen (depan = +z)
+    const KRIM = '#f3ead8', MERAH = '#8b1a2b', MERAH2 = '#6e1222', EMAS = '#d9aa2b', BATU = '#d8cfbd', PUTIH = '#fbf8f1';
+    v.box(0, 0, 0, 60, 0.1, 50, '#e3dccb');
+    v.box(0, 0.1, 13, 4.2, 0.04, 22, MERAH);                                             // karpet merah jalan masuk
+    v.box(0, 0, -11, 42, 1.6, 24, BATU);                                                 // podium
+    for (let k = 0; k < 5; k++) v.box(0, k * 0.32, 2.4 - k * 0.45, 30 - k * 0.8, 0.32, 1.4, BATU);
+    v.box(0, 1.6, -13, 34, 10.4, 18, KRIM);                                              // aula utama
+    for (const y of [1.6, 11.2]) v.box(0, y, -13, 34.4, 0.6, 18.4, MERAH);
+    for (const sx of [-1, 1]) for (let z = -20; z <= -6; z += 3.5) v.box(sx * 17.06, 4, z, 0.12, 5, 1.6, 'win');
+    for (let x = -12; x <= 12; x += 4) v.box(x, 1.6, 0.6, 1.1, 9.4, 1.1, PUTIH).box(x, 1.6, 0.6, 1.5, 0.5, 1.5, BATU).box(x, 10.5, 0.6, 1.5, 0.5, 1.5, EMAS);   // 7 pilar
+    v.box(0, 11, -1.5, 34, 1.4, 5.6, MERAH2).box(0, 12.4, -1.8, 28, 1.0, 5, MERAH).box(0, 13.4, -2.1, 20, 0.9, 4.4, MERAH2).box(0, 14.3, -2.4, 11, 0.8, 3.8, MERAH);
+    v.box(0, 12.35, 1.26, 34.2, 0.12, 0.12, EMAS).box(0, 13.4, 0.12, 28.2, 0.12, 0.12, EMAS);
+    for (const x of [-6, 6]) v.box(x, 3.4, 1.4, 1.4, 6.6, 0.08, MERAH).box(x, 3.4, 1.45, 0.12, 6.6, 0.05, EMAS);    // spanduk merah
+    v.box(0, 12, -13, 13, 3.4, 13, KRIM).box(0, 15.4, -13, 13.6, 0.5, 13.6, EMAS);   // tambur kubah
+    v.bola(0, 15.9, -13, 12.4, 9, 12.4, MERAH).box(0, 24.6, -13, 1.4, 1.8, 1.4, EMAS).bola(0, 26.4, -13, 1, 1, 1, EMAS);
+    for (const sx of [-1, 1]) { v.box(sx * 24, 0, -14, 11, 8.2, 17, KRIM).box(sx * 24, 8.2, -14, 11.6, 0.9, 17.6, MERAH); for (let z = -20; z <= -8; z += 3.2) v.box(sx * 29.56, 2.4, z, 0.12, 3.6, 1.4, 'win'); for (let x = -3; x <= 3; x += 3) v.box(sx * 24 + x, 2.4, -5.44, 1.4, 3.6, 0.12, 'win'); }
+    v.box(0, 0.1, 14, 3.4, 1.4, 3.4, BATU).box(0, 1.5, 14, 2.6, 0.3, 2.6, EMAS);     // alas patung benang merah
+    v.box(-13, 0.1, 17, 3.4, 0.7, 3.4, BATU).box(-13, 0.8, 17, 1.6, 4.6, 1.6, PUTIH).box(-13, 5.4, 17, 2.4, 0.4, 2.4, EMAS);   // tugu buku puisi
+    for (const sx of [-1, 1]) for (let z = 6; z <= 22; z += 5.3) v.box(sx * 4.2, 0.1, z, 0.2, 4.2, 0.2, '#2b2b2b').box(sx * 4.2, 4.3, z, 0.7, 0.5, 0.7, 'lamp');
+    for (let x = -28; x <= 28; x += 3.5) if (Math.abs(x) > 4) v.bola(x, 0.1, 24, 2.6, 1.3, 1.4, '#3f6f3a');
+    for (const sx of [-1, 1]) v.box(sx * 13, 0.1, 9, 3, 0.5, 0.9, '#7a5a3a').box(sx * 13, 0.6, 8.7, 3, 0.7, 0.15, '#7a5a3a');   // bangku
+    const knot = new THREE.Mesh(new THREE.TorusKnotGeometry(1.7, 0.36, 160, 18, 2, 3), new THREE.MeshStandardMaterial({ color: '#c1121f', roughness: 0.3, metalness: 0.15 }));
+    knot.position.set(0, 4.3, 14); knot.castShadow = true; ex.push(knot);
+    const putihM = new THREE.MeshStandardMaterial({ color: '#fffaf0', roughness: 0.8 }), sampul = new THREE.MeshStandardMaterial({ color: MERAH, roughness: 0.6 });
+    for (const s of [-1, 1]) { const hal = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 2.1), putihM); hal.position.set(-13 + s * 0.78, 6.05, 17); hal.rotation.z = -s * 0.22; ex.push(hal);
+      const cv = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.06, 2.2), sampul); cv.position.set(-13 + s * 0.8, 5.98, 17); cv.rotation.z = -s * 0.22; ex.push(cv); }
+    const s1 = signMesh((b.nama || 'MUSEUM BENANG MERAH').toUpperCase(), 22, 1.7, MERAH2, '#f5c518'); s1.position.set(0, 11.45, 1.32); ex.push(s1);
+    const s2 = signMesh('PENERBIT BENANG MERAH · MITRA PERTAMA SIDOARJOVERSE', 16, 0.9, '#fbf8f1', MERAH2); s2.position.set(0, 9.55, 1.3); ex.push(s2);
+    const s3 = signMesh('📖 BUKU PUISI NETIZEN', 3.4, 0.6, MERAH2, '#f5c518'); s3.position.set(-13, 0.45, 18.72); ex.push(s3);
+  } },
   puskesmas: { label: 'Puskesmas', w: 8, d: 6, build(vb) {
     vb.box(0, 0, 0, 8, 0.12, 6, '#cfc6b4');
     vb.box(0, 0.12, -0.8, 7.2, 2.8, 3.6, '#fbfbfb');

@@ -262,3 +262,17 @@ body.bermain .peta-lokasi { top: 222px; }
 .mc-pesan { text-align: center; font-weight: 700; color: var(--teal); margin: 10px 0; min-height: 22px; }
 .mc-tombol { font-size: 22px; padding: 14px; }
 .mc-kartu { width: 100%; border-radius: 16px; display: block; margin-bottom: 10px; }
+/* Museum Benang Merah & Buku Puisi Netizen */
+.rumah-kotak { position: relative; }
+.mu-baca { position: absolute; inset: 56px 0 0 0; background: rgba(30,10,14,.72); display: flex; align-items: center; justify-content: center; padding: 14px; z-index: 2; }
+.mu-baca[hidden] { display: none; }
+.mu-kertas { background: #fbf6ea; border: 4px solid #c9a94a; border-radius: 10px; max-width: 460px; width: 100%; max-height: 100%; overflow: auto; padding: 18px 20px; text-align: center; font-family: Georgia, serif; color: #2b2622; }
+.mu-kertas h3 { color: #8b1a2b; font-style: italic; margin: 4px 0 10px; }
+.mu-kertas p, .mu-puisi p { white-space: pre-line; line-height: 1.6; margin: 0 0 10px; }
+.mu-nama { color: #8b1a2b; font-weight: 700; font-family: system-ui, sans-serif; margin-bottom: 10px; }
+.mu-buku { flex: 1; min-height: 0; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.mu-form { display: flex; flex-direction: column; gap: 8px; background: #fff; border-radius: 12px; padding: 12px; }
+.mu-form input, .mu-form textarea { font: inherit; padding: 8px 10px; border: 1px solid #d8cfbd; border-radius: 8px; resize: vertical; }
+.mu-daftar { display: flex; flex-direction: column; gap: 10px; }
+.mu-puisi { background: #fbf6ea; border-left: 5px solid #8b1a2b; border-radius: 8px; padding: 10px 14px; font-family: Georgia, serif; }
+.mu-puisi h4 { margin: 0 0 6px; color: #8b1a2b; font-style: italic; }
