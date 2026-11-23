@@ -917,6 +917,31 @@ export const TIPE = {
     const sg = signMesh('SIDOARJOVERSE', 5.4, 1.0); sg.position.set(0, 3.75, 0.47); ex.push(sg);
     const sg2 = sg.clone(); sg2.rotation.y = Math.PI; sg2.position.z = -0.47; ex.push(sg2);
   } },
+  gapuramegah: { label: 'Gapura Megah', w: 24, d: 10, build(v, b, ex) {   // gapura paduraksa megah (bata merah + emas) + papan nama penyumbang (b.ket) nang ngarep; depan = +z
+    const BATA = '#a8442e', BATA2 = '#8e3b2e', KRIM = '#efe4cf', EMAS = '#d9aa2b', BATU = '#cfc6b4';
+    v.box(0, 0, 0, 24, 0.15, 10, '#ddd3c0');
+    for (const s of [-1, 1]) {
+      const x = s * 6.2;
+      v.box(x, 0.15, 0, 5, 1.2, 5, BATU);
+      let y = 1.35, w = 4.2;
+      for (const [h, c] of [[5.5, BATA], [0.4, KRIM], [2.6, BATA2], [0.4, KRIM], [1.8, BATA], [0.35, EMAS]]) { v.box(x, y, 0, w, h, w, c); y += h; w = Math.max(1.4, w - 0.55); }
+      for (let k = 0; k < 4; k++) v.box(x, y + k * 0.7, 0, 2.6 - k * 0.55, 0.7, 2.6 - k * 0.55, k % 2 ? EMAS : BATA2);   // pucuk bertingkat
+      v.bola(x, y + 2.8, 0, 0.8, 0.9, 0.8, EMAS);
+      for (const z of [-2.12, 2.12]) v.box(x, 2.4, z, 2.4, 3.2, 0.08, BATA2).box(x, 2.6, z * 1.01, 1.4, 2.4, 0.06, EMAS);   // relief emas
+      v.box(s * 10.2, 0.15, 0, 4, 2, 1.2, BATA).box(s * 10.2, 2.15, 0, 4.2, 0.3, 1.4, KRIM);   // tembok sayap
+      v.box(s * 12, 0.15, 0, 0.9, 3.2, 0.9, BATA2).bola(s * 12, 3.35, 0, 0.9, 0.9, 0.9, EMAS);
+      v.box(s * 3.2, 0.15, 4, 0.2, 3.6, 0.2, '#2b2b2b').box(s * 3.2, 3.75, 4, 0.7, 0.6, 0.7, 'lamp');
+    }
+    v.box(0, 8.4, 0, 9, 1.6, 2.6, BATA2).box(0, 10, 0, 10, 0.5, 3, EMAS).box(0, 10.5, 0, 7, 0.9, 2.2, BATA).box(0, 11.4, 0, 3, 1.2, 1.6, EMAS);   // balok gapura
+    v.box(0, 0.15, 6.5, 4.6, 0.3, 1.4, BATU).box(-1.6, 0.45, 6.5, 0.25, 1.5, 0.25, '#4a3420').box(1.6, 0.45, 6.5, 0.25, 1.5, 0.25, '#4a3420');   // papan nama
+    const sg = signMesh((b.nama || 'GAPURA').toUpperCase(), 8.6, 1.3, '#6e1e14', '#f5c518'); sg.position.set(0, 9.2, 1.32); ex.push(sg);
+    const sg2 = sg.clone(); sg2.rotation.y = Math.PI; sg2.position.z = -1.32; ex.push(sg2);
+    const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512; const g = cv.getContext('2d');
+    g.fillStyle = '#3b2414'; g.fillRect(0, 0, 1024, 512); g.strokeStyle = '#d9aa2b'; g.lineWidth = 14; g.strokeRect(14, 14, 996, 484);
+    g.textAlign = 'center'; const baris = String(b.ket || '').split('\n').slice(0, 5);
+    baris.forEach((t, i) => { g.fillStyle = i === 0 ? '#f5c518' : '#f6efe2'; g.font = `${i === 0 ? 900 : 700} ${i === 0 ? 64 : 48}px Georgia, serif`; g.fillText(t, 512, 110 + i * 90); });
+    const papan = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 2.1), new THREE.MeshLambertMaterial({ map: canvasTex(cv) })); papan.position.set(0, 1.55, 6.66); ex.push(papan);
+  } },
   alunalun: { label: 'Alun-alun', w: 12, d: 12, build(vb, b, ex, r) {
     vb.box(0, 0, 0, 12, 0.12, 12, '#d9cbb0');
     vb.box(0, 0.12, 0, 10, 0.08, 10, '#7cc46a');
@@ -1946,7 +1971,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
       const rot = ((+b.rot || 0) % 360) * Math.PI / 180;
       const quarter = Math.round((+b.rot || 0) / 90) % 2 !== 0;
       const w = quarter ? T.d : T.w, d = quarter ? T.w : T.d;
-      fps.push({ x: +b.x, z: +b.z, w, d, b, lewat: ['alunalun', 'lapangan'].includes(b.tipe) && b.status !== 'lahan' });
+      fps.push({ x: +b.x, z: +b.z, w, d, b, lewat: ['alunalun', 'lapangan', 'gapuramegah'].includes(b.tipe) && b.status !== 'lahan' });
       const holder = new THREE.Group();
       holder.position.set(+b.x, 0, +b.z);
       holder.userData.pick = { jenis: 'bangunan', data: b };
