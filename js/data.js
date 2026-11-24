@@ -5,7 +5,7 @@ import { CONFIG } from './config.js';
 const PAKSA_DEMO = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).has('demo');
 export const DEMO = PAKSA_DEMO || !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY;
 // Kolom warga yang boleh dibaca publik (PIN sengaja tidak).
-const KOLOM = 'id,kode,nama,pekerjaan,gender,kecamatan,created_at';
+const KOLOM = 'id,kode,nama,pekerjaan,gender,kecamatan,created_at,look';   // look = pilihan karakter (05-karakter.sql)
 const KEY_PEMILU = 'sv_pemilu_' + CONFIG.KOTA_ID;
 const KEY_KOTA = 'sv_kota_' + CONFIG.KOTA_ID;
 const KEY_WARGA = 'sv_warga_' + CONFIG.KOTA_ID;
@@ -38,6 +38,7 @@ async function rest(path, opt = {}, token) {
   if (!r.ok) {
     let msg = r.status + '';
     try { const j = await r.json(); msg = j.message || j.error_description || j.msg || msg; } catch (_) {}
+    if (/look/i.test(msg) && /[,=]look/.test(path)) return rest(path.replace(/,look/g, ''), opt, token);   // database durung dijalanke 05-karakter.sql: tanpa kolom look
     if (r.status === 402 || /restricted|quota|exceed_/i.test(msg)) msg = 'Server kota lagi perbaikan sebentar, rek. Coba maneh mengko yo 🙏';   // jangan tampilkan pesan teknis berbahasa Inggris
     throw new Error(msg);
   }
@@ -468,4 +469,13 @@ export async function tulisPuisi(kode, pin, judul, isi) {
   if (l.length >= 40) throw new Error('Buku Puisi Netizen wis kebak (40 puisi).');
   l.unshift({ id: String(Date.now()), kode, nama: w.nama, kecamatan: w.kecamatan, judul, isi, created_at: new Date().toISOString() });
   localStorage.setItem(KEY_PUISI_DEMO, JSON.stringify(l)); return { ok: true };
+}
+
+// ---------- Ubah karakter (gender, kulit, rambut, pakaian, aksesoris) ----------
+export async function ubahKarakter(kode, pin, gender, look) {
+  kode = (kode || '').trim().toUpperCase(); pin = (pin || '').trim().toUpperCase();
+  if (!DEMO) return rest('/rest/v1/rpc/ubah_karakter', { method: 'POST', body: JSON.stringify({ p_kode: kode, p_pin: pin, p_gender: gender, p_look: look }) });
+  const l = wargaDemo(), w = l.find(x => x.kode === kode);
+  if (!w) throw new Error('KTP tidak dikenali.');
+  w.look = look; w.gender = gender; localStorage.setItem(KEY_WARGA, JSON.stringify(l)); return { ok: true };
 }

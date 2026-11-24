@@ -1332,6 +1332,7 @@ function mulutBuka() {           // bicara: mulut terbuka + gigi atas + lidah
   return g;
 }
 function makeChar(look, opt = {}) {
+  if (look && look.opt) opt = Object.assign({}, look.opt, opt);   // pilihan karakter warga (peci, helm, batik, kemeja, jam, gaya rambut)
   const g = new THREE.Group();
   const M = matHalus;
   const mesh = (geo, c, sx, sy, sz, x, y, z, parent = g) => {
@@ -1353,7 +1354,7 @@ function makeChar(look, opt = {}) {
   if (opt.kaos) {   // kemeja terbuka: kaos di dalam terlihat, kerah + kancing di tepi kemeja
     const kaos = mesh(GEO.badan, opt.kaos, 0.24, 0.8, 0.06, 0, 1.3, 0.172);
     mesh(GEO.tabung, opt.kaos, 0.2, 0.02, 0.1, 0, 1.69, 0.13).rotation.x = Math.PI / 2 - 0.3;      // leher kaos
-    const tepi = kain.userData.manset || gelap(baju);
+    const tepi = (kain.userData && kain.userData.manset) || gelap(baju);
     for (const sx of [-1, 1]) {
       mesh(GEO.badan, kain, 0.05, 0.8, 0.05, sx * 0.135, 1.3, 0.19);                              // tepi kemeja (plaket)
       const kr = mesh(GEO.badan, kain, 0.17, 0.13, 0.04, sx * 0.13, 1.64, 0.2); kr.rotation.set(-0.25, 0, sx * 0.55);  // kerah

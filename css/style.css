@@ -276,3 +276,17 @@ body.bermain .peta-lokasi { top: 222px; }
 .mu-daftar { display: flex; flex-direction: column; gap: 10px; }
 .mu-puisi { background: #fbf6ea; border-left: 5px solid #8b1a2b; border-radius: 8px; padding: 10px 14px; font-family: Georgia, serif; }
 .mu-puisi h4 { margin: 0 0 6px; color: #8b1a2b; font-style: italic; }
+/* Ubah Karakter */
+.kr-kotak { height: min(720px, 94vh); }
+.kr-isi { flex: 1; min-height: 0; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
+.kr-pratinjau { flex: 0 0 auto; display: flex; align-items: flex-start; justify-content: center; }
+.kr-pratinjau canvas { width: 150px; height: auto; border-radius: 16px; background: #cfe8ef; box-shadow: 0 4px 0 rgba(0,0,0,.08); }
+.kr-pilih { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+.kr-grup b { display: block; font-size: 13px; color: #16324f; margin-bottom: 6px; }
+.kr-opsi { display: flex; flex-wrap: wrap; gap: 6px; }
+.kr-warna { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1px #c9d3da; cursor: pointer; padding: 0; }
+.kr-warna.on { box-shadow: 0 0 0 3px #f28c28; }
+.kr-chip { border: 1px solid #c9d3da; background: #fff; border-radius: 999px; padding: 6px 10px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; color: #16324f; }
+.kr-chip.on { background: #f28c28; border-color: #f28c28; color: #fff; }
+.kr-pesan { flex: 1; text-align: left; }
+@media (max-width: 520px) { .kr-isi { flex-direction: column; } .kr-pratinjau canvas { width: 104px; } .kr-pilih { overflow: auto; } }

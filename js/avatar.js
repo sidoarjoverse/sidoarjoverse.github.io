@@ -11,11 +11,43 @@ function hash(s) {
   return h >>> 0;
 }
 
+// Pilihan karakter (fitur Ubah Karakter). Disimpan ringkas nang warga.look: {k,g,rw,kw,b,c,a,bp,t,kc,ku,j}
+export const PILIH = {
+  kulit: ['#f6d2b8', '#f1c27d', '#eac086', '#e0ac69', '#c68642', '#8d5524'],
+  rambutWarna: ['#1a1a1a', '#2b1d16', '#4a2c1a', '#7a4a24', '#b07a3c', '#8c8c8c'],
+  kerudung: ['#e76f51', '#2a9d8f', '#8338ec', '#f4a261', '#ef476f', '#118ab2', '#f1f1f1', '#1d1d1d'],
+  baju: ['#e63946', '#2a9d8f', '#f4a261', '#457b9d', '#8d5a97', '#e9c46a', '#3a86ff', '#ff6b9a', '#06a77d', '#f77f00', '#f6f4ef', '#2b2b2b'],
+  celana: ['#2b2d42', '#3d405b', '#5c4033', '#264653', '#1d3557', '#a9c7dc', '#c2b280'],
+  gaya: [['pendek', '✂️ Pendek'], ['genz', '😎 Gen-Z'], ['panjang', '💇 Dawa'], ['kerudung', '🧕 Kerudung']],
+  atasan: [['polos', '👕 Kaos'], ['kemeja', '👔 Kemeja'], ['batik', '🟫 Batik']],
+  batik: ['sage', 'lilac', 'biru', 'navy', 'teal', 'kepsek'],
+  topi: [['', '🚫 Tanpa'], ['peci', '🕌 Peci'], ['helm', '⛑️ Helm']],
+};
+function terapkanPilihan(look, L) {
+  const P = PILIH, opt = {}, pick = (arr, i) => (Number.isInteger(i) && arr[i]) || null;
+  if (pick(P.kulit, L.k)) look.kulit = pick(P.kulit, L.k);
+  if (pick(P.rambutWarna, L.rw)) look.rambut = pick(P.rambutWarna, L.rw);
+  if (pick(P.baju, L.b)) look.baju = pick(P.baju, L.b);
+  if (pick(P.celana, L.c)) look.celana = pick(P.celana, L.c);
+  if (L.g) { look.kerudung = null; look.rambutPanjang = false;
+    if (L.g === 'panjang') look.rambutPanjang = true;
+    else if (L.g === 'kerudung') look.kerudung = pick(P.kerudung, L.kw) || P.kerudung[0];
+    else if (L.g === 'genz') opt.gaya = 'genz'; }
+  if (L.kc !== undefined) look.kacamata = !!L.kc;
+  if (L.ku !== undefined) look.kumis = !!L.ku;
+  if (L.a === 'kemeja') opt.kaos = '#f6f4ef';
+  if (L.a === 'batik') opt.batik = P.batik.includes(L.bp) ? L.bp : 'teal';
+  if (L.t === 'peci' && !look.kerudung) opt.peci = true;
+  if (L.t === 'helm' && !look.kerudung) opt.helm = '#ffd166';
+  if (L.j) opt.jam = true;
+  look.opt = opt; return look;
+}
+
 export function lookFor(w) {
   const h = hash((w && (w.kode || w.nama)) || 'x');
   const p = (arr, n) => arr[(h >>> n) % arr.length];
   const g = w && w.gender;
-  return {
+  const look = {
     kulit: p(KULIT, 0),
     baju: p(BAJU, 3),
     celana: p(CELANA, 7),
@@ -25,6 +57,7 @@ export function lookFor(w) {
     kumis: g === 'L' && (h >>> 17) % 3 === 0,
     kacamata: (h >>> 19) % 5 === 0,
   };
+  return w && w.look && typeof w.look === 'object' ? terapkanPilihan(look, w.look) : look;
 }
 
 // Gambar wajah blok (dipakai untuk tekstur kepala 3D dan foto KTP).

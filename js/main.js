@@ -6,6 +6,7 @@ import { lookFor, drawPortrait } from './avatar.js';
 import { bukaMancing } from './mancing.js';
 import { bukaSekolah, PERAN_SEKOLAH } from './sekolah.js';
 import { bukaMuseum, bukaBukuPuisi } from './museum.js';
+import { bukaKarakter } from './karakter.js';
 import { mulaiRamai, KALIMAT, EMOTE, teksChat } from './ramai.js';
 import { bukaRumah, tutupRumah } from './rumah.js';
 import { pasangPeta } from './peta2d.js';
@@ -277,7 +278,8 @@ function renderKTP() {
     v.innerHTML = `<h2>KTP-ku</h2><p class="sub">Karaktermu sekarang ikut jalan-jalan di peta ⭐</p>
       <div class="ktp-wrap"><canvas id="ktpCv"></canvas></div>
       <div class="ktp-acts">
-        <button class="btn oren" id="kLihat">📍 Lihat aku di peta</button>
+        <button class="btn oren" id="kKarakter">🎨 Ubah karakter</button>
+        <button class="btn" id="kLihat">📍 Lihat aku di peta</button>
         <button class="btn" id="kSimpan">⬇️ Simpan gambar</button>
         <button class="btn ghost" id="kShare">🔗 Bagikan</button>
       </div>
@@ -285,6 +287,7 @@ function renderKTP() {
       <p class="mini">Nomor wargamu: <b>${esc(saya.kode)}</b> (untuk membuka KTP ini di HP lain).</p>
       <button class="lnk" id="kLupa">Bukan KTP saya / ganti KTP</button>`;
     gambarKTP($('ktpCv'), saya);
+    $('kKarakter').onclick = () => bukaKarakter({ saya, pin: pinSaya, onSimpan: ({ gender, look }) => { saya = Object.assign({}, saya, { gender, look }); renderKTP(); sidikWarga = ''; refreshWarga(); } });
     $('kSimpan').onclick = () => { const a = document.createElement('a'); a.download = `KTP-SidoarjoVerse-${saya.nama}.png`; a.href = $('ktpCv').toDataURL('image/png'); a.click(); };
     $('kLihat').onclick = () => {
       buka('peta');
@@ -367,8 +370,8 @@ async function refreshWarga() {
   const list = [...wargaList];
   const kurang = pj.filter(x => x.warga_id && !list.some(w => w.id === x.warga_id)).map(x => x.warga_id);
   if (kurang.length) { try { list.push(...await D.wargaById(kurang)); } catch (e) { console.warn(e); } }
-  if (saya && !list.some(w => w.kode === saya.kode)) list.unshift(saya);
-  const sidik = JSON.stringify([list.map(w => w.kode), jabatanMap, kodeSaya]);
+  if (saya) { const i = list.findIndex(w => w.kode === saya.kode); if (i >= 0) list[i] = Object.assign({}, list[i], saya); else list.unshift(saya); }
+  const sidik = JSON.stringify([list.map(w => w.kode + (w.gender || '') + (w.look ? JSON.stringify(w.look) : '')), jabatanMap, kodeSaya]);
   if (sidik !== sidikWarga) { sidikWarga = sidik; world.setWarga(list, kodeSaya, jabatanMap); }
 }
 
