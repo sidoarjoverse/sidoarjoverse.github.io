@@ -7,6 +7,7 @@ import { adeganRumah } from './rumah.js';
 import { adeganSekolah } from './sekolah.js';
 import { adeganMuseum } from './museum.js';
 import { lebarkanRumah } from './data.js';
+import { lookFor } from './avatar.js';
 
 const W = 720, H = 1280;
 const q = new URLSearchParams(location.search);
@@ -111,7 +112,10 @@ for (const P of [].concat(NASKAH.penonton || [])) {
   for (let k = 0; k < (P.n || 120); k++) {
     const a = (P.a0 ?? -1.2) + r() * ((P.a1 ?? 1.2) - (P.a0 ?? -1.2)), rr = (P.r0 ?? 6) + Math.sqrt(r()) * ((P.r1 ?? 16) - (P.r0 ?? 6));
     const x = P.cx + Math.sin(a) * rr, z = P.cz + Math.cos(a) * rr;
-    const ch = makeCharUmum({ kulit: KULIT[Math.floor(r() * 5)], baju: BAJU[Math.floor(r() * 10)], celana: ['#3d405b', '#1d3557', '#5c4033'][Math.floor(r() * 3)], rambut: RAMBUT[Math.floor(r() * 3)], ...(r() < 0.4 ? { kerudung: BAJU[Math.floor(r() * 10)] } : {}) });
+    const ch = P.variasi   // "variasi": true → warga nganggo karakter pilihan (fitur Ubah Karakter): peci, helm, batik, kemeja, kacamata, Gen-Z
+      ? makeCharUmum(lookFor({ kode: 'V' + k + P.cx, gender: r() < 0.5 ? 'P' : 'L', look: { k: Math.floor(r() * 6), g: ['pendek', 'genz', 'panjang', 'kerudung'][Math.floor(r() * 4)], rw: Math.floor(r() * 6), kw: Math.floor(r() * 8), b: Math.floor(r() * 12), c: Math.floor(r() * 7),
+          a: ['polos', 'kemeja', 'batik'][Math.floor(r() * 3)], bp: ['sage', 'lilac', 'biru', 'navy', 'teal', 'kepsek'][Math.floor(r() * 6)], t: ['', '', 'peci', 'helm'][Math.floor(r() * 4)], kc: r() < 0.3, ku: r() < 0.15, j: r() < 0.3 } }))
+      : makeCharUmum({ kulit: KULIT[Math.floor(r() * 5)], baju: BAJU[Math.floor(r() * 10)], celana: ['#3d405b', '#1d3557', '#5c4033'][Math.floor(r() * 3)], rambut: RAMBUT[Math.floor(r() * 3)], ...(r() < 0.4 ? { kerudung: BAJU[Math.floor(r() * 10)] } : {}) });
     ch.position.set(x, 0, z); ch.rotation.y = Math.atan2(P.cx - x, P.cz - z) + (r() - 0.5) * 0.5; ch.scale.setScalar(0.92 + r() * 0.16); scene.add(ch);
     const lengan = (ch.userData.anim && ch.userData.anim.arms) || [];
     PENONTON.push({ ch, lengan, sorak: r() < 0.55, ph: r() * 6.28 });
@@ -461,6 +465,21 @@ if (NASKAH.sekolahMegah) {
   const s3 = signMesh(nama, 10.8, 1.25, NAVY, '#f5c518'); s3.position.set(0, 7.8, 24.25); s3.rotation.y = Math.PI; g.add(s3);
   const jam = signMesh('🕒', 3.4, 3.4, '#fffaf0', NAVY); jam.position.set(0, 18.2, -11.95); g.add(jam);
   world.scene.add(g);
+}
+// tumpeng selametan (naskah "tumpeng": {x, z}) — tumpeng kuning nang tampah + lauk, tikar, kembang
+if (NASKAH.tumpeng) {
+  const T = NASKAH.tumpeng, g = new THREE.Group(); g.position.set(T.x, 0, T.z); const M = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 });
+  const rumput = new THREE.Mesh(new THREE.CylinderGeometry(17, 17, 0.04, 48), M('#7fb069')); rumput.position.y = 0.12; g.add(rumput);
+  const tikar = new THREE.Mesh(new THREE.BoxGeometry(7, 0.06, 7), M('#c9a86a')); tikar.position.y = 0.16; g.add(tikar);
+  for (let i = -3; i <= 3; i++) { const l = new THREE.Mesh(new THREE.BoxGeometry(7, 0.065, 0.08), M('#a8864a')); l.position.set(0, 0.035, i); g.add(l); }
+  const meja = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.5, 0.6, 24), M('#7a5230')); meja.position.y = 0.36; g.add(meja);
+  const tampah = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.15, 0.14, 32), M('#d9b26a')); tampah.position.y = 0.73; g.add(tampah);
+  const daun = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.02, 24), M('#3f7d34')); daun.position.y = 0.81; g.add(daun);
+  const nasi = new THREE.Mesh(new THREE.ConeGeometry(0.62, 1.5, 28), M('#f2c230')); nasi.position.y = 1.57; g.add(nasi);
+  const pucuk = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.3, 12), M('#c8321f')); pucuk.position.y = 2.42; g.add(pucuk);
+  const lauk = [['#f6efe0', 0.13], ['#8a4b1f', 0.12], ['#c97b3a', 0.12], ['#2f6b2f', 0.11], ['#e63946', 0.08], ['#f4a261', 0.12]];
+  for (let k = 0; k < 18; k++) { const [c, r] = lauk[k % lauk.length], a = k / 18 * Math.PI * 2; const m = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), M(c)); m.position.set(Math.cos(a) * 0.95, 0.88, Math.sin(a) * 0.95); m.scale.y = 0.7; g.add(m); }
+  scene.add(g);
 }
 // Kepala Sekolah Bebaz (collab resmi): peci, rambut samping abu-abu, kacamata emas, kumis tebal, batik biru-kuning, lanyard KEPSEK.
 // baris "kepsekDi": [x, z, ry] → berdiri di kota; "kepsekKelas": [x, z, ry] → di ruang kelas; "kepsekLambai": true → melambai
