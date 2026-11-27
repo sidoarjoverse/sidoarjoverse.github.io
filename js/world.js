@@ -1205,6 +1205,47 @@ export const TIPE = {
     const u = makeUtas(); u.position.set(-2.6, 0.1, -1.2); u.rotation.y = 0.15; u.scale.setScalar(1.15); ex.push(u);
     const sl = makeSulam(); sl.position.set(2.6, 0.1, -1.2); sl.rotation.y = -0.15; sl.scale.setScalar(1.15); ex.push(sl);
   } },
+  pembangun: { label: 'Kantor Pembangun Kota', w: 30, d: 26, build(v, b, ex) {   // studio sing mbangun SidoarjoVerse: gedung kaca 2 lantai, crane proyek, perancah, papan cetak biru, NPC Cak Deny (depan = +z)
+    const PUTIH = '#f4f6f8', ABU = '#2f3a44', TEAL = '#0f4c5c', OREN = '#f28c28', KUNING = '#ffc93c', BIRU = '#1d4e89';
+    v.box(0, 0, 0, 30, 0.3, 26, '#dcd8cf');   // lemah diangkat ben pematang sawah ora nembus
+    v.box(0, 0.3, 9, 5, 0.04, 8, '#c9c3b6');                                             // jalan masuk
+    // gedung utama 2 lantai: kaca ngarep + pigura putih
+    v.box(-2, 0.3, -5, 18, 8, 10, PUTIH).box(-2, 8.1, -5, 18.6, 0.5, 10.6, ABU).box(-2, 4.05, -5, 18.4, 0.3, 10.4, TEAL);
+    for (const y of [0.6, 4.6]) for (let x = -9.4; x <= 5.4; x += 2.1) v.box(x, y, 0.02, 1.8, 3.1, 0.1, 'win');
+    v.box(-2, 0.3, 0.1, 2.4, 3.2, 0.12, ABU).box(-2, 3.4, 0.9, 5, 0.25, 1.8, OREN);   // lawang + kanopi oren
+    // sayap sing sik dibangun (perancah) = kota terus dibangun
+    v.box(10, 0.3, -6, 7, 5, 8, '#c9c3b6');
+    for (const x of [6.6, 10, 13.4]) for (const z of [-1.6, -10.4]) v.box(x, 0.3, z, 0.18, 9, 0.18, KUNING);
+    for (const y of [3, 6, 9]) { v.box(10, y, -1.6, 7, 0.14, 0.14, KUNING).box(10, y, -10.4, 7, 0.14, 0.14, KUNING); v.box(10, y - 0.1, -1.4, 7, 0.08, 0.9, '#a07a4a'); }
+    for (let k = 0; k < 4; k++) v.box(8.4 + k * 1.1, 5.1 + (k % 2) * 0.5, -6, 1, 0.5, 2, '#b5553a');   // tumpukan bata
+    // crane proyek
+    const cx = 13, cz = -12;
+    v.box(cx, 0.3, cz, 2.2, 0.6, 2.2, ABU);
+    for (let y = 0.7; y < 20; y += 1.6) v.box(cx, y, cz, 1.1, 1.5, 1.1, KUNING).box(cx, y + 1.5, cz, 1.2, 0.1, 1.2, '#d9a520');
+    v.box(cx, 20.4, cz, 1.6, 1.6, 1.6, KUNING).box(cx - 8, 21.6, cz, 22, 0.7, 0.8, KUNING).box(cx + 4.5, 20.6, cz, 2.6, 1.2, 1.4, ABU);
+    v.box(cx, 22.2, cz, 0.3, 2.4, 0.3, KUNING);
+    v.box(cx - 15, 12.4, cz, 0.06, 9, 0.06, '#333').box(cx - 15, 11.2, cz, 2.4, 1.2, 1.2, '#b5553a');   // tali + bata sing digantung
+    // papan cetak biru (blueprint) kota
+    v.box(-12.5, 0.3, 6, 0.25, 3, 0.25, ABU).box(-6.5, 0.3, 6, 0.25, 3, 0.25, ABU);
+    const bp = document.createElement('canvas'); bp.width = 512; bp.height = 300; const g = bp.getContext('2d');
+    g.fillStyle = BIRU; g.fillRect(0, 0, 512, 300); g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 1;
+    for (let i = 0; i < 512; i += 24) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 300); g.stroke(); } for (let i = 0; i < 300; i += 24) { g.beginPath(); g.moveTo(0, i); g.lineTo(512, i); g.stroke(); }
+    g.strokeStyle = '#fff'; g.lineWidth = 3; g.strokeRect(40, 60, 120, 80); g.strokeRect(200, 40, 90, 140); g.strokeRect(330, 90, 140, 70); g.beginPath(); g.moveTo(20, 220); g.lineTo(490, 220); g.moveTo(250, 200); g.lineTo(250, 290); g.stroke();
+    g.fillStyle = '#fff'; g.font = 'bold 30px sans-serif'; g.textAlign = 'center'; g.fillText('RENCANA KOTA SIDOARJOVERSE', 256, 268);
+    const tx = new THREE.CanvasTexture(bp); tx.colorSpace = THREE.SRGBColorSpace;
+    const papan = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 3.9), new THREE.MeshBasicMaterial({ map: tx })); papan.position.set(-9.5, 4.4, 6.14); ex.push(papan);
+    const fr = new THREE.Mesh(new THREE.BoxGeometry(7, 4.3, 0.2), new THREE.MeshStandardMaterial({ color: ABU })); fr.position.set(-9.5, 4.4, 6); ex.push(fr);
+    // lampu taman + tanduran
+    for (const sx of [-1, 1]) for (const z of [4, 11]) v.box(sx * 3.4, 0.3, z, 0.18, 3.4, 0.18, ABU).box(sx * 3.4, 3.5, z, 0.5, 0.4, 0.5, 'lamp');
+    for (let x = -14; x <= 14; x += 3) if (Math.abs(x) > 4) v.bola(x, 0.3, 12, 2.2, 1.2, 1.2, '#5f8f4a');
+    // papan jeneng
+    const s1 = signMesh((b.nama || 'KANTOR PEMBANGUN KOTA').toUpperCase(), 14, 1.5, TEAL, '#ffffff'); s1.position.set(-2, 6.4, 0.14); ex.push(s1);
+    const s2 = signMesh('🏗️ DIBANGUN DENING @denypm.id', 9, 1.1, OREN, '#ffffff'); s2.position.set(-2, 9.1, -0.1); ex.push(s2);
+    // NPC Cak Deny (sing mbangun kota) nyambut nang ngarep lawang
+    const deny = makeChar({ kulit: '#e0ac69', baju: '#0f4c5c', celana: '#2b2d42', rambut: '#1a1a1a' }, { helm: OREN, kaos: '#f6f4ef' });
+    deny.position.set(1.6, 0.3, 4.6); deny.rotation.y = -0.25; deny.scale.setScalar(1.4); ex.push(deny);
+    const lb = textSprite('👷 Cak Deny · @denypm.id', { bg: 'rgba(242,140,40,.95)', fg: '#fff', size: 1.0 }); lb.position.set(1.6, 3.9, 4.6); ex.push(lb);
+  } },
   puskesmas: { label: 'Puskesmas', w: 8, d: 6, build(vb) {
     vb.box(0, 0, 0, 8, 0.12, 6, '#cfc6b4');
     vb.box(0, 0.12, -0.8, 7.2, 2.8, 3.6, '#fbfbfb');

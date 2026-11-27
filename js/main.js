@@ -148,6 +148,10 @@ function kartuBangunan(b) {
     <p style="font-size:15px;line-height:1.5"><b>Penerbit Benang Merah</b> · teman perjalanan naskahmu ✍️ Nang njero onok galeri: puisi, surat lan tulisan eksklusif para penyawer 🖋️</p>
     <div class="meta">📖 Nang ngarep onok tugu <b>Buku Puisi Netizen</b>: sopo ae sing duwe KTP oleh nulis puisi!</div>
     <div class="ktp-acts" style="justify-content:flex-start"><button class="btn oren" id="btnMuseum">🖋️ Mlebu galeri</button><button class="btn" id="btnBukuPuisi">📖 Buku Puisi Netizen</button></div>`;
+  if (b.tipe === 'pembangun' && b.status === 'selesai') return `<div class="lab" style="color:#f28c28;font-weight:800;font-size:12px">🏗️ KANTOR PEMBANGUN KOTA</div><h3>${esc(b.nama)}</h3>
+    <p style="font-size:15px;line-height:1.5">Kenalno, iki <b>Cak Deny</b> 👷, wong sing mbangun SidoarjoVerse teko nol: saben komen, saben usulan, saben bata nang kota iki digarap teko kene 🧱</p>
+    <div class="meta">👀 Bocoran fitur anyar, voting bangunan sak teruse, lan behind the scenes mbangun kota: kabeh nang Instagram-e Cak Deny.</div>
+    <div class="ktp-acts" style="justify-content:flex-start"><a class="btn oren" href="https://www.instagram.com/denypm.id/" target="_blank" rel="noopener">📸 Kenalan karo @denypm.id</a></div>`;
   if (b.tipe === 'kolampancing' && b.status === 'selesai') return `<div class="lab" style="color:var(--teal2);font-weight:800;font-size:12px">🎣 KOLAM PANCING</div><h3>${esc(b.nama)}</h3>
     <p style="font-size:15px;line-height:1.5">Mancing gratis! Oleh iwak reno-reno: bandeng, lele, gurami, koi emas... sopo ngerti oleh <b>hiu</b> 😱</p>
     <div class="ktp-acts" style="justify-content:flex-start"><button class="btn oren" id="btnMancing">🎣 Mancing saiki</button></div>`;
@@ -531,7 +535,7 @@ function onDekat(b) {
   dekatB = b;
   const el = $('dekat');
   if (!b) { el.hidden = true; return; }
-  el.innerHTML = /^sekolah/.test(b.tipe) && saya && PERAN_SEKOLAH[saya.pekerjaan] ? `🏫 Mlebu ${esc(b.nama)}<small>Ketuk gawe mlebu kelas</small>` : b.tipe === 'museum' ? `🧶 Mlebu ${esc(b.nama)}<small>Ketuk gawe ndelok galeri karya</small>`: b.tipe === 'kolampancing' ? `🎣 Mancing nang ${esc(b.nama)}<small>Ketuk gawe mancing!</small>` : `📍 ${esc(b.nama)}<small>Ketuk untuk lihat info</small>`;
+  el.innerHTML = /^sekolah/.test(b.tipe) && saya && PERAN_SEKOLAH[saya.pekerjaan] ? `🏫 Mlebu ${esc(b.nama)}<small>Ketuk gawe mlebu kelas</small>` : b.tipe === 'museum' ? `🧶 Mlebu ${esc(b.nama)}<small>Ketuk gawe ndelok galeri karya</small>`: b.tipe === 'pembangun' ? `🏗️ ${esc(b.nama)}<small>Ketuk gawe kenalan karo sing mbangun kota</small>` : b.tipe === 'kolampancing' ? `🎣 Mancing nang ${esc(b.nama)}<small>Ketuk gawe mancing!</small>` : `📍 ${esc(b.nama)}<small>Ketuk untuk lihat info</small>`;
   el.hidden = false;
 }
 $('dekat').onclick = () => { if (!dekatB) return; if (dekatB.tipe === 'museum') bukaMuseum({ museum: dekatB, saya, pin: pinSaya }); else if (dekatB.tipe === 'kolampancing') bukaMancing({ nama: saya && saya.nama }); else if (/^sekolah/.test(dekatB.tipe) && saya && PERAN_SEKOLAH[saya.pekerjaan]) bukaSekolah({ sekolah: dekatB, saya }); else onPick({ jenis: 'bangunan', data: dekatB }); };
