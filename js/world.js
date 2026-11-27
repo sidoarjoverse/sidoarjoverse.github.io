@@ -786,7 +786,7 @@ function bangunDaerah(statik, r, footprints, ringan) {
     for (const lnd of BANDARA.landasan || []) for (let k = 0; k + 1 < lnd.length; k++) { const [ax, az] = lnd[k], [bx, bz] = lnd[k + 1], L = Math.hypot(bx - ax, bz - az); for (let d = 0; d < L; d += 20) v.box(ax + (bx - ax) * d / L, 0.04, az + (bz - az) * d / L, 4, 0.03, 4, '#f4f4f4'); }
     statik.add(v.build({ shadow: false }));
     let sx = 0, sz = 0; for (const [x, z] of P) { sx += x; sz += z; }
-    papanRencana(sx / P.length, sz / P.length, 0, 'LAHAN BANDARA', 'rencana bandar udara · Juanda', 10);
+    if (!footprints.some(f => Math.abs(f.x - sx / P.length) < f.w / 2 + 6 && Math.abs(f.z - sz / P.length) < f.d / 2 + 6)) papanRencana(sx / P.length, sz / P.length, 0, 'LAHAN BANDARA', 'rencana bandar udara · Juanda', 10);
   }
   // lahan-lahan rencana lain
   for (const L of LAHAN_RENCANA) {
@@ -1345,6 +1345,36 @@ export const TIPE = {
     for (let x = -10; x <= 18; x += 7) for (const z of [LZ + LD / 2 + 4.8]) v.box(LX + x - 4, Y, z, 2, 0.45, 0.6, '#8a5a32').box(LX + x - 4, Y + 0.45, z + 0.25, 2, 0.5, 0.1, '#8a5a32');
     for (let x = -33; x <= 33; x += 5.5) for (const z of [-28.5, 28.5]) if (!(z > 0 && Math.abs(x - LX) < 6)) { v.box(x, Y, z, 0.35, 2.4, 0.35, '#6b4a2a'); v.bola(x, Y + 2.2, z, 2.6, 2.4, 2.6, r() < 0.5 ? '#3f8f45' : '#2f7a3a'); }
     for (let z = -22; z <= 22; z += 5.5) { v.box(33.5, Y, z, 0.35, 2.4, 0.35, '#6b4a2a'); v.bola(33.5, Y + 2.2, z, 2.6, 2.4, 2.6, '#3f8f45'); }
+  } },
+  stadion: { label: 'Stadion / GOR Delta', w: 60, d: 40, build(v, b, ex) {   // stadion: lapangan bal, track abang, tribun 4 sisi (kursi biru-ijo), atap tribun lor, lampu sorot 4 pojok (depan = +z)
+    const Y = 0.3, BETON = '#d9d2c3', BIRU = '#1f6fb2', IJO = '#2a9d5c';
+    v.box(0, 0, 0, 60, Y, 40, '#cfc6b4');
+    v.box(0, Y, 0, 42, 0.04, 27, '#c0533a');                                                   // track
+    v.box(0, Y + 0.04, 0, 34, 0.05, 20, '#4f9e3f');
+    for (let k = 0; k < 8; k++) v.box(-14.875 + k * 4.25, Y + 0.095, 0, 2.125, 0.005, 20, '#5aae49');   // belang suket
+    const L = (x, z, w, d) => v.box(x, Y + 0.1, z, w, 0.01, d, '#ffffff');
+    L(0, -10, 34, 0.15); L(0, 10, 34, 0.15); L(-17, 0, 0.15, 20); L(17, 0, 0.15, 20); L(0, 0, 0.15, 20);
+    for (let a = 0; a < 24; a++) { const t = a / 24 * Math.PI * 2; L(Math.cos(t) * 3, Math.sin(t) * 3, 0.5, 0.5); }
+    for (const s of [-1, 1]) { L(s * 14.5, 0, 0.15, 10); L(s * 15.75, -5, 2.5, 0.15); L(s * 15.75, 5, 2.5, 0.15);
+      v.box(s * 17.4, Y, 0, 0.12, 2.2, 0.12, '#fff').box(s * 17.4, Y, -2.4, 0.12, 2.2, 0.12, '#fff').box(s * 17.4, Y, 2.4, 0.12, 2.2, 0.12, '#fff').box(s * 17.4, Y + 2.2, 0, 0.12, 0.12, 4.9, '#fff').box(s * 18, Y, 0, 1.2, 0.02, 4.8, '#dddddd'); }
+    // tribun dawa (lor & kidul) + tribun pojok (kulon & wetan): undhak-undhakan
+    for (const s of [-1, 1]) for (let k = 0; k < 6; k++) {
+      v.box(0, Y, s * (15 + k * 0.9), 44 - k * 0.2, 0.8 + k * 0.8, 0.9, BETON).box(0, Y + 0.8 + k * 0.8, s * (15 + k * 0.9), 43 - k * 0.2, 0.2, 0.6, k % 2 ? BIRU : IJO);
+      v.box(s * (22.5 + k * 0.9), Y, 0, 0.9, 0.6 + k * 0.6, 24 - k * 0.4, BETON).box(s * (22.5 + k * 0.9), Y + 0.6 + k * 0.6, 0, 0.6, 0.18, 23 - k * 0.4, k % 2 ? IJO : BIRU);
+    }
+    v.box(0, Y, -20, 46, 6.2, 0.6, BETON).box(0, Y, 20, 46, 1.4, 0.6, BETON);
+    // atap tribun lor (kantilever) + tiang
+    v.box(0, Y + 9, -17.4, 46, 0.35, 7.2, '#e9eef2').box(0, Y + 9.35, -17.4, 46, 0.12, 7.4, '#1f6fb2');
+    for (let x = -21; x <= 21; x += 7) v.box(x, Y, -20.3, 0.5, 9.3, 0.5, '#8a96a3');
+    // lampu sorot 4 pojok
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const x = sx * 28, z = sz * 18.5;
+      v.box(x, Y, z, 0.8, 18, 0.8, '#8a96a3').box(x, Y + 18, z, 3.6, 2.2, 0.5, '#555d66');
+      for (const dx of [-1.1, 0, 1.1]) for (const dy of [0.5, 1.5]) v.box(x + dx, Y + 18 + dy, z - sz * 0.27, 0.8, 0.7, 0.05, 'lamp'); }
+    // papan skor + gapura ngarep
+    v.box(-24, Y, -17, 0.4, 7, 0.4, '#333').box(-24, Y + 7, -17, 7, 3.2, 0.5, '#1d1d1d');
+    const sk = signMesh('DELTA 3 - 1 VERSE', 6.4, 1.6, '#1d1d1d', '#ffd166'); sk.position.set(-24, Y + 8.6, -16.73); ex.push(sk);
+    v.box(-8, Y, 20.6, 1.4, 6, 1.4, BIRU).box(8, Y, 20.6, 1.4, 6, 1.4, BIRU).box(0, Y + 6, 20.6, 18, 1.8, 1.4, IJO);
+    const nm = signMesh((b.nama || 'GELORA DELTA').toUpperCase(), 16, 1.5, IJO, '#ffffff'); nm.position.set(0, Y + 6.9, 21.32); ex.push(nm);
   } },
   puskesmas: { label: 'Puskesmas', w: 8, d: 6, build(vb) {
     vb.box(0, 0, 0, 8, 0.12, 6, '#cfc6b4');
