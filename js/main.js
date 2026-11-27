@@ -148,6 +148,10 @@ function kartuBangunan(b) {
     <p style="font-size:15px;line-height:1.5"><b>Penerbit Benang Merah</b> · teman perjalanan naskahmu ✍️ Nang njero onok galeri: puisi, surat lan tulisan eksklusif para penyawer 🖋️</p>
     <div class="meta">📖 Nang ngarep onok tugu <b>Buku Puisi Netizen</b>: sopo ae sing duwe KTP oleh nulis puisi!</div>
     <div class="ktp-acts" style="justify-content:flex-start"><button class="btn oren" id="btnMuseum">🖋️ Mlebu galeri</button><button class="btn" id="btnBukuPuisi">📖 Buku Puisi Netizen</button></div>`;
+  if (b.tipe === 'alunalunsda' && b.status === 'selesai') return `<div class="lab" style="color:#c44536;font-weight:800;font-size:12px">🏛️ ALUN-ALUN SIDOARJO</div><h3>${esc(b.nama)}</h3>
+    <p style="font-size:15px;line-height:1.5">Jantunge kota! Nang tengah ngadeg <b>Monumen Jayandaru</b> 🦐🐟 (udang karo bandeng, lambang Kota Delta), diubengi Masjid Agung, Pendopo Delta Wibawa, beringin kembar, air mancur, lan PKL sing rame.</p>
+    <div class="meta">❓ Dibangun teko sumbangan <b>Rp1.000.000.000</b> teko akun misterius. Sopo yo sing nyumbang?</div>
+    ${b.ket ? `<p style="white-space:pre-line">${esc(b.ket)}</p>` : ''}`;
   if (b.tipe === 'pembangun' && b.status === 'selesai') return `<div class="lab" style="color:#f28c28;font-weight:800;font-size:12px">🏗️ KANTOR PEMBANGUN KOTA</div><h3>${esc(b.nama)}</h3>
     <p style="font-size:15px;line-height:1.5">Kenalno, iki <b>Cak Deny</b> 👷, wong sing mbangun SidoarjoVerse teko nol: saben komen, saben usulan, saben bata nang kota iki digarap teko kene 🧱</p>
     <div class="meta">👀 Bocoran fitur anyar, voting bangunan sak teruse, lan behind the scenes mbangun kota: kabeh nang Instagram-e Cak Deny.</div>

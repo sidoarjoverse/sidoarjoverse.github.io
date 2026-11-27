@@ -1246,6 +1246,106 @@ export const TIPE = {
     deny.position.set(1.6, 0.3, 4.6); deny.rotation.y = -0.25; deny.scale.setScalar(1.4); ex.push(deny);
     const lb = textSprite('👷 Cak Deny · @denypm.id', { bg: 'rgba(242,140,40,.95)', fg: '#fff', size: 1.0 }); lb.position.set(1.6, 3.9, 4.6); ex.push(lb);
   } },
+  alunalunsda: { label: 'Alun-alun Sidoarjo (megah)', w: 70, d: 60, build(v, b, ex, r) {   // alun-alun megah: Monumen Jayandaru (udang + bandeng), Masjid Agung, Pendopo, beringin kembar, air mancur, PKL, huruf landmark (depan = +z)
+    const PAV = '#ddd5c4', PUTIH = '#f6f2e8', EMAS = '#d9aa2b', IJO = '#2f8a4a', KAYU = '#7a4f2a', Y = 0.3;
+    v.box(0, 0, 0, 70, Y, 60, PAV);
+    // lapangan tengah + jogging track + pagar besi cendhek
+    const LX = 4, LZ = 2, LW = 40, LD = 30;
+    v.box(LX, Y, LZ, LW + 5, 0.04, LD + 5, '#c0533a');                                     // jogging track abang
+    v.box(LX, Y + 0.04, LZ, LW, 0.06, LD, '#6fb35a');                                       // suket
+    for (let x = -LW / 2 + 2; x < LW / 2; x += 4) for (let z = -LD / 2 + 2; z < LD / 2; z += 4) if ((x + z) % 8 === 0) v.box(LX + x, Y + 0.1, LZ + z, 3.6, 0.005, 3.6, '#79bd63');   // belang suket dipotong
+    v.box(LX, Y + 0.1, LZ, 2.4, 0.02, LD, PAV).box(LX, Y + 0.1, LZ, LW, 0.02, 2.4, PAV);   // dalan salib
+    for (const [sx, sz, w, d] of [[0, -1, LW, 0.12], [0, 1, LW, 0.12], [-1, 0, 0.12, LD], [1, 0, 0.12, LD]]) {
+      const px = LX + sx * LW / 2, pz = LZ + sz * LD / 2;
+      if (w > 1) { v.box(px - LW / 4 - 0.8, Y + 0.55, pz, LW / 2 - 2.6, 0.08, 0.08, '#2b2b2b').box(px + LW / 4 + 0.8, Y + 0.55, pz, LW / 2 - 2.6, 0.08, 0.08, '#2b2b2b'); for (let x = -LW / 2; x <= LW / 2; x += 2) if (Math.abs(x) > 1.6) v.box(LX + x, Y, pz, 0.08, 0.6, 0.08, '#2b2b2b'); }
+      else { v.box(px, Y + 0.55, pz - LD / 4 - 0.8, 0.08, 0.08, LD / 2 - 2.6, '#2b2b2b').box(px, Y + 0.55, pz + LD / 4 + 0.8, 0.08, 0.08, LD / 2 - 2.6, '#2b2b2b'); for (let z = -LD / 2; z <= LD / 2; z += 2) if (Math.abs(z) > 1.6) v.box(px, Y, LZ + z, 0.08, 0.6, 0.08, '#2b2b2b'); }
+    }
+    // MONUMEN JAYANDARU: undhak-undhakan, kolam, tugu putih dhuwur, patung udang + bandeng nang pucuk
+    const MX = LX, MZ = LZ - 3;
+    v.bola(MX, Y, MZ, 11, 0.5, 11, '#e9e2d2').bola(MX, Y + 0.3, MZ, 10, 0.32, 10, 'water');
+    v.box(MX, Y, MZ, 7, 0.8, 7, '#e9e2d2').box(MX, Y + 0.8, MZ, 5.4, 0.8, 5.4, PUTIH).box(MX, Y + 1.6, MZ, 4, 0.8, 4, '#e9e2d2');
+    v.box(MX, Y + 2.4, MZ, 2.4, 1.6, 2.4, PUTIH).box(MX, Y + 4, MZ, 2.7, 0.3, 2.7, EMAS);
+    for (let k = 0; k < 6; k++) v.box(MX, Y + 4.3 + k * 2, MZ, 1.7 - k * 0.12, 2, 1.7 - k * 0.12, k % 2 ? '#efe9dc' : PUTIH);
+    v.box(MX, Y + 16.3, MZ, 1.6, 0.35, 1.6, EMAS);
+    const pucuk = Y + 16.6;
+    const mPerak = new THREE.MeshStandardMaterial({ color: '#c7d3de', metalness: 0.55, roughness: 0.3 }), mSirip = new THREE.MeshStandardMaterial({ color: '#8fa3b5', metalness: 0.5, roughness: 0.35 });
+    const mUdang = new THREE.MeshStandardMaterial({ color: '#ef7d3c', roughness: 0.45 }), mUdang2 = new THREE.MeshStandardMaterial({ color: '#d9622a', roughness: 0.45 });
+    // bandeng: awak dawa ngadeg miring, buntut cabang
+    const bd = new THREE.Group(); bd.position.set(MX - 0.5, pucuk + 2.6, MZ); bd.rotation.z = 0.35; ex.push(bd);
+    const awak = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), mPerak); awak.scale.set(0.75, 2.9, 0.45); bd.add(awak);
+    const ndas = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.1, 16), mPerak); ndas.position.y = 3.1; ndas.scale.z = 0.7; bd.add(ndas);
+    for (const s of [-1, 1]) { const t = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.6, 4), mSirip); t.position.set(s * 0.45, -3.1, 0); t.rotation.z = Math.PI + s * 0.5; t.scale.z = 0.25; bd.add(t);
+      const sr = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1, 4), mSirip); sr.position.set(s * 0.7, 0.6, 0); sr.rotation.z = -s * 1.9; sr.scale.z = 0.2; bd.add(sr); }
+    for (const s of [-1, 1]) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), new THREE.MeshStandardMaterial({ color: '#111' })); m.position.set(0.15, 2.9, s * 0.38); bd.add(m); }
+    // udang: ruas-ruas mlengkung ngubengi bandeng, buntut kipas, sungut dawa
+    const ud = new THREE.Group(); ud.position.set(MX + 0.6, pucuk + 2.4, MZ); ex.push(ud);
+    for (let k = 0; k < 10; k++) {
+      const a = -1.2 + k * 0.3, rr = 1.9, sc = 0.78 - k * 0.045;
+      const seg = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), k % 2 ? mUdang : mUdang2);
+      seg.position.set(Math.cos(a) * rr * 0.7, Math.sin(a) * rr * 1.3, 0.5); seg.scale.set(sc, sc * 0.75, sc * 0.9); ud.add(seg);
+      if (k === 9) { for (const s of [-1, 0, 1]) { const f = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.9, 3), mUdang); f.position.set(seg.position.x - 0.2 + s * 0.25, seg.position.y + 0.6, 0.5); f.rotation.z = s * 0.4; f.scale.z = 0.3; ud.add(f); } }
+      if (k < 7 && k % 2 === 0) for (const s of [-1, 1]) { const kk = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.03, 0.8), mUdang2); kk.position.set(seg.position.x - 0.4, seg.position.y - 0.2, 0.5 + s * 0.35); kk.rotation.z = 0.9; ud.add(kk); }
+    }
+    { const ndasU = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.4, 12), mUdang); ndasU.position.set(Math.cos(-1.2) * 1.33 + 0.3, Math.sin(-1.2) * 2.47 - 0.5, 0.5); ndasU.rotation.z = 2.4; ud.add(ndasU);
+      for (const s of [-1, 1]) { const sg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.015, 4.2), mUdang2); sg.position.set(ndasU.position.x + 1.2, ndasU.position.y - 0.6, 0.5 + s * 0.3); sg.rotation.z = 1.9 + s * 0.15; ud.add(sg); } }
+    // prasasti nang ngarep monumen
+    v.box(MX, Y, MZ + 6.2, 3.4, 1.3, 0.6, '#5a5550');
+    const pr = signMesh('MONUMEN JAYANDARU', 3.1, 0.55, '#5a5550', '#f5d76e'); pr.position.set(MX, Y + 0.95, MZ + 6.51); ex.push(pr);
+    const pr2 = signMesh('Udang & Bandeng · Kota Delta', 3.1, 0.4, '#5a5550', '#ffffff'); pr2.position.set(MX, Y + 0.45, MZ + 6.51); ex.push(pr2);
+    // beringin kembar + air mancur nang ngarep
+    for (const sx of [-1, 1]) {
+      const bx = LX + sx * 9, bz = LZ + 9;
+      v.bola(bx, Y, bz, 3, 0.4, 3, '#cfc6b2').box(bx, Y, bz, 1.3, 4.5, 1.3, '#5d4128');
+      for (let k = 0; k < 7; k++) { const a = k * 0.9; v.box(bx + Math.cos(a) * 2.6, Y, bz + Math.sin(a) * 2.6, 0.12, 4.2, 0.12, '#6b4a2a'); }
+      v.bola(bx, Y + 4, bz, 9, 3.2, 9, '#256b2e').bola(bx, Y + 5.8, bz, 7, 2.8, 7, '#2f7d36').bola(bx, Y + 7.6, bz, 4.6, 2.2, 4.6, '#3a8f3d');
+    }
+    v.bola(LX, Y + 0.1, LZ + 12, 6, 0.6, 6, '#e9e2d2').bola(LX, Y + 0.5, LZ + 12, 5, 0.3, 5, 'water').box(LX, Y + 0.5, LZ + 12, 0.6, 1.6, 0.6, PUTIH).bola(LX, Y + 2.1, LZ + 12, 2, 0.5, 2, '#e9e2d2').bola(LX, Y + 2.5, LZ + 12, 1.1, 1.4, 1.1, '#bfe6f5');
+    // MASJID AGUNG (sisih kulon): bangunan putih, kubah ijo-emas, menara
+    const QX = -27, QZ = 0;
+    v.box(QX, Y, QZ, 13, 0.6, 18, '#e9e2d2').box(QX, Y + 0.6, QZ, 11, 6, 15, PUTIH).box(QX, Y + 6.6, QZ, 11.6, 0.5, 15.6, IJO);
+    for (const z of [-5, -1.7, 1.7, 5]) for (const sx of [-1, 1]) v.box(QX + sx * 5.53, Y + 2, QZ + z, 0.1, 2.8, 1.6, 'win');
+    for (const x of [-3, 0, 3]) v.box(QX + x, Y + 0.6, QZ + 7.53, 1.8, 3.6, 0.1, x ? 'win' : '#4a3a22');
+    v.box(QX, Y + 7.1, QZ, 6, 1, 6, PUTIH).bola(QX, Y + 8.1, QZ, 6.2, 6.4, 6.2, IJO).box(QX, Y + 11.2, QZ, 0.18, 1.6, 0.18, EMAS).bola(QX, Y + 12.8, QZ, 0.6, 0.6, 0.6, EMAS);
+    for (const [x, z] of [[-4.5, -6.2], [4.5, -6.2], [-4.5, 6.2], [4.5, 6.2]]) v.bola(QX + x, Y + 7.1, QZ + z, 2, 2.2, 2, IJO);
+    v.box(QX + 3, Y, QZ - 11, 2.4, 2, 2.4, '#e9e2d2');
+    for (let k = 0; k < 5; k++) v.box(QX + 3, Y + 2 + k * 3.6, QZ - 11, 1.8 - k * 0.1, 3.4, 1.8 - k * 0.1, k % 2 ? '#efe9dc' : PUTIH).box(QX + 3, Y + 5.4 + k * 3.6, QZ - 11, 2.2 - k * 0.1, 0.2, 2.2 - k * 0.1, IJO);
+    v.bola(QX + 3, Y + 20, QZ - 11, 1.8, 2.2, 1.8, IJO).box(QX + 3, Y + 22, QZ - 11, 0.12, 1.4, 0.12, EMAS);
+    const sm = signMesh('MASJID AGUNG', 6, 0.8, IJO, '#ffffff'); sm.position.set(QX, Y + 4.8, QZ + 7.6); ex.push(sm);
+    // PENDOPO DELTA WIBAWA (sisih lor): saka kayu + atap joglo susun
+    const PX = LX, PZ = -23;
+    v.box(PX, Y, PZ, 20, 0.8, 10, '#d8cbb4');
+    for (let x = -8.4; x <= 8.4; x += 2.8) for (const z of [-3.6, 3.6]) v.box(PX + x, Y + 0.8, PZ + z, 0.45, 4, 0.45, KAYU);
+    for (const x of [-1.6, 1.6]) for (const z of [-1.4, 1.4]) v.box(PX + x, Y + 0.8, PZ + z, 0.6, 6, 0.6, KAYU);
+    v.box(PX, Y + 4.8, PZ, 21, 0.4, 11, '#6e3b20').box(PX, Y + 5.2, PZ, 17, 0.9, 8.6, '#8a4a2a').box(PX, Y + 6.1, PZ, 12, 1, 6.4, '#9a5530').box(PX, Y + 7.1, PZ, 7, 1.3, 4.4, '#8a4a2a').box(PX, Y + 8.4, PZ, 3, 0.4, 2, '#6e3b20');
+    const sp = signMesh('PENDOPO DELTA WIBAWA', 7, 0.8, '#6e3b20', '#f5d76e'); sp.position.set(PX, Y + 4.4, PZ + 5.56); ex.push(sp);
+    // dolanan bocah (sisih wetan)
+    const DX = 30, DZ = 0;
+    v.box(DX, Y, DZ, 8, 0.05, 12, '#e8c26a');
+    v.box(DX - 1.5, Y, DZ - 3, 0.15, 3, 0.15, '#e63946').box(DX + 1.5, Y, DZ - 3, 0.15, 3, 0.15, '#e63946').box(DX, Y + 3, DZ - 3, 3.3, 0.15, 0.15, '#e63946');
+    for (const x of [-0.7, 0.7]) v.box(DX + x, Y + 0.7, DZ - 3, 0.6, 0.08, 0.4, '#2a9d8f');
+    v.box(DX, Y, DZ + 2.5, 1.6, 2.4, 1.6, '#3a86ff').box(DX, Y + 0.9, DZ + 4.3, 1, 0.15, 2.8, '#ffd166');
+    // PKL: gerobak + payung warna-warni nang ngarep
+    const PAYUNG = ['#e63946', '#2a9d8f', '#f4a261', '#3a86ff', '#ffd166', '#8338ec'];
+    for (let k = 0; k < 7; k++) { const x = -12 + k * 5.2, z = 25;
+      v.box(x, Y, z, 2.2, 1.1, 1.1, ['#f4ecd8', '#ffd166', '#a8dadc'][k % 3]).box(x, Y + 1.1, z, 2.3, 0.08, 1.2, '#6b4a2a');
+      for (const s of [-1, 1]) v.bola(x + s * 0.8, Y, z + 0.6, 0.5, 0.5, 0.15, '#333');
+      v.box(x + 1.3, Y, z - 0.9, 0.08, 2.6, 0.08, '#555').bola(x + 1.3, Y + 2.5, z - 0.9, 3, 0.7, 3, PAYUNG[k % 6]);
+      for (const s of [-1, 1]) v.box(x + s * 1.6, Y, z + 1.9, 0.6, 0.5, 0.6, '#c44536'); }
+    // huruf landmark "ALUN-ALUN SIDOARJO"
+    v.box(LX, Y, 20.5, 20, 0.6, 1.6, '#4a4a4a');
+    const hr = signMesh('ALUN-ALUN SIDOARJO', 19, 2.2, '#ffffff', '#e63946'); hr.position.set(LX, Y + 1.9, 21.1); ex.push(hr);
+    const hr2 = signMesh('ALUN-ALUN SIDOARJO', 19, 2.2, '#ffffff', '#e63946'); hr2.position.set(LX, Y + 1.9, 19.9); hr2.rotation.y = Math.PI; ex.push(hr2);
+    // prasasti donatur misterius
+    v.box(LX + 15, Y, 20.5, 4.4, 2.4, 0.5, '#2b2b2b');
+    const dn = signMesh('❓ Rp1.000.000.000 · AKUN MISTERIUS', 4.1, 0.9, '#2b2b2b', '#f5d76e'); dn.position.set(LX + 15, Y + 1.6, 20.77); ex.push(dn);
+    const dn2 = signMesh('Matur nuwun, sopo ae sampeyan 🙏', 4.1, 0.6, '#2b2b2b', '#ffffff'); dn2.position.set(LX + 15, Y + 0.7, 20.77); ex.push(dn2);
+    // lampu hias, bangku, wit peneduh nang pinggir
+    for (let x = -18; x <= 26; x += 6) for (const z of [LZ - LD / 2 - 3.5, LZ + LD / 2 + 3.5]) v.box(LX + x - 4, Y, z, 0.16, 3.6, 0.16, '#2b2b2b').bola(LX + x - 4, Y + 3.7, z, 0.6, 0.6, 0.6, 'lamp');
+    for (let z = -12; z <= 16; z += 7) for (const x of [LX - LW / 2 - 3.5, LX + LW / 2 + 3.5]) v.box(x, Y, z, 0.16, 3.6, 0.16, '#2b2b2b').bola(x, Y + 3.7, z, 0.6, 0.6, 0.6, 'lamp');
+    for (let x = -10; x <= 18; x += 7) for (const z of [LZ + LD / 2 + 4.8]) v.box(LX + x - 4, Y, z, 2, 0.45, 0.6, '#8a5a32').box(LX + x - 4, Y + 0.45, z + 0.25, 2, 0.5, 0.1, '#8a5a32');
+    for (let x = -33; x <= 33; x += 5.5) for (const z of [-28.5, 28.5]) if (!(z > 0 && Math.abs(x - LX) < 6)) { v.box(x, Y, z, 0.35, 2.4, 0.35, '#6b4a2a'); v.bola(x, Y + 2.2, z, 2.6, 2.4, 2.6, r() < 0.5 ? '#3f8f45' : '#2f7a3a'); }
+    for (let z = -22; z <= 22; z += 5.5) { v.box(33.5, Y, z, 0.35, 2.4, 0.35, '#6b4a2a'); v.bola(33.5, Y + 2.2, z, 2.6, 2.4, 2.6, '#3f8f45'); }
+  } },
   puskesmas: { label: 'Puskesmas', w: 8, d: 6, build(vb) {
     vb.box(0, 0, 0, 8, 0.12, 6, '#cfc6b4');
     vb.box(0, 0.12, -0.8, 7.2, 2.8, 3.6, '#fbfbfb');
@@ -2026,7 +2126,7 @@ export function createWorld(canvas, { onPick, onDekat, manual = false } = {}) {
       const rot = ((+b.rot || 0) % 360) * Math.PI / 180;
       const quarter = Math.round((+b.rot || 0) / 90) % 2 !== 0;
       const w = quarter ? T.d : T.w, d = quarter ? T.w : T.d;
-      fps.push({ x: +b.x, z: +b.z, w, d, b, lewat: ['alunalun', 'lapangan', 'gapuramegah', 'pohonbesar'].includes(b.tipe) && b.status !== 'lahan' });
+      fps.push({ x: +b.x, z: +b.z, w, d, b, lewat: ['alunalun', 'alunalunsda', 'lapangan', 'gapuramegah', 'pohonbesar'].includes(b.tipe) && b.status !== 'lahan' });
       const holder = new THREE.Group();
       holder.position.set(+b.x, 0, +b.z);
       holder.userData.pick = { jenis: 'bangunan', data: b };
