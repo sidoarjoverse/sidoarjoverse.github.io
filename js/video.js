@@ -389,6 +389,7 @@ function aturCahaya(t, s) {
   const u = (t - s.start) / s.dur, m = h.mulai ?? 0, k = Math.min(1, Math.max(0, (u - m) / (h.lama ?? (1 - m))));
   cahaya.position.set(h.dari[0] + (h.ke[0] - h.dari[0]) * k, (h.y ?? 1.9) + Math.sin(t * 7) * 0.08, h.dari[1] + (h.ke[1] - h.dari[1]) * k);
   cahaya.children[1].intensity = 60 * (0.75 + 0.25 * Math.sin(t * 23) * Math.sin(t * 7.3));
+  const w = h.warna || null; if (cahaya.userData.w !== w) { cahaya.userData.w = w; cahaya.children[0].material.color.set(w || '#fff6c8'); cahaya.children[1].color.set(w || '#ffe9a8'); cahaya.children[2].material.color.set(w || '#fff1b0'); }   // warna: mis. '#ff3b30' (benang abang)
 }
 // Mbah Paijo, penjaga hutan (naskah "mbah": {x, z, ry}) — rambut & kumis putih, peci, sarung, senter. Baris "mbah": true → tampil;
 // "mbahJalan": [[x, z], [x, z]] → berjalan; "mbahSenter": false → senter mati; "mbahTawa": true → bahu terguncang tertawa
@@ -1356,7 +1357,7 @@ window.video = {
         teks(lb, x1 - lebar / 2, y1 - 24, { size: 20, warna, bobot: 800, align: 'left', garis: 5, warnaGaris: 'rgba(0,0,0,.7)' });
       };
       if (s.footage) kotak(darjo, 2.4, 'CAK DARJO', '#ffd166');
-      if (s.cahaya && cahaya.visible) kotak(cahaya, 0.8, '??? 🔦', '#ff4d4d');
+      if (s.cahaya && cahaya.visible) kotak(cahaya, 0.8, s.cahaya.label || '??? 🔦', '#ff4d4d');
       if (hantu.visible) kotak(hantu, 2.6, '??? ' + (Math.floor(t * 3) % 2 ? '⚠️' : ''), '#ff4d4d');
       teks(`00:00:${String(dtk % 60).padStart(2, '0')}  ${NASKAH.cctvTanggal || '13/11/2026'}`, W - 40, H - 150, { size: 24, warna: '#fff', bobot: 700, align: 'right', garis: 5, warnaGaris: 'rgba(0,0,0,.6)' });
       c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 3;
