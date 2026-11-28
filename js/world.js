@@ -93,6 +93,10 @@ class VB {
     if (c === 'lamp') this.lampu.push([x, y + h / 2, z]);
     return this._add(c, new THREE.Matrix4().makeScale(w, h, d).setPosition(x, y + h / 2, z), UNIT);
   }
+  // kotak diputer nang sumbu y (ry radian)
+  boxR(x, y, z, w, h, d, c, ry) {
+    return this._add(c, new THREE.Matrix4().makeRotationY(ry).multiply(new THREE.Matrix4().makeScale(w, h, d)).setPosition(x, y + h / 2, z), UNIT);
+  }
   // bola low-poly: x,z = pusat, y = dasar
   bola(x, y, z, w, h, d, c) {
     return this._add(c, new THREE.Matrix4().makeScale(w, h, d).setPosition(x, y + h / 2, z), BOLA_LP);
@@ -376,7 +380,7 @@ function dalamJalanBaru(x, z, m = 0) {
   return false;
 }
 // garis dihaluskan (kurva Catmull-Rom) supaya belokan sungai & jalan melengkung, bukan patah
-function haluskan(p) {
+export function haluskan(p) {
   if (p.length < 3) { const out = []; for (let k = 0; k + 1 < p.length; k++) { const [ax, az] = p[k], [bx, bz] = p[k + 1], m = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 6)); for (let s = 0; s < m; s++) out.push([ax + (bx - ax) * s / m, az + (bz - az) * s / m]); } out.push(p[p.length - 1]); return out; }
   const kv = new THREE.CatmullRomCurve3(p.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, 'centripetal');
   let L = 0; for (let k = 0; k + 1 < p.length; k++) L += Math.hypot(p[k + 1][0] - p[k][0], p[k + 1][1] - p[k][1]);
@@ -767,6 +771,17 @@ function bangunDaerah(statik, r, footprints, ringan) {
     }
   }
   statik.add(gabungPita(koridor, mat('#b8a77a')));
+  // rel sepur temenan nang tengah koridor: kricak, bantalan, rong batang besi (dienggo sepur nang video)
+  { const kricak = [], besi = [];
+    for (const p of REL) {
+      kricak.push(pita(p, 3.2, 0.05));
+      const h = haluskan(p), geser = d => h.map((q, k) => { const a = h[Math.max(0, k - 1)], b = h[Math.min(h.length - 1, k + 1)], dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz) || 1; return [q[0] - dz / L * d, q[1] + dx / L * d]; });
+      for (const d of [-0.72, 0.72]) besi.push(pita(geser(d), 0.14, 0.2));
+      for (let k = 0; k + 1 < h.length; k++) { const [ax, az] = h[k], [bx, bz] = h[k + 1], L = Math.hypot(bx - ax, bz - az), ry = Math.atan2(bx - ax, bz - az);
+        for (let d = 0; d < L; d += 2) { const x = ax + (bx - ax) * d / L, z = az + (bz - az) * d / L; pv(x, z).boxR(x, 0.08, z, 2.3, 0.1, 0.35, '#5c4a3a', ry); } }
+    }
+    statik.add(gabungPita(kricak, mat('#8a8379'))); statik.add(gabungPita(besi, mat('#c3cbd2')));
+  }
   const papanRencana = (x, z, ry, judul, sub, lebar = 7) => {
     const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry;
     const v = new VB(); v.box(-lebar / 2 + 0.4, 0, 0, 0.25, 3.6, 0.25, '#4a3420').box(lebar / 2 - 0.4, 0, 0, 0.25, 3.6, 0.25, '#4a3420'); g.add(v.build());
@@ -1375,6 +1390,35 @@ export const TIPE = {
     const sk = signMesh('DELTA 3 - 1 VERSE', 6.4, 1.6, '#1d1d1d', '#ffd166'); sk.position.set(-24, Y + 8.6, -16.73); ex.push(sk);
     v.box(-8, Y, 20.6, 1.4, 6, 1.4, BIRU).box(8, Y, 20.6, 1.4, 6, 1.4, BIRU).box(0, Y + 6, 20.6, 18, 1.8, 1.4, IJO);
     const nm = signMesh((b.nama || 'GELORA DELTA').toUpperCase(), 16, 1.5, IJO, '#ffffff'); nm.position.set(0, Y + 6.9, 21.32); ex.push(nm);
+  } },
+  stasiun: { label: 'Stasiun Kereta', w: 44, d: 18, build(v, b, ex) {   // stasiun: peron dawa nang pinggir rel (sisih -z), kanopi, gedung loket, menara jam, papan jeneng + udang & bandeng (depan = +z)
+    const Y = 0.3, KRIM = '#f3ead8', IJO = '#2f7d5b', ABANG = '#b5483a', ABU = '#6b7480';
+    v.box(0, 0, 0, 44, Y, 18, '#d8d1c2');
+    v.box(0, Y, -7, 42, 0.7, 4, '#cfc8b8').box(0, Y + 0.7, -8.85, 42, 0.04, 0.3, '#ffd166');                 // peron + garis kuning
+    for (let x = -18; x <= 18; x += 6) v.box(x, Y + 0.7, -6.4, 0.3, 4, 0.3, ABU);
+    v.box(0, Y + 4.7, -7, 42.6, 0.25, 5, IJO).box(0, Y + 4.95, -7, 40, 0.5, 3.6, '#276b4d');               // kanopi
+    for (let x = -16; x <= 16; x += 8) v.box(x, Y + 0.7, -6, 2, 0.45, 0.6, '#8a5a32');                     // bangku
+    // gedung loket
+    v.box(0, Y, 1, 26, 6, 9, KRIM).box(0, Y + 6, 1, 27, 0.5, 10, ABANG).box(0, Y + 6.5, 1, 22, 1.4, 7, '#c25a48').box(0, Y + 7.9, 1, 14, 0.9, 4, ABANG);
+    for (let x = -10.5; x <= 10.5; x += 3) if (Math.abs(x) > 2.5) v.box(x, Y + 1.2, 5.53, 2, 3, 0.1, 'win');
+    v.box(0, Y, 5.6, 3.4, 4, 0.2, '#4a3a22').box(0, Y + 4.2, 6.2, 8, 0.25, 2.4, IJO);                       // lawang + kanopi ngarep
+    // menara jam
+    v.box(-15, Y, 2, 4, 11, 4, KRIM).box(-15, Y + 11, 2, 4.6, 0.4, 4.6, ABANG).box(-15, Y + 11.4, 2, 3, 2.2, 3, ABANG).box(-15, Y + 13.6, 2, 0.2, 1.4, 0.2, '#333');
+    const jam = signMesh('🕒', 2.6, 2.6, '#fffaf0', '#2b2b2b'); jam.position.set(-15, Y + 8.6, 4.02); ex.push(jam);
+    // papan jeneng (ngarep & sisih peron)
+    const nm = (b.nama || 'STASIUN').toUpperCase();
+    const s1 = signMesh(nm, 14, 1.4, IJO, '#ffffff'); s1.position.set(0, Y + 7.2, 4.55); ex.push(s1);
+    const s2 = signMesh('🦐 ' + nm + ' 🐟', 12, 1.1, '#ffffff', IJO); s2.position.set(6, Y + 3.6, -8.6); s2.rotation.y = Math.PI; ex.push(s2);
+    for (const x of [-12, 12]) v.box(x, Y + 0.7, -8.3, 0.2, 3.4, 0.2, '#333');
+    const s3 = signMesh(nm, 4.6, 0.7, IJO, '#ffffff'); s3.position.set(-12, Y + 3.6, -8.18); s3.rotation.y = Math.PI; ex.push(s3);
+    // tugu udang + bandeng cilik nang ngarep
+    v.box(9, Y, 7.5, 2.2, 1, 2.2, '#e9e2d2');
+    const mU = new THREE.MeshStandardMaterial({ color: '#ef7d3c' }), mB = new THREE.MeshStandardMaterial({ color: '#c7d3de', metalness: 0.4, roughness: 0.4 });
+    const bd = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), mB); bd.scale.set(0.35, 1.2, 0.22); bd.position.set(8.7, Y + 2.3, 7.5); bd.rotation.z = 0.3; ex.push(bd);
+    for (let k = 0; k < 6; k++) { const sg = new THREE.Mesh(new THREE.SphereGeometry(0.32 - k * 0.03, 10, 8), mU); const a = -1 + k * 0.4; sg.position.set(9.4 + Math.cos(a) * 0.5, Y + 1.8 + Math.sin(a) * 0.9 + 0.8, 7.6); ex.push(sg); }
+    // parkiran + lampu
+    for (let x = -20; x <= 20; x += 2.8) if (Math.abs(x) > 14) v.box(x, Y, 7, 0.08, 0.01, 3, '#ffffff');
+    for (const x of [-19, -6, 6, 19]) v.box(x, Y, 8.4, 0.16, 3.6, 0.16, '#2b2b2b').box(x, Y + 3.6, 8.4, 0.5, 0.4, 0.5, 'lamp');
   } },
   puskesmas: { label: 'Puskesmas', w: 8, d: 6, build(vb) {
     vb.box(0, 0, 0, 8, 0.12, 6, '#cfc6b4');

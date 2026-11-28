@@ -2,7 +2,7 @@
 // Semua adegan dibaca dari naskah.json (kamera, pose, stiker, efek suara per baris).
 // Pakai: video.html?dir=video/<nama>&skala=1.5
 import * as THREE from 'three';
-import { VB, signMesh, createWorld, OPSI_DUNIA, WISATA_LUMPUR, makeCakDarjo, makeAyam, buatAkuarium, makeCharUmum, rng } from './world.js';
+import { VB, signMesh, createWorld, OPSI_DUNIA, WISATA_LUMPUR, makeCakDarjo, makeAyam, buatAkuarium, makeCharUmum, rng, REL, haluskan } from './world.js';
 import { adeganRumah } from './rumah.js';
 import { adeganSekolah } from './sekolah.js';
 import { adeganMuseum } from './museum.js';
@@ -390,6 +390,38 @@ function aturCahaya(t, s) {
   cahaya.position.set(h.dari[0] + (h.ke[0] - h.dari[0]) * k, (h.y ?? 1.9) + Math.sin(t * 7) * 0.08, h.dari[1] + (h.ke[1] - h.dari[1]) * k);
   cahaya.children[1].intensity = 60 * (0.75 + 0.25 * Math.sin(t * 23) * Math.sin(t * 7.3));
   const w = h.warna || null; if (cahaya.userData.w !== w) { cahaya.userData.w = w; cahaya.children[0].material.color.set(w || '#fff6c8'); cahaya.children[1].color.set(w || '#ffe9a8'); cahaya.children[2].material.color.set(w || '#fff1b0'); }   // warna: mis. '#ff3b30' (benang abang)
+}
+// SEPUR nang rel (naskah "sepur": {di: [x, z], awal: d}) — baris "sepur": {dari: d0, ke: d1} → sepur mlaku teko jarak d0 nang d1 (meter teko titik "di" urut rel)
+let SEPUR = null;
+if (NASKAH.sepur) {
+  const D0 = NASKAH.sepur.di; let best = null;
+  for (const p of REL) { const h = haluskan(p); for (let k = 0; k < h.length; k++) { const d = Math.hypot(h[k][0] - D0[0], h[k][1] - D0[1]); if (!best || d < best.d) best = { d, h, k }; } }
+  const h = best.h, cum = [0]; for (let k = 1; k < h.length; k++) cum.push(cum[k - 1] + Math.hypot(h[k][0] - h[k - 1][0], h[k][1] - h[k - 1][1]));
+  const s0 = cum[best.k];
+  const titik = s => { s = Math.max(0, Math.min(cum[cum.length - 1] - 0.01, s0 + s)); let k = 1; while (k < cum.length - 1 && cum[k] < s) k++; const u = (s - cum[k - 1]) / ((cum[k] - cum[k - 1]) || 1), a = h[k - 1], b = h[k];
+    return { x: a[0] + (b[0] - a[0]) * u, z: a[1] + (b[1] - a[1]) * u, ry: Math.atan2(b[0] - a[0], b[1] - a[1]) }; };
+  const M = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.5, metalness: 0.15 });
+  const gerbong = (loko) => {
+    const g = new THREE.Group(), L = 9;
+    const kotak = (w, hh, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, hh, d), M(c)); m.position.set(x, y, z); m.castShadow = true; g.add(m); return m; };
+    kotak(2.6, 2.6, L, loko ? '#f28c28' : '#f4f1ea', 0, 1.9, 0);
+    kotak(2.62, 0.5, L, '#0f4c5c', 0, 1.0, 0);
+    kotak(2.3, 0.25, L - 0.4, '#8a96a3', 0, 3.3, 0);
+    for (let z = -L / 2 + 1; z < L / 2 - 0.6; z += 1.6) for (const sx of [-1.315, 1.315]) { const w = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.8, 1.1), new THREE.MeshStandardMaterial({ color: '#9fd8ee', emissive: '#2a5a6a', emissiveIntensity: 0.4 })); w.position.set(sx, 2.4, z); g.add(w); }
+    for (const z of [-L / 2 + 1.4, L / 2 - 1.4]) for (const sx of [-0.75, 0.75]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.25, 14), M('#222')); r.rotation.z = Math.PI / 2; r.position.set(sx, 0.62, z); g.add(r); }
+    kotak(2.2, 0.35, L - 1, '#333', 0, 0.62, 0);
+    if (loko) { kotak(2.4, 1.0, 0.1, '#16324f', 0, 2.6, L / 2 + 0.01); const lp = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), new THREE.MeshBasicMaterial({ color: '#fff6c8' })); lp.position.set(0, 1.6, L / 2 + 0.05); g.add(lp);
+      const sg = signMesh('🦐 SIDOARJOVERSE 🐟', 7, 0.7, '#f28c28', '#ffffff'); for (const sx of [-1, 1]) { const m = sg.clone(); m.position.set(sx * 1.33, 1.85, 0); m.rotation.y = sx * Math.PI / 2; g.add(m); } }
+    scene.add(g); return g;
+  };
+  const cars = [gerbong(true), gerbong(false), gerbong(false), gerbong(false)];
+  SEPUR = { titik, cars, posisi: NASKAH.sepur.awal ?? 0, arah: NASKAH.sepur.arah || 1 };
+}
+function aturSepur(t, s) {
+  if (!SEPUR) return;
+  if (s.sepur) { const u = Math.min(1, Math.max(0, (t - s.start) / s.dur)), e = s.sepur.alus === false ? u : u * u * (3 - 2 * u) * 0.35 + u * 0.65; SEPUR.posisi = s.sepur.dari + (s.sepur.ke - s.sepur.dari) * e; SEPUR.arah = Math.sign(s.sepur.ke - s.sepur.dari) || 1; }
+  const arah = SEPUR.arah || 1;
+  SEPUR.cars.forEach((g, i) => { const p = SEPUR.titik(SEPUR.posisi - arah * i * 9.6); g.position.set(p.x, 0.25, p.z); g.rotation.y = p.ry + (arah < 0 ? Math.PI : 0); });
 }
 // Mbah Paijo, penjaga hutan (naskah "mbah": {x, z, ry}) — rambut & kumis putih, peci, sarung, senter. Baris "mbah": true → tampil;
 // "mbahJalan": [[x, z], [x, z]] → berjalan; "mbahSenter": false → senter mati; "mbahTawa": true → bahu terguncang tertawa
@@ -1269,7 +1301,7 @@ window.video = {
       const u = t - (s.start + s.dur * s.getar);
       if (u > 0 && u < 1.1) { const a = 0.35 * (1 - u / 1.1); camera.position.x += Math.sin(t * 91) * a; camera.position.y += Math.sin(t * 73) * a * 0.7; }
     }
-    aturHantu(t, s); aturCahaya(t, s); aturMbah(t, s); aturKunang(t, s); aturKepsek(t, s); aturRumah(t, i); aturKerumunan(t, s);
+    aturHantu(t, s); aturCahaya(t, s); aturSepur(t, s); aturMbah(t, s); aturKunang(t, s); aturKepsek(t, s); aturRumah(t, i); aturKerumunan(t, s);
     { const jm = NASKAH.jam ?? 9.3, gelap = (jm > 18.5 || jm < 5.5) && s.darjo !== 'pojok'; lampuDarjo.intensity = gelap && !s.footage ? 16 : 0; lampuDarjo.position.set(0.9, 2.7, 3.4); }
     senter.intensity = s.footage ? 40 : 0;
     if (!s.footage) { const a = darjo.userData.anim; a.legs[0].rotation.x = a.legs[1].rotation.x = 0; }

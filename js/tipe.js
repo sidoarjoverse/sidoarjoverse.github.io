@@ -5,7 +5,7 @@ export const TIPE_LIST = [
   { id: 'pasar', label: 'Pasar' }, { id: 'sekolah', label: 'Sekolah' }, { id: 'sekolahelite', label: 'Sekolah Elite (megah)' }, { id: 'puskesmas', label: 'Puskesmas' },
   { id: 'warung', label: 'Warung' }, { id: 'posronda', label: 'Pos Ronda' }, { id: 'tambak', label: 'Tambak' },
   { id: 'sawah', label: 'Sawah' }, { id: 'candi', label: 'Candi' }, { id: 'tugu', label: 'Tugu' },
-  { id: 'lapangan', label: 'Lapangan Bola' }, { id: 'stadion', label: 'Stadion / GOR Delta (megah)' }, { id: 'kantor', label: 'Gedung / Kantor' }, { id: 'toko', label: 'Toko Mitra (Google Maps + WA)' }, { id: 'kolampancing', label: 'Kolam Pancing' }, { id: 'museum', label: 'Penerbit Benang Merah (gedung + galeri)' }, { id: 'pembangun', label: 'Kantor Pembangun Kota (@denypm.id)' },
+  { id: 'lapangan', label: 'Lapangan Bola' }, { id: 'stadion', label: 'Stadion / GOR Delta (megah)' }, { id: 'stasiun', label: 'Stasiun Kereta' }, { id: 'kantor', label: 'Gedung / Kantor' }, { id: 'toko', label: 'Toko Mitra (Google Maps + WA)' }, { id: 'kolampancing', label: 'Kolam Pancing' }, { id: 'museum', label: 'Penerbit Benang Merah (gedung + galeri)' }, { id: 'pembangun', label: 'Kantor Pembangun Kota (@denypm.id)' },
 ];
 
 // Perumahan warga: 25 kavling (1 kavling = 1 blok = 40 rumah → 1000 rumah), masing-masing di letak asli perumahannya di Sidoarjo.
